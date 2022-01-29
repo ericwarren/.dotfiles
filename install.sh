@@ -23,7 +23,8 @@ nix-env -iA \
 	nixpkgs.neovim \
 	nixpkgs.stow \
 	nixpkgs.bat \
-    nixpkgs.fzf 	
+    nixpkgs.fzf \
+    nixpkgs.ripgrep \
     nixpkgs.gnumake \
 	nixpkgs.gcc \	
     nixpkgs.erlang \

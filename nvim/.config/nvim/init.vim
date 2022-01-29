@@ -1,3 +1,4 @@
+
 " --- General 
 
 let mapleader = " "
@@ -35,7 +36,9 @@ set mouse=a
 call plug#begin('~/.config/nvim/plugged')
 
 Plug 'folke/tokyonight.nvim', { 'branch': 'main' } " Colorscheme
-
+Plug 'nvim-lualine/lualine.nvim'                   " Status line
+Plug 'akinsho/bufferline.nvim'                     " Buffers
+Plug 'machakann/vim-highlightedyank'               " Highlight yanked text
 Plug 'kyazdani42/nvim-tree.lua'                    " File explorer
 
 Plug 'neovim/nvim-lspconfig'
