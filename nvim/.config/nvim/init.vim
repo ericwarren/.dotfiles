@@ -36,13 +36,22 @@ set mouse=a
 call plug#begin('~/.config/nvim/plugged')
 
 Plug 'folke/tokyonight.nvim', { 'branch': 'main' } " Colorscheme
+Plug 'kyazdani42/nvim-web-devicons'                " Devicons
 Plug 'nvim-lualine/lualine.nvim'                   " Status line
 Plug 'akinsho/bufferline.nvim'                     " Buffers
 Plug 'machakann/vim-highlightedyank'               " Highlight yanked text
 Plug 'kyazdani42/nvim-tree.lua'                    " File explorer
 
+" Lsp
 Plug 'neovim/nvim-lspconfig'
 Plug 'nvim-lua/completion-nvim'
+
+" Autocompletion
+Plug 'hrsh7th/nvim-cmp'
+Plug 'hrsh7th/cmp-nvim-lsp'
+Plug 'L3MON4D3/LuaSnip'
+Plug 'saadparwaiz1/cmp_luasnip'
+Plug 'onsails/lspkind-nvim'
 
 " Telescope
 Plug 'nvim-lua/plenary.nvim'

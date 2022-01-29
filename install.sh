@@ -26,7 +26,7 @@ nix-env -iA \
     nixpkgs.fzf \
     nixpkgs.ripgrep \
     nixpkgs.gnumake \
-	nixpkgs.gcc \	
+	nixpkgs.gcc \
     nixpkgs.erlang \
 	nixpkgs.elixir \
 	nixpkgs.python310 \
@@ -37,6 +37,12 @@ nix-env -iA \
 stow git
 stow nvim
 stow zsh
+
+#install for language server support
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+nvm install 16
+nvm use 16
+npm install -g typescript typescript-language-server
 
 # add zsh as a login shell
 command -v zsh | sudo tee -a /etc/shells
