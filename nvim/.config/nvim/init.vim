@@ -39,6 +39,7 @@ Plug 'folke/tokyonight.nvim', { 'branch': 'main' } " Colorscheme
 Plug 'kyazdani42/nvim-tree.lua'                    " File explorer
 
 Plug 'neovim/nvim-lspconfig'
+Plug 'nvim-lua/completion-nvim'
 
 " Telescope
 Plug 'nvim-lua/plenary.nvim'
