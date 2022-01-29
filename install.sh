@@ -29,6 +29,7 @@ nix-env -iA \
 	nixpkgs.gcc \
     nixpkgs.erlang \
 	nixpkgs.elixir \
+    nixpkgs.efm-langserver \
 	nixpkgs.python310 \
 	nixpkgs.jq \
 	nixpkgs.keychain
@@ -37,6 +38,7 @@ nix-env -iA \
 stow git
 stow nvim
 stow zsh
+stow efm-langserver
 
 #install for language server support
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
