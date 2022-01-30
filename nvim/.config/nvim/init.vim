@@ -46,6 +46,10 @@ Plug 'kyazdani42/nvim-tree.lua'                    " File explorer
 Plug 'neovim/nvim-lspconfig'
 Plug 'nvim-lua/completion-nvim'
 
+" Elixir syntax highlighting
+Plug 'elixir-editors/vim-elixir'
+syntax on
+
 " Autocompletion
 Plug 'hrsh7th/nvim-cmp'
 Plug 'hrsh7th/cmp-nvim-lsp'
