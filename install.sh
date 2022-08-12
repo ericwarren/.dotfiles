@@ -30,7 +30,7 @@ nix-env -iA \
     nixpkgs.erlang \
 	nixpkgs.elixir \
     nixpkgs.efm-langserver \
-	nixpkgs.python310 \
+	nixpkgs.python310Full \
 	nixpkgs.jq \
 	nixpkgs.keychain
 
