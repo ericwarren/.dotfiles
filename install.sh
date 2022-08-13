@@ -13,7 +13,10 @@ fi
 nix-env -iA \
 	nixpkgs.zsh \
 	nixpkgs.git \
-	nixpkgs.stow
+	nixpkgs.stow \
+	nixpkgs.bat \
+	nixpkgs.fzf \
+	nixpkgs.ripgrep
 
 # stow dotfiles
 stow git
