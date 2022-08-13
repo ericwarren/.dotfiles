@@ -16,7 +16,9 @@ nix-env -iA \
 	nixpkgs.stow \
 	nixpkgs.bat \
 	nixpkgs.fzf \
-	nixpkgs.ripgrep
+	nixpkgs.ripgrep \
+	nixpkgs.jq \
+	nixpkgs.keychainp
 
 # stow dotfiles
 stow git
