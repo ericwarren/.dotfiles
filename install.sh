@@ -24,6 +24,12 @@ nix-env -iA \
 stow git
 stow zsh
 
+
+# Download zsh completion files
+curl -o ~/.zsh/git-completion.bash --create-dirs https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
+curl -o ~/.zsh/_git --create-dirs https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.zsh
+
+# Install Antidote zsh plugin manager
 git clone --depth=1 https://github.com/mattmc3/antidote.git ${ZDOTDIR:-~}/.antidote
 
 #install for language server support

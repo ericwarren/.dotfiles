@@ -19,6 +19,11 @@ HISTSIZE=10000
 SAVEHIST=10000
 setopt appendhistory
 
+# Load Git completion
+zstyle ':completion:*:*:git:*' script ~/.zsh/git-completion.bash
+fpath=(~/.zsh $fpath)
+autoload -Uz compinit && compinit
+
 # Better ls
 alias ll="ls -al"
 # List out all globally installed npm packages
