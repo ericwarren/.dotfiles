@@ -18,7 +18,7 @@ nix-env -iA \
 	nixpkgs.fzf \
 	nixpkgs.ripgrep \
 	nixpkgs.jq \
-	nixpkgs.keychainp
+	nixpkgs.keychain
 
 # stow dotfiles
 stow git
@@ -48,4 +48,4 @@ sudo chsh -s $(which zsh) $USER
 antidote bundle < ~/.zsh_plugins.txt > ~/.zsh_plugins.sh
 
 # install neovim plugins
-nvim --headless +PlugInstall +qall
+# nvim --headless +PlugInstall +qall
