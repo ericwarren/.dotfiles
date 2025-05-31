@@ -18,7 +18,7 @@ return {
       require('mason-lspconfig').setup({
         ensure_installed = {
           'rust_analyzer',
-          'tsserver',
+          'ts_ls',
           'pyright',
           'omnisharp',
         },
@@ -49,7 +49,7 @@ return {
         },
       })
       
-      lspconfig.tsserver.setup({
+      lspconfig.ts_ls.setup({
         capabilities = capabilities,
       })
       
@@ -155,7 +155,7 @@ return {
       
       -- Update LSP servers with cmp capabilities
       local lspconfig = require('lspconfig')
-      local servers = { 'rust_analyzer', 'tsserver', 'pyright', 'omnisharp' }
+      local servers = { 'rust_analyzer', 'ts_ls', 'pyright', 'omnisharp' }
       
       for _, server in ipairs(servers) do
         if lspconfig[server] then
