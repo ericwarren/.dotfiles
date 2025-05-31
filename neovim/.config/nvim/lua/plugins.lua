@@ -15,12 +15,12 @@ return require('lazy').setup({
     config = function()
       require('mason-lspconfig').setup({
         ensure_installed = {
-          'rust_analyzer',    -- Rust
-          'tsserver',         -- TypeScript/JavaScript  
-          'omnisharp',        -- C#
-          'pyright',          -- Python
-          'html',             -- HTML
-          'cssls',            -- CSS
+          'rust_analyzer',
+          'tsserver',
+          'omnisharp',
+          'pyright',
+          'html',
+          'cssls',
         }
       })
     end
@@ -34,7 +34,6 @@ return require('lazy').setup({
       local lspconfig = require('lspconfig')
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
 
-      -- Auto-setup LSP servers installed by Mason
       require('mason-lspconfig').setup_handlers({
         function(server_name)
           lspconfig[server_name].setup({
@@ -138,4 +137,4 @@ return require('lazy').setup({
       vim.cmd([[colorscheme tokyonight]])
     end,
   },
-})
+})                                                                  - ~/.config/nvim/init.lua:20       
