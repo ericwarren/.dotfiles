@@ -1,10 +1,11 @@
-return require('lazy').setup({
+return {
   -- GitHub Copilot
   'github/copilot.vim',
 
   -- LSP Support
   {
     'williamboman/mason.nvim',
+    build = ':MasonUpdate',
     config = function()
       require('mason').setup()
     end
@@ -12,29 +13,142 @@ return require('lazy').setup({
 
   {
     'williamboman/mason-lspconfig.nvim',
-    dependencies = { 'mason.nvim' },
+    dependencies = { 'williamboman/mason.nvim' },
     config = function()
       require('mason-lspconfig').setup({
         ensure_installed = {
           'rust_analyzer',
           'ts_ls',
           'pyright',
+          'omnisharp',  -- Added for C# support
         },
+        automatic_installation = true,
       })
     end
   },
 
   {
     'neovim/nvim-lspconfig',
-    dependencies = { 'mason-lspconfig.nvim' },
+    dependencies = { 
+      'williamboman/mason.nvim',
+      'williamboman/mason-lspconfig.nvim',
+    },
     config = function()
-      -- Simple LSP setup without handlers for now
       local lspconfig = require('lspconfig')
+      local capabilities = vim.lsp.protocol.make_client_capabilities()
       
-      -- Basic server setups
-      lspconfig.rust_analyzer.setup({})
-      lspconfig.ts_ls.setup({})
-      lspconfig.pyright.setup({})
+      -- Setup handlers for automatic server configuration
+      require('mason-lspconfig').setup_handlers({
+        -- Default handler
+        function(server_name)
+          lspconfig[server_name].setup({
+            capabilities = capabilities,
+          })
+        end,
+        
+        -- Custom configurations for specific servers
+        ['rust_analyzer'] = function()
+          lspconfig.rust_analyzer.setup({
+            capabilities = capabilities,
+            settings = {
+              ['rust-analyzer'] = {
+                checkOnSave = {
+                  command = "clippy"
+                },
+              },
+            },
+          })
+        end,
+      })
+    end
+  },
+
+  -- Telescope
+  {
+    'nvim-telescope/telescope.nvim',
+    tag = '0.1.5',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      require('telescope').setup({
+        defaults = {
+          file_ignore_patterns = { "node_modules", ".git/" },
+        },
+      })
+    end
+  },
+
+  -- Treesitter for better syntax highlighting
+  {
+    'nvim-treesitter/nvim-treesitter',
+    build = ':TSUpdate',
+    config = function()
+      require('nvim-treesitter.configs').setup({
+        ensure_installed = { "lua", "rust", "python", "javascript", "typescript", "c_sharp" },
+        sync_install = false,
+        auto_install = true,
+        highlight = {
+          enable = true,
+        },
+        indent = {
+          enable = true,
+        },
+      })
+    end
+  },
+
+  -- Auto-completion
+  {
+    'hrsh7th/nvim-cmp',
+    dependencies = {
+      'hrsh7th/cmp-nvim-lsp',
+      'hrsh7th/cmp-buffer',
+      'hrsh7th/cmp-path',
+      'L3MON4D3/LuaSnip',
+      'saadparwaiz1/cmp_luasnip',
+    },
+    config = function()
+      local cmp = require('cmp')
+      local luasnip = require('luasnip')
+      
+      cmp.setup({
+        snippet = {
+          expand = function(args)
+            luasnip.lsp_expand(args.body)
+          end,
+        },
+        mapping = cmp.mapping.preset.insert({
+          ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+          ['<C-f>'] = cmp.mapping.scroll_docs(4),
+          ['<C-Space>'] = cmp.mapping.complete(),
+          ['<C-e>'] = cmp.mapping.abort(),
+          ['<CR>'] = cmp.mapping.confirm({ select = true }),
+          ['<Tab>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_next_item()
+            elseif luasnip.expand_or_jumpable() then
+              luasnip.expand_or_jump()
+            else
+              fallback()
+            end
+          end, { 'i', 's' }),
+          ['<S-Tab>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_prev_item()
+            elseif luasnip.jumpable(-1) then
+              luasnip.jump(-1)
+            else
+              fallback()
+            end
+          end, { 'i', 's' }),
+        }),
+        sources = cmp.config.sources({
+          { name = 'nvim_lsp' },
+          { name = 'luasnip' },
+        }, {
+          { name = 'buffer' },
+          { name = 'path' },
+        })
+      })
     end
   },
 
@@ -44,7 +158,36 @@ return require('lazy').setup({
     lazy = false,
     priority = 1000,
     config = function()
-      vim.cmd([[colorscheme tokyonight]])
+      vim.cmd([[colorscheme tokyonight-night]])
     end,
   },
-})
+  
+  -- Status line
+  {
+    'nvim-lualine/lualine.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    config = function()
+      require('lualine').setup({
+        options = {
+          theme = 'tokyonight'
+        }
+      })
+    end
+  },
+
+  -- Comment plugin
+  {
+    'numToStr/Comment.nvim',
+    config = function()
+      require('Comment').setup()
+    end
+  },
+
+  -- Git signs
+  {
+    'lewis6991/gitsigns.nvim',
+    config = function()
+      require('gitsigns').setup()
+    end
+  },
+}
