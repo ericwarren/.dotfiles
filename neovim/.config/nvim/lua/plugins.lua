@@ -2,7 +2,7 @@ return require('lazy').setup({
   -- GitHub Copilot
   'github/copilot.vim',
 
-  -- LSP Support with Mason
+  -- LSP Support
   {
     'williamboman/mason.nvim',
     config = function()
@@ -10,120 +10,31 @@ return require('lazy').setup({
     end
   },
 
-  -- LSP Configuration (load before mason-lspconfig)
-  {
-    'neovim/nvim-lspconfig',
-    config = function()
-      -- Basic LSP setup will be handled by mason-lspconfig
-    end
-  },
-
   {
     'williamboman/mason-lspconfig.nvim',
-    dependencies = { 'mason.nvim', 'nvim-lspconfig' },
+    dependencies = { 'mason.nvim' },
     config = function()
       require('mason-lspconfig').setup({
         ensure_installed = {
           'rust_analyzer',
           'ts_ls',
-          'omnisharp',
           'pyright',
-          'html',
-          'cssls',
         },
-        automatic_installation = true,
-      })
-
-      -- Setup handlers after mason-lspconfig is configured
-      require('mason-lspconfig').setup_handlers({
-        function(server_name)
-          require('lspconfig')[server_name].setup({})
-        end,
       })
     end
   },
 
-  -- Autocompletion
   {
-    'hrsh7th/nvim-cmp',
-    dependencies = {
-      'hrsh7th/cmp-nvim-lsp',
-      'hrsh7th/cmp-buffer',
-      'hrsh7th/cmp-path',
-      'L3MON4D3/LuaSnip',
-      'saadparwaiz1/cmp_luasnip',
-    },
+    'neovim/nvim-lspconfig',
+    dependencies = { 'mason-lspconfig.nvim' },
     config = function()
-      local cmp = require('cmp')
-      cmp.setup({
-        snippet = {
-          expand = function(args)
-            require('luasnip').lsp_expand(args.body)
-          end,
-        },
-        mapping = cmp.mapping.preset.insert({
-          ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-          ['<C-f>'] = cmp.mapping.scroll_docs(4),
-          ['<C-Space>'] = cmp.mapping.complete(),
-          ['<C-e>'] = cmp.mapping.abort(),
-          ['<CR>'] = cmp.mapping.confirm({ select = true }),
-        }),
-        sources = cmp.config.sources({
-          { name = 'nvim_lsp' },
-          { name = 'luasnip' },
-        }, {
-          { name = 'buffer' },
-        })
-      })
-    end
-  },
-
-  -- File explorer
-  {
-    'nvim-tree/nvim-tree.lua',
-    dependencies = 'nvim-tree/nvim-web-devicons',
-    config = function()
-      require('nvim-tree').setup()
-    end
-  },
-
-  -- Fuzzy finder
-  {
-    'nvim-telescope/telescope.nvim',
-    dependencies = { 'nvim-lua/plenary.nvim' },
-    config = function()
-      require('telescope').setup()
-    end
-  },
-
-  -- Treesitter
-  {
-    'nvim-treesitter/nvim-treesitter',
-    build = ':TSUpdate',
-    config = function()
-      require('nvim-treesitter.configs').setup({
-        ensure_installed = { 'c', 'lua', 'vim', 'rust', 'python', 'javascript', 'typescript', 'html', 'css' },
-        highlight = { enable = true },
-        indent = { enable = true },
-      })
-    end
-  },
-
-  -- Git integration
-  'tpope/vim-fugitive',
-  {
-    'lewis6991/gitsigns.nvim',
-    config = function()
-      require('gitsigns').setup()
-    end
-  },
-
-  -- Status line
-  {
-    'nvim-lualine/lualine.nvim',
-    dependencies = 'nvim-tree/nvim-web-devicons',
-    config = function()
-      require('lualine').setup()
+      -- Simple LSP setup without handlers for now
+      local lspconfig = require('lspconfig')
+      
+      -- Basic server setups
+      lspconfig.rust_analyzer.setup({})
+      lspconfig.ts_ls.setup({})
+      lspconfig.pyright.setup({})
     end
   },
 
