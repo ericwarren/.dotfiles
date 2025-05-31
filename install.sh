@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # WSL Ubuntu Development Environment Setup Script with Nix
-# Installs: git, neovim, zsh, gnu stow using Nix package manager
+# Comprehensive setup including Neovim development environment
+# Installs: git, neovim, zsh, gnu stow, development tools using Nix package manager
 # Expects to be run from ~/.dotfiles repository
 
 set -e  # Exit on any error
@@ -30,6 +31,10 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+print_nvim_status() { echo -e "${GREEN}[NVIM]${NC} $1"; }
+print_nvim_warning() { echo -e "${YELLOW}[NVIM]${NC} $1"; }
+print_nvim_error() { echo -e "${RED}[NVIM]${NC} $1"; }
+
 # Check if running as root
 if [[ $EUID -eq 0 ]]; then
    log_error "This script should not be run as root"
@@ -57,7 +62,7 @@ if [[ "$SCRIPT_DIR" != "$EXPECTED_DIR" ]]; then
     log_warning "Current location: $SCRIPT_DIR"
     log_info "Expected workflow:"
     log_info "  1. git clone <your-repo> ~/.dotfiles"
-    log_info "  2. cd ~/.dotfiles && ./setup.sh"
+    log_info "  2. cd ~/.dotfiles && ./Ubuntu-WSL-Nix-setup.sh"
     echo ""
     read -p "Continue anyway? (y/N): " -n 1 -r
     echo ""
@@ -97,22 +102,111 @@ install_nix() {
     fi
 }
 
-# Install packages using Nix
+# Install packages using Nix (combined core and development packages)
 install_nix_packages() {
     log_info "Installing development packages with Nix..."
     
-    # Install packages
-    nix-env -iA \
-        nixpkgs.git \
-        nixpkgs.neovim \
-        nixpkgs.zsh \
-        nixpkgs.stow \
-        nixpkgs.curl \
-        nixpkgs.wget \
-        nixpkgs.unzip \
-        nixpkgs.fontconfig
+    # Combined package list from both scripts
+    local packages=(
+        # Core tools
+        "git"
+        "neovim"
+        "zsh"
+        "stow"
+        "curl"
+        "wget"
+        "unzip"
+        "fontconfig"
+        
+        # Development tools
+        "tree"
+        "ripgrep"
+        "fd"
+        
+        # Language runtimes
+        "nodejs_20"
+        "python3"
+        "python3Packages.pip"
+        "dotnet-sdk_8"
+        
+        # Container tools
+        "docker"
+        "docker-compose"
+        
+        # Shell tools
+        "shfmt"
+        "shellcheck"
+    )
+    
+    log_info "Installing: ${packages[*]}"
+    nix-env -iA ${packages[@]/#/nixpkgs.}
     
     log_success "Nix packages installed"
+    
+    # Print alternative configuration note
+    log_info "Alternative: Add these packages to your nix configuration:"
+    echo "  environment.systemPackages = with pkgs; ["
+    printf "    %s\n" "${packages[@]}" | sed 's/^/    /'
+    echo "  ];"
+}
+
+# Install Node.js based LSP servers and tools
+install_node_tools() {
+    print_nvim_status "Installing Node.js based LSP servers and formatters..."
+    
+    # Check if npm is available
+    if ! command -v npm &> /dev/null; then
+        print_nvim_error "npm not found. Please ensure nodejs is installed via Nix."
+        return 1
+    fi
+    
+    local npm_packages=(
+        "typescript"
+        "typescript-language-server"
+        "prettier" 
+        "bash-language-server"
+        "dockerfile-language-server-nodejs"
+        "docker-compose-language-service"
+        "vscode-langservers-extracted"  # HTML, CSS, JSON, ESLint
+        "@fsouza/prettierd"            # Faster prettier
+    )
+    
+    print_nvim_status "Installing npm packages globally..."
+    npm install -g "${npm_packages[@]}"
+}
+
+# Install Python tools
+install_python_tools() {
+    print_nvim_status "Installing Python development tools..."
+    
+    if ! command -v pip3 &> /dev/null; then
+        print_nvim_error "pip3 not found. Please ensure python3 and pip are installed via Nix."
+        return 1
+    fi
+    
+    # Install Python LSP and formatters
+    pip3 install --user \
+        black \
+        isort \
+        flake8 \
+        mypy \
+        pyright \
+        python-lsp-server[all] \
+        debugpy
+}
+
+# Install .NET tools
+install_dotnet_tools() {
+    print_nvim_status "Installing .NET development tools..."
+    
+    if ! command -v dotnet &> /dev/null; then
+        print_nvim_warning ".NET SDK not found. Some C# features may not work."
+        return 0
+    fi
+    
+    # Install .NET global tools
+    dotnet tool install --global csharpier
+    dotnet tool install --global dotnet-ef  # Entity Framework tools
 }
 
 # Install Caskaydia Cove Nerd Font
@@ -179,6 +273,37 @@ EOF
     log_success "Nix environment configured"
 }
 
+# Setup directories
+setup_directories() {
+    print_nvim_status "Setting up Neovim and development directories..."
+    mkdir -p "$HOME/.local/share/nvim"
+    mkdir -p "$HOME/.vim/undodir"
+}
+
+# Verify installation
+verify_installation() {
+    print_nvim_status "Verifying installation..."
+    
+    local tools=("nvim" "node" "python3" "dotnet" "git" "rg" "zsh" "stow")
+    local missing_tools=()
+    
+    for tool in "${tools[@]}"; do
+        if command -v "$tool" &> /dev/null; then
+            print_nvim_status "✓ $tool installed"
+        else
+            missing_tools+=("$tool")
+            print_nvim_warning "✗ $tool not found"
+        fi
+    done
+    
+    if [ ${#missing_tools[@]} -eq 0 ]; then
+        print_nvim_status "All tools installed successfully!"
+    else
+        print_nvim_warning "Missing tools: ${missing_tools[*]}"
+        print_nvim_warning "Install them via: nix-env -iA nixpkgs.<package-name>"
+    fi
+}
+
 log_info "Starting WSL Ubuntu development environment setup with Nix..."
 
 # Install Nix package manager
@@ -189,6 +314,14 @@ configure_nix_env
 
 # Install packages
 install_nix_packages
+
+# Install development tools
+install_node_tools
+install_python_tools
+install_dotnet_tools
+
+# Setup directories
+setup_directories
 
 # Install Oh My Zsh (optional but recommended)
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
@@ -207,7 +340,6 @@ DOTFILES_DIR="$SCRIPT_DIR"
 
 # Look for dotfiles packages (directories that aren't common repo files)
 EXCLUDE_DIRS=("\.git" "\.github" "docs" "scripts" "bin")
-EXCLUDE_FILES=("setup\.sh" "README\.md" "LICENSE" "\.gitignore")
 
 # Find potential dotfiles packages
 PACKAGES=()
@@ -234,7 +366,7 @@ else
     log_warning "No dotfiles packages found in: $DOTFILES_DIR"
     log_info "Expected structure:"
     log_info "  ~/.dotfiles/"
-    log_info "  ├── setup.sh (this script)"
+    log_info "  ├── Ubuntu-WSL-Nix-setup.sh (this script)"
     log_info "  ├── git/          # dotfiles package"
     log_info "  ├── zsh/          # dotfiles package" 
     log_info "  └── nvim/         # dotfiles package"
@@ -253,7 +385,7 @@ case "\$1" in
         if [[ -z "\$2" ]]; then
             echo "Usage: dotfiles install <package>"
             echo "Available packages:"
-            ls -1 "\$DOTFILES_DIR" 2>/dev/null | grep -v -E '(setup\.sh|README\.md|LICENSE|\.git)' || echo "No packages found in \$DOTFILES_DIR"
+            ls -1 "\$DOTFILES_DIR" 2>/dev/null | grep -v -E '(Ubuntu-WSL-Nix-setup\.sh|README\.md|LICENSE|\.git)' || echo "No packages found in \$DOTFILES_DIR"
             exit 1
         fi
         cd "\$DOTFILES_DIR" && stow "\$2"
@@ -296,12 +428,12 @@ case "\$1" in
         ;;
     "list")
         echo "Available dotfiles packages:"
-        ls -1 "\$DOTFILES_DIR" 2>/dev/null | grep -v -E '(setup\.sh|README\.md|LICENSE|\.git)' || echo "No packages found in \$DOTFILES_DIR"
+        ls -1 "\$DOTFILES_DIR" 2>/dev/null | grep -v -E '(Ubuntu-WSL-Nix-setup\.sh|README\.md|LICENSE|\.git)' || echo "No packages found in \$DOTFILES_DIR"
         ;;
     "status")
         echo "Dotfiles directory: \$DOTFILES_DIR"
         echo "Available packages:"
-        ls -1 "\$DOTFILES_DIR" | grep -v -E '(setup\.sh|README\.md|LICENSE|\.git)' 2>/dev/null || echo "No packages found"
+        ls -1 "\$DOTFILES_DIR" | grep -v -E '(Ubuntu-WSL-Nix-setup\.sh|README\.md|LICENSE|\.git)' 2>/dev/null || echo "No packages found"
         echo ""
         echo "Current symlinks in home directory:"
         find "\$HOME" -maxdepth 3 -type l -exec ls -la {} \; 2>/dev/null | grep "\$DOTFILES_DIR" || echo "No dotfile symlinks found"
@@ -319,7 +451,7 @@ case "\$1" in
         if [[ -z "\$2" ]]; then
             echo "Usage: dotfiles edit <package>"
             echo "Available packages:"
-            ls -1 "\$DOTFILES_DIR" 2>/dev/null | grep -v -E '(setup\.sh|README\.md|LICENSE|\.git)' || echo "No packages found in \$DOTFILES_DIR"
+            ls -1 "\$DOTFILES_DIR" 2>/dev/null | grep -v -E '(Ubuntu-WSL-Nix-setup\.sh|README\.md|LICENSE|\.git)' || echo "No packages found in \$DOTFILES_DIR"
             exit 1
         fi
         cd "\$DOTFILES_DIR/\$2"
@@ -383,16 +515,25 @@ if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]]; then
     git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 fi
 
+# Verify installation
+verify_installation
+
 # Summary
 log_success "WSL Ubuntu development environment setup with Nix complete!"
+echo ""
+echo "🎉 Neovim development environment setup completed!"
 echo ""
 echo "Installed with Nix:"
 echo "  - Git: $(git --version 2>/dev/null || echo 'Not found in PATH')"
 echo "  - Neovim: $(nvim --version 2>/dev/null | head -n1 || echo 'Not found in PATH')"
 echo "  - Zsh: $(zsh --version 2>/dev/null || echo 'Not found in PATH')"
 echo "  - GNU Stow: $(stow --version 2>/dev/null | head -n1 || echo 'Not found in PATH')"
+echo "  - Node.js: $(node --version 2>/dev/null || echo 'Not found in PATH')"
+echo "  - Python: $(python3 --version 2>/dev/null || echo 'Not found in PATH')"
+echo "  - .NET: $(dotnet --version 2>/dev/null || echo 'Not found in PATH')"
 echo "  - Oh My Zsh with plugins"
 echo "  - Caskaydia Cove Nerd Font"
+echo "  - Development tools (ripgrep, fd, tree, etc.)"
 echo ""
 echo "Dotfiles setup:"
 echo "  - Repository location: $SCRIPT_DIR"
@@ -404,7 +545,7 @@ else
 fi
 echo "  - Management script: ~/.local/bin/dotfiles"
 echo ""
-echo "Next steps:"
+echo "📋 Next steps:"
 if [[ ${#PACKAGES[@]} -gt 0 ]]; then
     echo "1. Deploy dotfiles: 'dotfiles install-all' or 'dotfiles install <package>'"
 else
@@ -417,11 +558,28 @@ echo "2. Restart your terminal or run 'exec zsh' to use zsh with Nix environment
 echo "3. Configure git with: git config --global user.name 'Your Name'"
 echo "4. Configure git with: git config --global user.email 'your.email@example.com'"
 echo "5. Set Caskaydia Cove Nerd Font in your Windows Terminal settings"
+echo "6. Start Neovim: nvim"
+echo "7. Wait for plugins to install automatically"
+echo "8. Run :checkhealth to verify everything works"
+echo "9. Run :Mason to manage LSP servers"
+echo ""
+echo "🔧 Key bindings:"
+echo "  <Space> - Leader key"
+echo "  <Leader>ff - Find files"
+echo "  <Leader>fg - Live grep"
+echo "  <Leader>e - Toggle file explorer"
+echo "  gd - Go to definition"
+echo "  K - Hover documentation"
+echo "  <Leader>fmt - Format code"
+echo "  <Leader>y - Copy to Windows clipboard (WSL)"
 echo ""
 echo "WSL-specific notes:"
 echo "- Nix packages are isolated from Ubuntu's apt packages"
 echo "- Font is installed for WSL but must be configured in Windows Terminal"
 echo "- Use 'dotfiles nix-update' to update all Nix packages"
+echo "- Clipboard integration is configured for Windows"
+echo "- Use Windows Terminal or VSCode terminal for best experience"
+echo "- Docker commands will work if Docker Desktop is running"
 echo ""
 echo "Useful commands:"
 echo "  - dotfiles status      # See current state and Nix packages"
