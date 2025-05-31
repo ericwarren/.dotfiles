@@ -459,13 +459,38 @@ DOTFILES_DIR="$DOTFILES_DIR"
 case "\$1" in
     "install"|"stow")
         if [[ -z "\$2" ]]; then
-            echo "Usage: dotfiles install <package>"
+            echo "Usage: dotfiles install <package> [--force]"
             echo "Available packages:"
             ls -1 "\$DOTFILES_DIR" 2>/dev/null | grep -v -E '(Ubuntu-WSL-Nix-setup\.sh|README\.md|LICENSE|\.git)' || echo "No packages found in \$DOTFILES_DIR"
             exit 1
         fi
-        cd "\$DOTFILES_DIR" && stow "\$2"
-        echo "Installed dotfiles package: \$2"
+        cd "\$DOTFILES_DIR"
+        if [[ "\$3" == "--force" ]]; then
+            # Backup conflicting files before stowing
+            echo "Backing up conflicting files..."
+            mkdir -p "\$HOME/.config-backups/\$(date +%Y%m%d-%H%M%S)"
+            backup_dir="\$HOME/.config-backups/\$(date +%Y%m%d-%H%M%S)"
+            
+            # Find potential conflicts and back them up
+            while IFS= read -r -d '' file; do
+                if [[ -f "\$HOME/\$file" ]] && [[ ! -L "\$HOME/\$file" ]]; then
+                    echo "Backing up: \$file"
+                    mkdir -p "\$backup_dir/\$(dirname "\$file")"
+                    mv "\$HOME/\$file" "\$backup_dir/\$file"
+                fi
+            done < <(find "\$2" -type f -printf '%P\0' 2>/dev/null)
+            
+            stow "\$2"
+            echo "Installed dotfiles package: \$2 (conflicts backed up to \$backup_dir)"
+        else
+            if stow "\$2" 2>/dev/null; then
+                echo "Installed dotfiles package: \$2"
+            else
+                echo "Conflict detected. Existing files would be overwritten."
+                echo "Use 'dotfiles install \$2 --force' to backup existing files and install."
+                echo "Conflicting files will be moved to ~/.config-backups/"
+            fi
+        fi
         ;;
     "uninstall"|"unstow")
         if [[ -z "\$2" ]]; then
@@ -493,11 +518,13 @@ case "\$1" in
                     # Skip non-dotfiles directories
                     if [[ ! "\$package_name" =~ ^(\.git|\.github|docs|scripts|bin)$ ]] && [[ ! -f "\$package_name" ]]; then
                         echo "Installing: \$package_name"
-                        stow "\$package_name"
+                        if ! stow "\$package_name" 2>/dev/null; then
+                            echo "Conflict detected for \$package_name. Use 'dotfiles install \$package_name --force' to backup and install."
+                        fi
                     fi
                 fi
             done
-            echo "All packages installed"
+            echo "All packages processed"
         else
             echo "Dotfiles directory not found: \$DOTFILES_DIR"
         fi
@@ -541,7 +568,7 @@ case "\$1" in
         echo "Usage: dotfiles <command> [package]"
         echo ""
         echo "Commands:"
-        echo "  install/stow <package>    - Install dotfiles package"
+        echo "  install/stow <package> [--force] - Install dotfiles package"
         echo "  uninstall/unstow <package> - Uninstall dotfiles package"
         echo "  restow <package>          - Reinstall dotfiles package"
         echo "  install-all               - Install all available packages"
@@ -550,6 +577,9 @@ case "\$1" in
         echo "  nix-update                - Update all Nix packages"
         echo "  edit <package>            - Edit package files with \\\$EDITOR"
         echo "  cd                        - Print command to cd to dotfiles dir"
+        echo ""
+        echo "Options:"
+        echo "  --force                   - Backup existing files and install (preserves your configs)"
         echo ""
         echo "Dotfiles location: \$DOTFILES_DIR"
         ;;
