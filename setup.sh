@@ -137,28 +137,32 @@ sudo npm install -g typescript ts-node yarn pnpm eslint prettier nodemon
 echo "Installing Python tools..."
 # Handle PEP 668 externally-managed-environment on newer Ubuntu
 if [ "$DISTRO" = "ubuntu" ]; then
-    # Install pipx manually since python3-pipx package doesn't exist in Ubuntu 24.04
-    sudo apt install -y python3-full python3-pip
-    python3 -m pip install --user pipx
-    python3 -m pipx ensurepath
+    # Install available Python tools via apt (system packages)
+    sudo apt install -y python3-full python3-pip python3-venv
     
-    # Add pipx to current session PATH
-    export PATH="$HOME/.local/bin:$PATH"
+    # Install system packages that are available
+    sudo apt install -y python3-pytest python3-flake8 python3-mypy 2>/dev/null || true
     
-    # Install Python development tools via pipx (isolated environments)
-    python3 -m pipx install pipenv
-    python3 -m pipx install poetry
-    python3 -m pipx install black
-    python3 -m pipx install flake8
-    python3 -m pipx install mypy
-    python3 -m pipx install pytest
-    
-    # Install jupyter and ipython via system packages or pipx
-    if apt list --installed 2>/dev/null | grep -q python3-jupyter; then
-        sudo apt install -y python3-jupyter python3-ipython
+    # For tools not available as system packages, use a dedicated virtual environment
+    if [ ! -d "$HOME/.local/share/python-dev-tools" ]; then
+        echo "Creating Python development tools virtual environment..."
+        python3 -m venv "$HOME/.local/share/python-dev-tools"
+        
+        # Install tools in the virtual environment
+        "$HOME/.local/share/python-dev-tools/bin/pip" install \
+            pipenv poetry black flake8 mypy pytest jupyter ipython
+        
+        # Create symlinks to make tools available in PATH
+        mkdir -p "$HOME/.local/bin"
+        for tool in pipenv poetry black flake8 mypy pytest jupyter ipython; do
+            if [ -f "$HOME/.local/share/python-dev-tools/bin/$tool" ]; then
+                ln -sf "$HOME/.local/share/python-dev-tools/bin/$tool" "$HOME/.local/bin/$tool"
+            fi
+        done
+        
+        echo "✓ Python development tools installed in isolated environment"
     else
-        python3 -m pipx install jupyter
-        python3 -m pipx install ipython
+        echo "✓ Python development tools already installed"
     fi
 else
     # Fedora doesn't have this restriction
