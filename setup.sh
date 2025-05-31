@@ -135,7 +135,28 @@ echo "Installing Node.js tools..."
 sudo npm install -g typescript ts-node yarn pnpm eslint prettier nodemon
 
 echo "Installing Python tools..."
-pip3 install --user pipenv poetry black flake8 mypy pytest jupyter ipython
+# Handle PEP 668 externally-managed-environment on newer Ubuntu
+if [ "$DISTRO" = "ubuntu" ]; then
+    # Install pipx for isolated Python applications
+    sudo apt install -y python3-pipx
+    
+    # Install Python development tools via pipx (isolated environments)
+    pipx install pipenv
+    pipx install poetry
+    pipx install black
+    pipx install flake8
+    pipx install mypy
+    pipx install pytest
+    
+    # Install jupyter and ipython via apt (system packages)
+    sudo apt install -y python3-jupyter python3-ipython
+    
+    # Ensure pipx bin directory is in PATH
+    pipx ensurepath
+else
+    # Fedora doesn't have this restriction
+    pip3 install --user pipenv poetry black flake8 mypy pytest jupyter ipython
+fi
 
 # Setup Rust tools
 if command -v rustc &> /dev/null; then
