@@ -9,37 +9,35 @@ return require('lazy').setup({
       require('mason').setup()
     end
   },
+
+  -- LSP Configuration (load before mason-lspconfig)
   {
-    'williamboman/mason-lspconfig.nvim',
-    dependencies = { 'mason.nvim' },
+    'neovim/nvim-lspconfig',
     config = function()
-      require('mason-lspconfig').setup({
-        ensure_installed = {
-          'rust_analyzer',    -- Rust
-          'ts_ls',            -- TypeScript/JavaScript (formerly tsserver)
-          'omnisharp',        -- C#
-          'pyright',          -- Python
-          'html',             -- HTML
-          'cssls',            -- CSS
-        }
-      })
+      -- Basic LSP setup will be handled by mason-lspconfig
     end
   },
 
-  -- LSP Configuration
   {
-    'neovim/nvim-lspconfig',
-    dependencies = { 'mason-lspconfig.nvim' },
+    'williamboman/mason-lspconfig.nvim',
+    dependencies = { 'mason.nvim', 'nvim-lspconfig' },
     config = function()
-      local lspconfig = require('lspconfig')
-      local capabilities = require('cmp_nvim_lsp').default_capabilities()
+      require('mason-lspconfig').setup({
+        ensure_installed = {
+          'rust_analyzer',
+          'ts_ls',
+          'omnisharp',
+          'pyright',
+          'html',
+          'cssls',
+        },
+        automatic_installation = true,
+      })
 
-      -- Auto-setup LSP servers installed by Mason
+      -- Setup handlers after mason-lspconfig is configured
       require('mason-lspconfig').setup_handlers({
         function(server_name)
-          lspconfig[server_name].setup({
-            capabilities = capabilities,
-          })
+          require('lspconfig')[server_name].setup({})
         end,
       })
     end
