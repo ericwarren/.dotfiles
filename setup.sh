@@ -40,10 +40,23 @@ if [ "$DISTRO" = "ubuntu" ]; then
         ca-certificates gnupg lsb-release unzip stow \
         python3 python3-pip python3-venv
     
-    # Install Neovim (latest stable)
-    sudo add-apt-repository ppa:neovim-ppa/stable -y
+    # Install Neovim 0.10+ from unstable PPA
+    echo "Installing Neovim 0.10+..."
+    sudo add-apt-repository ppa:neovim-ppa/unstable -y
     sudo apt update
     sudo apt install -y neovim
+    
+    # Verify Neovim version
+    NVIM_VERSION=$(nvim --version | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo "unknown")
+    NVIM_MAJOR=$(echo $NVIM_VERSION | cut -d. -f1)
+    NVIM_MINOR=$(echo $NVIM_VERSION | cut -d. -f2)
+    
+    if [ "$NVIM_MAJOR" -eq 0 ] && [ "$NVIM_MINOR" -lt 10 ]; then
+        echo "⚠️  Warning: Neovim version $NVIM_VERSION is older than 0.10"
+        echo "   Some features may not work properly"
+    else
+        echo "✓ Neovim $NVIM_VERSION installed successfully"
+    fi
     
     # Install .NET SDK
     if ! command -v dotnet &> /dev/null; then
@@ -61,8 +74,28 @@ elif [ "$DISTRO" = "fedora" ]; then
     sudo dnf update -y
     sudo dnf install -y \
         curl wget git zsh gcc gcc-c++ make cmake \
-        unzip stow python3 python3-pip \
-        neovim rust cargo dotnet-sdk-8.0
+        unzip stow python3 python3-pip
+    
+    # Install latest Neovim from Fedora repos (should be 0.10+)
+    echo "Installing Neovim..."
+    sudo dnf install -y neovim
+    
+    # Verify Neovim version
+    NVIM_VERSION=$(nvim --version | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo "unknown")
+    NVIM_MAJOR=$(echo $NVIM_VERSION | cut -d. -f1)
+    NVIM_MINOR=$(echo $NVIM_VERSION | cut -d. -f2)
+    
+    if [ "$NVIM_MAJOR" -eq 0 ] && [ "$NVIM_MINOR" -lt 10 ]; then
+        echo "⚠️  Warning: Neovim version $NVIM_VERSION is older than 0.10"
+        echo "   You may need to use a third-party repository for newer versions"
+    else
+        echo "✓ Neovim $NVIM_VERSION installed successfully"
+    fi
+    
+    # Install .NET SDK
+    if ! command -v dotnet &> /dev/null; then
+        sudo dnf install -y dotnet-sdk-8.0
+    fi
 
 else
     echo "❌ Unsupported distribution: $DISTRO"
@@ -292,11 +325,13 @@ fi
 echo ""
 echo "🎉 Setup completed successfully!"
 echo ""
+echo "📌 Neovim version: $(nvim --version | head -n1)"
 
 if [ "$STOWED" != true ]; then
     echo "📝 Next: Apply your dotfiles with: stow git zsh neovim"
 fi
 
 echo "🐚 Restart your terminal or run: exec zsh"
-echo "⚡ Open Neovim and run :Copilot setup"
+echo "⚡ Open Neovim and run :checkhealth to verify setup"
+echo "⚡ Then run :Copilot setup to configure GitHub Copilot"
 echo "🎨 Run 'p10k configure' to set up Powerlevel10k with rainbow theme"
