@@ -219,15 +219,56 @@ install_python_tools() {
         return 1
     fi
     
-    # Install Python LSP and formatters
-    pip3 install --user \
-        black \
-        isort \
-        flake8 \
-        mypy \
-        pyright \
-        python-lsp-server[all] \
-        debugpy
+    # Create a virtual environment for development tools
+    print_nvim_status "Creating Python virtual environment for development tools..."
+    mkdir -p "$HOME/.local/share/python-tools"
+    
+    if [[ ! -d "$HOME/.local/share/python-tools/venv" ]]; then
+        python3 -m venv "$HOME/.local/share/python-tools/venv"
+    fi
+    
+    # Activate the virtual environment
+    source "$HOME/.local/share/python-tools/venv/bin/activate"
+    
+    # Upgrade pip in the virtual environment
+    pip install --upgrade pip
+    
+    # Install Python LSP and formatters in the virtual environment
+    local python_packages=(
+        "black"
+        "isort"
+        "flake8"
+        "mypy"
+        "pyright"
+        "python-lsp-server[all]"
+        "debugpy"
+    )
+    
+    print_nvim_status "Installing Python packages in virtual environment..."
+    for package in "${python_packages[@]}"; do
+        print_nvim_status "Installing $package..."
+        if pip install "$package"; then
+            print_nvim_status "✓ $package installed successfully"
+        else
+            print_nvim_warning "✗ Failed to install $package, continuing..."
+        fi
+    done
+    
+    # Deactivate the virtual environment
+    deactivate
+    
+    # Add virtual environment bin to PATH
+    export PATH="$HOME/.local/share/python-tools/venv/bin:$PATH"
+    
+    # Add to shell profiles if not already there
+    for shell_config in "$HOME/.bashrc" "$HOME/.zshrc"; do
+        if [[ -f "$shell_config" ]] && ! grep -q "python-tools/venv/bin" "$shell_config"; then
+            echo "" >> "$shell_config"
+            echo "# Python development tools" >> "$shell_config"
+            echo 'export PATH="$HOME/.local/share/python-tools/venv/bin:$PATH"' >> "$shell_config"
+            print_nvim_status "Added Python tools to $(basename "$shell_config")"
+        fi
+    done
 }
 
 # Install .NET tools
