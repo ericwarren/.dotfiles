@@ -137,22 +137,29 @@ sudo npm install -g typescript ts-node yarn pnpm eslint prettier nodemon
 echo "Installing Python tools..."
 # Handle PEP 668 externally-managed-environment on newer Ubuntu
 if [ "$DISTRO" = "ubuntu" ]; then
-    # Install pipx for isolated Python applications
-    sudo apt install -y python3-pipx
+    # Install pipx manually since python3-pipx package doesn't exist in Ubuntu 24.04
+    sudo apt install -y python3-full python3-pip
+    python3 -m pip install --user pipx
+    python3 -m pipx ensurepath
+    
+    # Add pipx to current session PATH
+    export PATH="$HOME/.local/bin:$PATH"
     
     # Install Python development tools via pipx (isolated environments)
-    pipx install pipenv
-    pipx install poetry
-    pipx install black
-    pipx install flake8
-    pipx install mypy
-    pipx install pytest
+    python3 -m pipx install pipenv
+    python3 -m pipx install poetry
+    python3 -m pipx install black
+    python3 -m pipx install flake8
+    python3 -m pipx install mypy
+    python3 -m pipx install pytest
     
-    # Install jupyter and ipython via apt (system packages)
-    sudo apt install -y python3-jupyter python3-ipython
-    
-    # Ensure pipx bin directory is in PATH
-    pipx ensurepath
+    # Install jupyter and ipython via system packages or pipx
+    if apt list --installed 2>/dev/null | grep -q python3-jupyter; then
+        sudo apt install -y python3-jupyter python3-ipython
+    else
+        python3 -m pipx install jupyter
+        python3 -m pipx install ipython
+    fi
 else
     # Fedora doesn't have this restriction
     pip3 install --user pipenv poetry black flake8 mypy pytest jupyter ipython
