@@ -18,9 +18,9 @@ return {
       require('mason-lspconfig').setup({
         ensure_installed = {
           'rust_analyzer',
-          'ts_ls',
+          'tsserver',
           'pyright',
-          'omnisharp',  -- Added for C# support
+          'omnisharp',
         },
         automatic_installation = true,
       })
@@ -37,28 +37,28 @@ return {
       local lspconfig = require('lspconfig')
       local capabilities = vim.lsp.protocol.make_client_capabilities()
       
-      -- Setup handlers for automatic server configuration
-      require('mason-lspconfig').setup_handlers({
-        -- Default handler
-        function(server_name)
-          lspconfig[server_name].setup({
-            capabilities = capabilities,
-          })
-        end,
-        
-        -- Custom configurations for specific servers
-        ['rust_analyzer'] = function()
-          lspconfig.rust_analyzer.setup({
-            capabilities = capabilities,
-            settings = {
-              ['rust-analyzer'] = {
-                checkOnSave = {
-                  command = "clippy"
-                },
-              },
+      -- Setup each server manually
+      lspconfig.rust_analyzer.setup({
+        capabilities = capabilities,
+        settings = {
+          ['rust-analyzer'] = {
+            checkOnSave = {
+              command = "clippy"
             },
-          })
-        end,
+          },
+        },
+      })
+      
+      lspconfig.tsserver.setup({
+        capabilities = capabilities,
+      })
+      
+      lspconfig.pyright.setup({
+        capabilities = capabilities,
+      })
+      
+      lspconfig.omnisharp.setup({
+        capabilities = capabilities,
       })
     end
   },
@@ -66,7 +66,7 @@ return {
   -- Telescope
   {
     'nvim-telescope/telescope.nvim',
-    tag = '0.1.5',
+    branch = '0.1.x',
     dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
       require('telescope').setup({
@@ -149,6 +149,21 @@ return {
           { name = 'path' },
         })
       })
+      
+      -- Update capabilities for nvim-cmp
+      local capabilities = require('cmp_nvim_lsp').default_capabilities()
+      
+      -- Update LSP servers with cmp capabilities
+      local lspconfig = require('lspconfig')
+      local servers = { 'rust_analyzer', 'tsserver', 'pyright', 'omnisharp' }
+      
+      for _, server in ipairs(servers) do
+        if lspconfig[server] then
+          lspconfig[server].setup({
+            capabilities = capabilities,
+          })
+        end
+      end
     end
   },
 
