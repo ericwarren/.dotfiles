@@ -1,0 +1,33 @@
+# General aliases
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+alias ..='cd ..'
+alias ...='cd ../..'
+
+# Git - just shortcut to git itself, use .gitconfig for git aliases
+alias g='git'
+
+# Development aliases
+alias py='python3'
+alias pip='pip3'
+alias nv='nvim'
+alias vim='nvim'
+
+# .NET aliases
+alias dn='dotnet'
+alias dnr='dotnet run'
+alias dnb='dotnet build'
+alias dnt='dotnet test'
+
+# Rust aliases
+alias cr='cargo run'
+alias cb='cargo build'
+alias ct='cargo test'
+alias cc='cargo check'
+
+# Node/npm aliases
+alias ni='npm install'
+alias ns='npm start'
+alias nt='npm test'
+alias nr='npm run'
