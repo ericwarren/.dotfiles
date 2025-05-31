@@ -160,6 +160,24 @@ install_node_tools() {
         return 1
     fi
     
+    # Configure npm to use user directory for global packages
+    print_nvim_status "Configuring npm for user-level packages..."
+    mkdir -p "$HOME/.npm-global"
+    npm config set prefix "$HOME/.npm-global"
+    
+    # Add npm global bin to PATH for current session
+    export PATH="$HOME/.npm-global/bin:$PATH"
+    
+    # Add to shell profiles if not already there
+    for shell_config in "$HOME/.bashrc" "$HOME/.zshrc"; do
+        if [[ -f "$shell_config" ]] && ! grep -q ".npm-global/bin" "$shell_config"; then
+            echo "" >> "$shell_config"
+            echo "# NPM global packages" >> "$shell_config"
+            echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> "$shell_config"
+            print_nvim_status "Added npm global bin to $(basename "$shell_config")"
+        fi
+    done
+    
     local npm_packages=(
         "typescript"
         "typescript-language-server"
@@ -171,7 +189,7 @@ install_node_tools() {
         "yaml-language-server"         # YAML support (includes docker-compose)
     )
     
-    print_nvim_status "Installing npm packages globally..."
+    print_nvim_status "Installing npm packages to user directory..."
     npm install -g "${npm_packages[@]}"
 }
 
