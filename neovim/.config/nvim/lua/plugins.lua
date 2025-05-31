@@ -1,14 +1,13 @@
 return require('lazy').setup({
-  -- GitHub Copilot
   'github/copilot.vim',
 
-  -- LSP Support with Mason
   {
     'williamboman/mason.nvim',
     config = function()
       require('mason').setup()
     end
   },
+
   {
     'williamboman/mason-lspconfig.nvim',
     dependencies = { 'mason.nvim' },
@@ -26,7 +25,6 @@ return require('lazy').setup({
     end
   },
 
-  -- LSP Configuration
   {
     'neovim/nvim-lspconfig',
     dependencies = { 'mason-lspconfig.nvim' },
@@ -44,7 +42,6 @@ return require('lazy').setup({
     end
   },
 
-  -- Autocompletion
   {
     'hrsh7th/nvim-cmp',
     dependencies = {
@@ -79,7 +76,6 @@ return require('lazy').setup({
     end
   },
 
-  -- File explorer
   {
     'nvim-tree/nvim-tree.lua',
     dependencies = 'nvim-tree/nvim-web-devicons',
@@ -88,7 +84,6 @@ return require('lazy').setup({
     end
   },
 
-  -- Fuzzy finder
   {
     'nvim-telescope/telescope.nvim',
     dependencies = { 'nvim-lua/plenary.nvim' },
@@ -97,7 +92,6 @@ return require('lazy').setup({
     end
   },
 
-  -- Treesitter
   {
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
@@ -110,7 +104,6 @@ return require('lazy').setup({
     end
   },
 
-  -- Git integration
   'tpope/vim-fugitive',
   {
     'lewis6991/gitsigns.nvim',
@@ -119,7 +112,6 @@ return require('lazy').setup({
     end
   },
 
-  -- Status line
   {
     'nvim-lualine/lualine.nvim',
     dependencies = 'nvim-tree/nvim-web-devicons',
@@ -128,7 +120,6 @@ return require('lazy').setup({
     end
   },
 
-  -- Color scheme
   {
     'folke/tokyonight.nvim',
     lazy = false,
@@ -137,4 +128,4 @@ return require('lazy').setup({
       vim.cmd([[colorscheme tokyonight]])
     end,
   },
-})                                                                  - ~/.config/nvim/init.lua:20       
+})
