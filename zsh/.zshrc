@@ -31,6 +31,7 @@ export VISUAL='nvim'
 # Development paths
 export PATH="$HOME/.cargo/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
 
 # Load NVM
 export NVM_DIR="$HOME/.nvm"
