@@ -16,7 +16,5 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
--- Load plugins directly (not from separate file)
-require('lazy').setup({
-  'github/copilot.vim',
-})
+-- Load plugins
+require('plugins')
