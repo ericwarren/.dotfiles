@@ -46,6 +46,7 @@ return require('lazy').setup({
         capabilities = capabilities,
       })
       lspconfig.omnisharp.setup({
+        cmd = { "omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
         capabilities = capabilities,
         enable_roslyn_analyzers = true,
         organize_imports_on_format = true,
@@ -285,6 +286,30 @@ return require('lazy').setup({
       local cmp_autopairs = require('nvim-autopairs.completion.cmp')
       local cmp = require('cmp')
       cmp.event:on('confirm_done', cmp_autopairs.on_confirm_done())
+    end
+  },
+
+  -- File Explorer
+  {
+    'nvim-tree/nvim-tree.lua',
+    dependencies = {
+      'nvim-tree/nvim-web-devicons',
+    },
+    config = function()
+      require('nvim-tree').setup({
+        sort_by = 'case_sensitive',
+        view = {
+          width = 30,
+        },
+        renderer = {
+          group_empty = true,
+        },
+        filters = {
+          dotfiles = false,
+        },
+      })
+      -- Add keymap for NvimTree
+      vim.keymap.set('n', '<leader>e', ':NvimTreeToggle<CR>', { silent = true })
     end
   },
 
