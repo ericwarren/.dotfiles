@@ -19,7 +19,7 @@ return require('lazy').setup({
           'rust_analyzer',
           'ts_ls',
           'pyright',
-          'roslyn',
+          'omnisharp',
         },
       })
     end
@@ -45,8 +45,27 @@ return require('lazy').setup({
       lspconfig.pyright.setup({
         capabilities = capabilities,
       })
-      lspconfig.roslyn.setup({
+      lspconfig.omnisharp.setup({
         capabilities = capabilities,
+        enable_roslyn_analyzers = true,
+        organize_imports_on_format = true,
+        enable_import_completion = true,
+        sdk_include_prereleases = true,
+        analyze_open_documents_only = false,
+        on_attach = function(client, bufnr)
+          -- Enable completion triggered by <c-x><c-o>
+          vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
+          
+          -- Format on save for C# files
+          if client.server_capabilities.documentFormattingProvider then
+            vim.api.nvim_create_autocmd("BufWritePre", {
+              buffer = bufnr,
+              callback = function()
+                vim.lsp.buf.format({ async = false })
+              end,
+            })
+          end
+        end,
       })
     end
   },
