@@ -46,7 +46,7 @@ return require('lazy').setup({
         capabilities = capabilities,
       })
       lspconfig.omnisharp.setup({
-        cmd = { "omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+        cmd = { vim.fn.stdpath("data") .. "/mason/bin/omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
         capabilities = capabilities,
         enable_roslyn_analyzers = true,
         organize_imports_on_format = true,
