@@ -19,7 +19,7 @@ return require('lazy').setup({
           'rust_analyzer',
           'ts_ls',
           'pyright',
-          'csharp_ls',
+          'roslyn',
         },
       })
     end
@@ -45,7 +45,7 @@ return require('lazy').setup({
       lspconfig.pyright.setup({
         capabilities = capabilities,
       })
-      lspconfig.csharp_ls.setup({
+      lspconfig.roslyn.setup({
         capabilities = capabilities,
       })
     end
