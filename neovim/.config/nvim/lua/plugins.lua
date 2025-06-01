@@ -19,7 +19,7 @@ return require('lazy').setup({
           'rust_analyzer',
           'ts_ls',
           'pyright',
-          'csharp_language_server',
+          'csharp_ls',
         },
       })
     end
