@@ -313,10 +313,18 @@ return require('lazy').setup({
       -- C#
       lspconfig.omnisharp.setup({
         capabilities = capabilities,
-        cmd = { "omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+        cmd = { 
+          vim.fn.stdpath("data") .. "/mason/bin/omnisharp",
+          "--languageserver", 
+          "--hostPID", 
+          tostring(vim.fn.getpid()) 
+        },
         enable_import_completion = true,
         organize_imports_on_format = true,
         enable_roslyn_analyzers = true,
+        root_dir = function(fname)
+          return require('lspconfig').util.root_pattern("*.csproj", "*.sln")(fname)
+        end,
       })
       
       -- Lua (for Neovim config editing)
