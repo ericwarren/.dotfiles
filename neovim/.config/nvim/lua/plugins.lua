@@ -1,151 +1,82 @@
-return {
-  -- GitHub Copilot (using the newer lua version)
+return require('lazy').setup({
+  -- GitHub Copilot
+  'github/copilot.vim',
+
+  -- Treesitter for better syntax highlighting and parsing
   {
-    'zbirenbaum/copilot.lua',
-    cmd = 'Copilot',
-    event = 'InsertEnter',
+    'nvim-treesitter/nvim-treesitter',
+    build = ':TSUpdate',
     config = function()
-      require('copilot').setup({
-        suggestion = {
-          enabled = true,
-          auto_trigger = true,
-          debounce = 75,
-          keymap = {
-            accept = "<M-l>",  -- Alt+l to accept suggestion
-            accept_word = false,
-            accept_line = false,
-            next = "<M-]>",
-            prev = "<M-[>",
-            dismiss = "<C-]>",
-          },
+      require('nvim-treesitter.configs').setup({
+        -- Install parsers for these languages
+        ensure_installed = {
+          'c_sharp',
+          'rust',
+          'typescript',
+          'javascript',
+          'python',
+          'lua',
+          'vim',
+          'vimdoc',
+          'html',
+          'css',
+          'json',
+          'yaml',
+          'markdown',
+          'bash',
         },
-        panel = {
-          enabled = true,
-          auto_refresh = false,
-          keymap = {
-            jump_prev = "[[",
-            jump_next = "]]",
-            accept = "<CR>",
-            refresh = "gr",
-            open = "<M-CR>"
+        
+        -- Install parsers synchronously (only applied to `ensure_installed`)
+        sync_install = false,
+        
+        -- Automatically install missing parsers when entering buffer
+        auto_install = true,
+        
+        highlight = {
+          enable = true,
+          -- Setting this to true will run `:h syntax` and tree-sitter at the same time.
+          -- Set this to `true` if you depend on 'syntax' being enabled (like for indentation).
+          -- Using this option may slow down your editor, and you may see some duplicate highlights.
+          -- Instead of true it can also be a list of languages
+          additional_vim_regex_highlighting = false,
+        },
+        
+        indent = {
+          enable = true
+        },
+        
+        -- Enable incremental selection
+        incremental_selection = {
+          enable = true,
+          keymaps = {
+            init_selection = '<C-space>',
+            node_incremental = '<C-space>',
+            scope_incremental = '<C-s>',
+            node_decremental = '<C-backspace>',
           },
         },
       })
     end,
   },
 
-  -- LSP Support
-  {
-    'williamboman/mason.nvim',
-    build = ':MasonUpdate',
-    config = function()
-      require('mason').setup()
-    end
-  },
-
-  {
-    'williamboman/mason-lspconfig.nvim',
-    dependencies = { 'williamboman/mason.nvim' },
-  },
-
-  {
-    'neovim/nvim-lspconfig',
-    dependencies = { 
-      'williamboman/mason.nvim',
-      'williamboman/mason-lspconfig.nvim',
-      'hrsh7th/cmp-nvim-lsp',
-    },
-    config = function()
-      -- Setup nvim-cmp capabilities
-      local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      
-      -- Setup mason-lspconfig
-      require('mason-lspconfig').setup({
-        ensure_installed = {
-          'rust_analyzer',
-          'ts_ls',
-          'pyright',
-          'omnisharp',
-        },
-        automatic_installation = true,
-      })
-      
-      -- Setup LSP servers
-      local lspconfig = require('lspconfig')
-      
-      -- Configure each server
-      lspconfig.rust_analyzer.setup({
-        capabilities = capabilities,
-        settings = {
-          ['rust-analyzer'] = {
-            checkOnSave = {
-              command = "clippy"
-            },
-          },
-        },
-      })
-      
-      lspconfig.ts_ls.setup({
-        capabilities = capabilities,
-      })
-      
-      lspconfig.pyright.setup({
-        capabilities = capabilities,
-      })
-      
-      lspconfig.omnisharp.setup({
-        capabilities = capabilities,
-      })
-    end
-  },
-
-  -- Telescope
-  {
-    'nvim-telescope/telescope.nvim',
-    branch = '0.1.x',
-    dependencies = { 'nvim-lua/plenary.nvim' },
-    config = function()
-      require('telescope').setup({
-        defaults = {
-          file_ignore_patterns = { "node_modules", ".git/" },
-        },
-      })
-    end
-  },
-
-  -- Treesitter for better syntax highlighting
-  {
-    'nvim-treesitter/nvim-treesitter',
-    build = ':TSUpdate',
-    config = function()
-      require('nvim-treesitter.configs').setup({
-        ensure_installed = { "lua", "rust", "python", "javascript", "typescript", "c_sharp" },
-        sync_install = false,
-        auto_install = true,
-        highlight = {
-          enable = true,
-        },
-        indent = {
-          enable = true,
-        },
-      })
-    end
-  },
-
-  -- Auto-completion
+  -- Autocompletion engine
   {
     'hrsh7th/nvim-cmp',
-    event = 'InsertEnter',
     dependencies = {
-      'hrsh7th/cmp-nvim-lsp',
-      'hrsh7th/cmp-buffer',
-      'hrsh7th/cmp-path',
-      'L3MON4D3/LuaSnip',
-      'saadparwaiz1/cmp_luasnip',
+      'hrsh7th/cmp-nvim-lsp',     -- LSP source for nvim-cmp
+      'hrsh7th/cmp-buffer',       -- Buffer completions
+      'hrsh7th/cmp-path',         -- Path completions
+      'hrsh7th/cmp-cmdline',      -- Command line completions
+      'L3MON4D3/LuaSnip',         -- Snippet engine
+      'saadparwaiz1/cmp_luasnip', -- Snippet completions
+      'rafamadriz/friendly-snippets', -- Collection of snippets
     },
     config = function()
       local cmp = require('cmp')
       local luasnip = require('luasnip')
+      
+      -- Load snippets from friendly-snippets
+      require('luasnip.loaders.from_vscode').lazy_load()
       
       cmp.setup({
         snippet = {
@@ -153,6 +84,7 @@ return {
             luasnip.lsp_expand(args.body)
           end,
         },
+        
         mapping = cmp.mapping.preset.insert({
           ['<C-b>'] = cmp.mapping.scroll_docs(-4),
           ['<C-f>'] = cmp.mapping.scroll_docs(4),
@@ -178,13 +110,183 @@ return {
             end
           end, { 'i', 's' }),
         }),
+        
         sources = cmp.config.sources({
-          { name = 'nvim_lsp' },
-          { name = 'luasnip' },
+          { name = 'nvim_lsp' },    -- LSP completions
+          { name = 'luasnip' },     -- Snippet completions
         }, {
-          { name = 'buffer' },
-          { name = 'path' },
+          { name = 'buffer' },      -- Buffer completions
+          { name = 'path' },        -- Path completions
+        }),
+        
+        -- Formatting for completion menu
+        formatting = {
+          format = function(entry, vim_item)
+            -- Kind icons
+            local kind_icons = {
+              Text = "",
+              Method = "󰆧",
+              Function = "󰊕",
+              Constructor = "",
+              Field = "󰇽",
+              Variable = "󰂡",
+              Class = "󰠱",
+              Interface = "",
+              Module = "",
+              Property = "󰜢",
+              Unit = "",
+              Value = "󰎠",
+              Enum = "",
+              Keyword = "󰌋",
+              Snippet = "",
+              Color = "󰏘",
+              File = "󰈙",
+              Reference = "",
+              Folder = "󰉋",
+              EnumMember = "",
+              Constant = "󰏿",
+              Struct = "",
+              Event = "",
+              Operator = "󰆕",
+              TypeParameter = "󰅲",
+            }
+            
+            vim_item.kind = string.format('%s %s', kind_icons[vim_item.kind], vim_item.kind)
+            vim_item.menu = ({
+              nvim_lsp = "[LSP]",
+              luasnip = "[Snippet]",
+              buffer = "[Buffer]",
+              path = "[Path]",
+            })[entry.source.name]
+            
+            return vim_item
+          end
+        },
+      })
+      
+      -- Use buffer source for `/` and `?` (if you enabled `native_menu`, this won't work anymore).
+      cmp.setup.cmdline({ '/', '?' }, {
+        mapping = cmp.mapping.preset.cmdline(),
+        sources = {
+          { name = 'buffer' }
+        }
+      })
+      
+      -- Use cmdline & path source for ':' (if you enabled `native_menu`, this won't work anymore).
+      cmp.setup.cmdline(':', {
+        mapping = cmp.mapping.preset.cmdline(),
+        sources = cmp.config.sources({
+          { name = 'path' }
+        }, {
+          { name = 'cmdline' }
         })
+      })
+    end,
+  },
+
+  -- Telescope (file finder)
+  {
+    'nvim-telescope/telescope.nvim',
+    tag = '0.1.5',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      require('telescope').setup({
+        defaults = {
+          -- Default configuration for telescope goes here:
+          mappings = {
+            i = {
+              -- Insert mode mappings
+              ["<C-n>"] = "move_selection_next",
+              ["<C-p>"] = "move_selection_previous",
+            },
+            n = {
+              -- Normal mode mappings
+              ["<C-n>"] = "move_selection_next",
+              ["<C-p>"] = "move_selection_previous",
+            },
+          },
+        },
+      })
+    end,
+  },
+
+  -- LSP Support
+  {
+    'williamboman/mason.nvim',
+    config = function()
+      require('mason').setup()
+    end
+  },
+
+  {
+    'williamboman/mason-lspconfig.nvim',
+    dependencies = { 'mason.nvim' },
+    config = function()
+      require('mason-lspconfig').setup({
+        ensure_installed = {
+          'rust_analyzer',
+          'ts_ls',
+          'pyright',
+          'omnisharp',        -- C# language server
+          'lua_ls',           -- Lua language server
+        },
+      })
+    end
+  },
+
+  {
+    'neovim/nvim-lspconfig',
+    dependencies = { 'mason-lspconfig.nvim', 'nvim-cmp' },
+    config = function()
+      local lspconfig = require('lspconfig')
+      
+      -- Get the capabilities from nvim-cmp to support autocompletion
+      local capabilities = require('cmp_nvim_lsp').default_capabilities()
+      
+      -- Basic server setups with completion capabilities
+      lspconfig.rust_analyzer.setup({
+        capabilities = capabilities,
+      })
+      
+      lspconfig.ts_ls.setup({
+        capabilities = capabilities,
+      })
+      
+      lspconfig.pyright.setup({
+        capabilities = capabilities,
+      })
+      
+      -- C# setup
+      lspconfig.omnisharp.setup({
+        capabilities = capabilities,
+        cmd = { "omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+        -- Enable import completion
+        enable_import_completion = true,
+        -- Organize imports on format
+        organize_imports_on_format = true,
+        -- Enable completion in comments
+        enable_ms_build_load_projects_on_demand = false,
+      })
+      
+      -- Lua setup (for editing Neovim config)
+      lspconfig.lua_ls.setup({
+        capabilities = capabilities,
+        settings = {
+          Lua = {
+            runtime = {
+              version = 'LuaJIT',
+            },
+            diagnostics = {
+              globals = {'vim'},
+            },
+            workspace = {
+              library = vim.api.nvim_get_runtime_file("", true),
+            },
+            telemetry = {
+              enable = false,
+            },
+          },
+        },
       })
     end
   },
@@ -195,36 +297,7 @@ return {
     lazy = false,
     priority = 1000,
     config = function()
-      vim.cmd([[colorscheme tokyonight-night]])
+      vim.cmd([[colorscheme tokyonight]])
     end,
   },
-  
-  -- Status line
-  {
-    'nvim-lualine/lualine.nvim',
-    dependencies = { 'nvim-tree/nvim-web-devicons' },
-    config = function()
-      require('lualine').setup({
-        options = {
-          theme = 'tokyonight'
-        }
-      })
-    end
-  },
-
-  -- Comment plugin
-  {
-    'numToStr/Comment.nvim',
-    config = function()
-      require('Comment').setup()
-    end
-  },
-
-  -- Git signs
-  {
-    'lewis6991/gitsigns.nvim',
-    config = function()
-      require('gitsigns').setup()
-    end
-  },
-}
+})
