@@ -38,7 +38,7 @@ if [ "$DISTRO" = "ubuntu" ]; then
         curl wget git zsh build-essential \
         software-properties-common apt-transport-https \
         ca-certificates gnupg lsb-release unzip stow \
-        python3 python3-pip python3-venv
+        python3 python3-pip python3-venv tmux
     
     # Install Neovim 0.10+ from unstable PPA
     echo "Installing Neovim 0.10+..."
@@ -91,24 +91,24 @@ if [ "$DISTRO" = "ubuntu" ]; then
         echo "⚠️  .NET SDK not found, skipping global tools"
     fi
 
-# Create .NET project templates directory
-mkdir -p ~/.dotnet/templates
+    # Create .NET project templates directory
+    mkdir -p ~/.dotnet/templates
 
-# Add .NET tools to PATH (they should already be there, but just in case)
-if ! echo $PATH | grep -q "$HOME/.dotnet/tools"; then
-    echo 'export PATH="$PATH:$HOME/.dotnet/tools"' >> ~/.zshrc
-    echo "✓ Added .NET tools to PATH"
+    # Add .NET tools to PATH (they should already be there, but just in case)
+    if ! echo $PATH | grep -q "$HOME/.dotnet/tools"; then
+        echo 'export PATH="$PATH:$HOME/.dotnet/tools"' >> ~/.zshrc
+        echo "✓ Added .NET tools to PATH"
+    fi
+
+    echo "✓ Enhanced .NET development tools setup complete"
 fi
-
-echo "✓ Enhanced .NET development tools setup complete"
-
 elif [ "$DISTRO" = "fedora" ]; then
     echo "Installing packages for Fedora 42..."
     
     sudo dnf update -y
     sudo dnf install -y \
         curl wget git zsh gcc gcc-c++ make cmake \
-        unzip stow python3 python3-pip
+        unzip stow python3 python3-pip tmux
     
     # Install latest Neovim from Fedora repos (should be 0.10+)
     echo "Installing Neovim..."
@@ -303,7 +303,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 stow_packages=()
 
 # Check for common dotfile packages - ADD NEW PACKAGES HERE
-for pkg in git zsh neovim; do
+for pkg in git zsh neovim tmux; do
     if [ -d "$script_dir/$pkg" ]; then
         stow_packages+=("$pkg")
     fi
@@ -311,8 +311,8 @@ done
 
 if [ ${#stow_packages[@]} -eq 0 ]; then
     echo "⚠️  No dotfile packages found in $script_dir"
-    echo "Expected directories: git/, zsh/, neovim/"
-    echo "You can run Stow manually later: stow git zsh neovim"
+    echo "Expected directories: git/, zsh/, neovim/, tmux/"
+    echo "You can run Stow manually later: stow git zsh neovim tmux"
 else
     echo "Found dotfile packages: ${stow_packages[*]}"
     
