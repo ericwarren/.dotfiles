@@ -14,7 +14,20 @@ return {
   {
     'williamboman/mason-lspconfig.nvim',
     dependencies = { 'williamboman/mason.nvim' },
+  },
+
+  {
+    'neovim/nvim-lspconfig',
+    dependencies = { 
+      'williamboman/mason.nvim',
+      'williamboman/mason-lspconfig.nvim',
+      'hrsh7th/cmp-nvim-lsp',
+    },
     config = function()
+      -- Setup nvim-cmp capabilities
+      local capabilities = require('cmp_nvim_lsp').default_capabilities()
+      
+      -- Setup mason-lspconfig
       require('mason-lspconfig').setup({
         ensure_installed = {
           'rust_analyzer',
@@ -24,20 +37,11 @@ return {
         },
         automatic_installation = true,
       })
-    end
-  },
-
-  {
-    'neovim/nvim-lspconfig',
-    dependencies = { 
-      'williamboman/mason.nvim',
-      'williamboman/mason-lspconfig.nvim',
-    },
-    config = function()
-      local lspconfig = require('lspconfig')
-      local capabilities = vim.lsp.protocol.make_client_capabilities()
       
-      -- Setup each server manually
+      -- Setup LSP servers
+      local lspconfig = require('lspconfig')
+      
+      -- Configure each server
       lspconfig.rust_analyzer.setup({
         capabilities = capabilities,
         settings = {
@@ -99,6 +103,7 @@ return {
   -- Auto-completion
   {
     'hrsh7th/nvim-cmp',
+    event = 'InsertEnter',
     dependencies = {
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-buffer',
@@ -149,21 +154,6 @@ return {
           { name = 'path' },
         })
       })
-      
-      -- Update capabilities for nvim-cmp
-      local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      
-      -- Update LSP servers with cmp capabilities
-      local lspconfig = require('lspconfig')
-      local servers = { 'rust_analyzer', 'ts_ls', 'pyright', 'omnisharp' }
-      
-      for _, server in ipairs(servers) do
-        if lspconfig[server] then
-          lspconfig[server].setup({
-            capabilities = capabilities,
-          })
-        end
-      end
     end
   },
 
