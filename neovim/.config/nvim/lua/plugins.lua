@@ -17,7 +17,7 @@ return require('lazy').setup({
       require('mason-lspconfig').setup({
         ensure_installed = {
           'rust_analyzer',
-          'ts_ls',
+          'tsserver',
           'pyright',
           'csharp_ls',
         },
@@ -27,15 +27,27 @@ return require('lazy').setup({
 
   {
     'neovim/nvim-lspconfig',
-    dependencies = { 'mason-lspconfig.nvim' },
+    dependencies = { 
+      'mason-lspconfig.nvim',
+      'hrsh7th/cmp-nvim-lsp',
+    },
     config = function()
       local lspconfig = require('lspconfig')
+      local capabilities = require('cmp_nvim_lsp').default_capabilities()
       
-      -- Basic server setups
-      lspconfig.rust_analyzer.setup({})
-      lspconfig.ts_ls.setup({})
-      lspconfig.pyright.setup({})
-      lspconfig.csharp_ls.setup({})
+      -- LSP servers with enhanced capabilities
+      lspconfig.rust_analyzer.setup({
+        capabilities = capabilities,
+      })
+      lspconfig.tsserver.setup({
+        capabilities = capabilities,
+      })
+      lspconfig.pyright.setup({
+        capabilities = capabilities,
+      })
+      lspconfig.csharp_ls.setup({
+        capabilities = capabilities,
+      })
     end
   },
 
@@ -46,32 +58,51 @@ return require('lazy').setup({
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-buffer',
       'hrsh7th/cmp-path',
-      'hrsh7th/cmp-cmdline',
       'L3MON4D3/LuaSnip',
       'saadparwaiz1/cmp_luasnip',
     },
     config = function()
       local cmp = require('cmp')
+      local luasnip = require('luasnip')
       
       cmp.setup({
         snippet = {
           expand = function(args)
-            require('luasnip').lsp_expand(args.body)
+            luasnip.lsp_expand(args.body)
           end,
         },
         mapping = cmp.mapping.preset.insert({
-          ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+          ['<C-d>'] = cmp.mapping.scroll_docs(-4),
           ['<C-f>'] = cmp.mapping.scroll_docs(4),
           ['<C-Space>'] = cmp.mapping.complete(),
           ['<C-e>'] = cmp.mapping.abort(),
           ['<CR>'] = cmp.mapping.confirm({ select = true }),
+          ['<Tab>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_next_item()
+            elseif luasnip.expand_or_jumpable() then
+              luasnip.expand_or_jump()
+            else
+              fallback()
+            end
+          end, { 'i', 's' }),
+          ['<S-Tab>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_prev_item()
+            elseif luasnip.jumpable(-1) then
+              luasnip.jump(-1)
+            else
+              fallback()
+            end
+          end, { 'i', 's' }),
         }),
         sources = cmp.config.sources({
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
         }, {
           { name = 'buffer' },
-        })
+          { name = 'path' },
+        }),
       })
     end
   },
@@ -79,22 +110,47 @@ return require('lazy').setup({
   -- Telescope (Fuzzy Finder)
   {
     'nvim-telescope/telescope.nvim',
-    tag = '0.1.5',
+    branch = '0.1.x',
     dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
-      require('telescope').setup({})
+      require('telescope').setup({
+        defaults = {
+          mappings = {
+            i = {
+              ["<C-j>"] = "move_selection_next",
+              ["<C-k>"] = "move_selection_previous",
+            },
+          },
+        },
+      })
     end
   },
 
-  -- Treesitter (Better Syntax Highlighting)
+  -- Treesitter
   {
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     config = function()
       require('nvim-treesitter.configs').setup({
-        ensure_installed = { 'c', 'lua', 'vim', 'vimdoc', 'query', 'rust', 'typescript', 'python', 'c_sharp' },
+        ensure_installed = { 
+          'lua', 
+          'vim', 
+          'vimdoc', 
+          'rust', 
+          'typescript', 
+          'javascript',
+          'python', 
+          'c_sharp',
+          'markdown',
+          'markdown_inline',
+        },
+        sync_install = false,
         auto_install = true,
         highlight = {
+          enable = true,
+          additional_vim_regex_highlighting = false,
+        },
+        indent = {
           enable = true,
         },
       })
@@ -102,7 +158,10 @@ return require('lazy').setup({
   },
 
   -- Git Integration
-  'tpope/vim-fugitive',
+  {
+    'tpope/vim-fugitive',
+    cmd = { 'Git', 'G', 'Gdiff', 'Gblame', 'Gwrite' },
+  },
   
   {
     'lewis6991/gitsigns.nvim',
@@ -116,29 +175,27 @@ return require('lazy').setup({
           changedelete = { text = '~' },
           untracked    = { text = '┆' },
         },
-        signcolumn = true,  -- Toggle with `:Gitsigns toggle_signs`
-        numhl      = false, -- Toggle with `:Gitsigns toggle_numhl`
-        linehl     = false, -- Toggle with `:Gitsigns toggle_linehl`
-        word_diff  = false, -- Toggle with `:Gitsigns toggle_word_diff`
+        signcolumn = true,
+        numhl      = false,
+        linehl     = false,
+        word_diff  = false,
         watch_gitdir = {
-          interval = 1000,
           follow_files = true
         },
         attach_to_untracked = true,
-        current_line_blame = false, -- Toggle with `:Gitsigns toggle_current_line_blame`
+        current_line_blame = false,
         current_line_blame_opts = {
           virt_text = true,
-          virt_text_pos = 'eol', -- 'eol' | 'overlay' | 'right_align'
+          virt_text_pos = 'eol',
           delay = 1000,
           ignore_whitespace = false,
         },
         current_line_blame_formatter = '<author>, <author_time:%Y-%m-%d> - <summary>',
         sign_priority = 6,
         update_debounce = 100,
-        status_formatter = nil, -- Use default
-        max_file_length = 40000, -- Disable if file is longer than this (in lines)
+        status_formatter = nil,
+        max_file_length = 40000,
         preview_config = {
-          -- Options passed to nvim_open_win
           border = 'single',
           style = 'minimal',
           relative = 'cursor',
@@ -202,20 +259,13 @@ return require('lazy').setup({
     'windwp/nvim-autopairs',
     event = "InsertEnter",
     config = function()
-      require('nvim-autopairs').setup({})
-    end
-  },
-
-  -- Which Key (Shows Key Bindings)
-  {
-    "folke/which-key.nvim",
-    event = "VeryLazy",
-    init = function()
-      vim.o.timeout = true
-      vim.o.timeoutlen = 300
-    end,
-    config = function()
-      require("which-key").setup({})
+      require('nvim-autopairs').setup({
+        check_ts = true,
+      })
+      -- Integration with nvim-cmp
+      local cmp_autopairs = require('nvim-autopairs.completion.cmp')
+      local cmp = require('cmp')
+      cmp.event:on('confirm_done', cmp_autopairs.on_confirm_done())
     end
   },
 
@@ -225,6 +275,11 @@ return require('lazy').setup({
     lazy = false,
     priority = 1000,
     config = function()
+      require('tokyonight').setup({
+        style = 'night',
+        transparent = false,
+        terminal_colors = true,
+      })
       vim.cmd([[colorscheme tokyonight]])
     end,
   },
