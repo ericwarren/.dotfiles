@@ -17,7 +17,7 @@ return require('lazy').setup({
       require('mason-lspconfig').setup({
         ensure_installed = {
           'rust_analyzer',
-          'tsserver',
+          'ts_ls',
           'pyright',
           'csharp_ls',
         },
@@ -39,7 +39,7 @@ return require('lazy').setup({
       lspconfig.rust_analyzer.setup({
         capabilities = capabilities,
       })
-      lspconfig.tsserver.setup({
+      lspconfig.ts_ls.setup({
         capabilities = capabilities,
       })
       lspconfig.pyright.setup({
