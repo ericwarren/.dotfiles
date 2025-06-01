@@ -67,6 +67,40 @@ if [ "$DISTRO" = "ubuntu" ]; then
         sudo apt update
         sudo apt install -y dotnet-sdk-8.0
     fi
+    echo ""
+    echo "🔧 Installing additional .NET development tools..."
+
+    # Install useful .NET global tools     
+    if command -v dotnet &> /dev/null; then
+        echo "Installing .NET global tools..."
+    
+        # Entity Framework tools (for database development)
+        dotnet tool install --global dotnet-ef 2>/dev/null || echo "dotnet-ef already installed"
+    
+        # Tool to check for outdated packages
+        dotnet tool install --global dotnet-outdated-tool 2>/dev/null || echo "dotnet-outdated-tool already installed"
+    
+        # Code formatting tool
+        dotnet tool install --global dotnet-format 2>/dev/null || echo "dotnet-format already installed"
+    
+        # Package vulnerability checker
+        dotnet tool install --global dotnet-audit 2>/dev/null || echo "dotnet-audit already installed"
+    
+        echo "✓ .NET global tools installed"
+    else
+        echo "⚠️  .NET SDK not found, skipping global tools"
+    fi
+
+# Create .NET project templates directory
+mkdir -p ~/.dotnet/templates
+
+# Add .NET tools to PATH (they should already be there, but just in case)
+if ! echo $PATH | grep -q "$HOME/.dotnet/tools"; then
+    echo 'export PATH="$PATH:$HOME/.dotnet/tools"' >> ~/.zshrc
+    echo "✓ Added .NET tools to PATH"
+fi
+
+echo "✓ Enhanced .NET development tools setup complete"
 
 elif [ "$DISTRO" = "fedora" ]; then
     echo "Installing packages for Fedora 42..."

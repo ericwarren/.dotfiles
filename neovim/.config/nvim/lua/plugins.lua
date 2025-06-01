@@ -2,7 +2,74 @@ return require('lazy').setup({
   -- GitHub Copilot - AI-powered code completion
   'github/copilot.vim',
 
-  -- Treesitter - Better syntax highlighting and code understanding
+  -- Modern C# Language Server (replaces OmniSharp)
+  {
+    'seblyng/roslyn.nvim',
+    ft = 'cs',
+    dependencies = { 'nvim-lspconfig' },
+    config = function()
+      require('roslyn').setup({
+        dotnet_cmd = "dotnet",
+        on_attach = function(client, bufnr)
+          -- LSP keymaps
+          local opts = { buffer = bufnr, silent = true }
+          vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+          vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+          vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
+          vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+          vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+          vim.keymap.set('n', '<leader>vws', vim.lsp.buf.workspace_symbol, opts)
+          vim.keymap.set('n', '<leader>vd', vim.diagnostic.open_float, opts)
+          vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
+          vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
+          vim.keymap.set('n', '<leader>vca', vim.lsp.buf.code_action, opts)
+          vim.keymap.set('n', '<leader>vrr', vim.lsp.buf.references, opts)
+          vim.keymap.set('n', '<leader>vrn', vim.lsp.buf.rename, opts)
+          vim.keymap.set('n', '<C-h>', vim.lsp.buf.signature_help, opts)
+        end,
+        capabilities = require('cmp_nvim_lsp').default_capabilities(),
+        settings = {
+          -- Enable inlay hints
+          ["csharp|inlay_hints"] = {
+            csharp_enable_inlay_hints_for_implicit_object_creation = true,
+            csharp_enable_inlay_hints_for_implicit_variable_types = true,
+            csharp_enable_inlay_hints_for_lambda_parameter_types = true,
+            csharp_enable_inlay_hints_for_types = true,
+            dotnet_enable_inlay_hints_for_indexer_parameters = true,
+            dotnet_enable_inlay_hints_for_literal_parameters = true,
+            dotnet_enable_inlay_hints_for_object_creation_parameters = true,
+            dotnet_enable_inlay_hints_for_other_parameters = true,
+            dotnet_enable_inlay_hints_for_parameters = true,
+            dotnet_suppress_inlay_hints_for_parameters_that_differ_only_by_suffix = true,
+            dotnet_suppress_inlay_hints_for_parameters_that_match_argument_name = true,
+            dotnet_suppress_inlay_hints_for_parameters_that_match_method_intent = true,
+          },
+          -- Enable code lens
+          ["csharp|code_lens"] = {
+            dotnet_enable_references_code_lens = true,
+            dotnet_enable_tests_code_lens = true,
+          },
+          -- Enable completion settings
+          ["csharp|completion"] = {
+            dotnet_provide_regex_completions = true,
+            dotnet_show_completion_items_from_unimported_namespaces = true,
+            dotnet_show_name_completion_suggestions = true,
+          },
+          -- Symbol search settings
+          ["csharp|symbol_search"] = {
+            dotnet_search_reference_assemblies = true,
+          },
+          -- Background analysis settings
+          ["csharp|background_analysis"] = {
+            dotnet_analyzer_diagnostics_scope = "fullSolution",
+            dotnet_compiler_diagnostics_scope = "fullSolution",
+          },
+        },
+      })
+    end,
+  },
+
+  -- Treesitter for better syntax highlighting and parsing
   {
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
@@ -234,7 +301,7 @@ return require('lazy').setup({
     end,
   },
 
-  -- LSP Support
+  -- LSP Support (for non-C# languages)
   {
     'williamboman/mason.nvim',
     config = function()
@@ -259,7 +326,7 @@ return require('lazy').setup({
           'rust_analyzer',    -- Rust
           'ts_ls',           -- TypeScript/JavaScript
           'pyright',         -- Python
-          'omnisharp',       -- C#
+          -- Note: No omnisharp here - using Roslyn instead
           'lua_ls',          -- Lua
           'html',            -- HTML
           'cssls',           -- CSS
@@ -310,22 +377,7 @@ return require('lazy').setup({
         },
       })
       
-      -- C#
-      lspconfig.omnisharp.setup({
-        capabilities = capabilities,
-        cmd = { 
-          vim.fn.stdpath("data") .. "/mason/bin/omnisharp",
-          "--languageserver", 
-          "--hostPID", 
-          tostring(vim.fn.getpid()) 
-        },
-        enable_import_completion = true,
-        organize_imports_on_format = true,
-        enable_roslyn_analyzers = true,
-        root_dir = function(fname)
-          return require('lspconfig').util.root_pattern("*.csproj", "*.sln")(fname)
-        end,
-      })
+      -- Note: C# is handled by Roslyn plugin above, not here
       
       -- Lua (for Neovim config editing)
       lspconfig.lua_ls.setup({
@@ -374,6 +426,24 @@ return require('lazy').setup({
         capabilities = capabilities,
       })
     end
+  },
+
+  -- Enhanced .NET development plugin (optional but recommended)
+  {
+    'GustavEikaas/easy-dotnet.nvim',
+    dependencies = { 'nvim-dap', 'nvim-lspconfig' },
+    config = function()
+      require('easy-dotnet').setup({
+        -- Auto detect test projects
+        test_runner = {
+          viewmode = "float", -- "split" | "float"
+        },
+        -- Solution management
+        solution_runner = {
+          viewmode = "float",
+        },
+      })
+    end,
   },
 
   -- Git integration
