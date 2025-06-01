@@ -42,7 +42,7 @@ if [ "$DISTRO" = "ubuntu" ]; then
     
     # Install Neovim 0.10+ from unstable PPA
     echo "Installing Neovim 0.10+..."
-    sudo add-apt-repository ppa:neovim-ppa/stable -y
+    sudo add-apt-repository ppa:neovim-ppa/unstable -y
     sudo apt update
     sudo apt install -y neovim
     
