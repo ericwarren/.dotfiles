@@ -1,3 +1,6 @@
+-- Set to be able to yank from system clipboard
+vim.opt.clipboard:append("unnamedplus")
+
 -- Performance optimizations
 vim.g.loaded_gzip = 1
 vim.g.loaded_zip = 1
@@ -69,7 +72,7 @@ require('lazy').setup(require('plugins'), {
       },
     },
   },
-  
+
   -- UI improvements
   ui = {
     -- Use a nice border for the lazy window
@@ -77,7 +80,7 @@ require('lazy').setup(require('plugins'), {
     -- Show loading progress
     backdrop = 60,
   },
-  
+
   -- Development settings
   dev = {
     -- Directory where you store your local plugin projects
@@ -85,7 +88,7 @@ require('lazy').setup(require('plugins'), {
     patterns = {}, -- For example {"folke"}
     fallback = false,
   },
-  
+
   -- Install settings
   install = {
     -- Install missing plugins on startup
@@ -93,7 +96,7 @@ require('lazy').setup(require('plugins'), {
     -- Try to load one of these colorschemes when starting an installation during startup
     colorscheme = { "tokyonight", "habamax" },
   },
-  
+
   -- Checker settings for plugin updates
   checker = {
     -- Automatically check for plugin updates
@@ -103,7 +106,7 @@ require('lazy').setup(require('plugins'), {
     frequency = 3600, -- Check every hour
     check_pinned = false, -- Don't check pinned plugins
   },
-  
+
   -- Change detection for config files
   change_detection = {
     enabled = true,
@@ -268,7 +271,7 @@ vim.api.nvim_create_autocmd("User", {
         table.insert(errors, plugin.name)
       end
     end
-    
+
     if #errors > 0 then
       vim.notify(
         "Failed to load plugins: " .. table.concat(errors, ", "),
