@@ -1,15 +1,30 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-#if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-#  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-#fi
+
 
 # Path to your oh-my-zsh installation
 export ZSH="$HOME/.oh-my-zsh"
 
 # Theme
-ZSH_THEME="fino"
+ZSH_THEME="robbyrussell"
+
+# Custom function for git status
+git_prompt_info_custom() {
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+        local branch=$(git branch --show-current 2>/dev/null)
+        local ahead=$(git rev-list --count @{upstream}..HEAD 2>/dev/null)
+        local behind=$(git rev-list --count HEAD..@{upstream} 2>/dev/null)
+        local status=""
+
+        [[ $ahead -gt 0 ]] && status+="$ahead"
+        [[ $behind -gt 0 ]] && status+="$behind"
+        [[ -n $(git status --porcelain) ]] && status+="*"
+
+        echo "%{$fg[blue]%}($branch)%{$fg[red]%}$status%{$reset_color%}"
+    fi
+}
+
+# Two-line prompt
+PROMPT='%{$fg[cyan]%}%n@%m%{$reset_color%} %{$fg[yellow]%}%~%{$reset_color%} $(git_prompt_info_custom)
+%{$fg[green]%}? %{$reset_color%}'
 
 # Plugins
 plugins=(
@@ -53,6 +68,3 @@ if grep -q Microsoft /proc/version 2>/dev/null; then
     # WSL-specific configurations
     export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0
 fi
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-#[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
