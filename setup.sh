@@ -207,15 +207,6 @@ else
     echo "û Oh My Zsh already installed"
 fi
 
-# Install Powerlevel10k theme
-if [ ! -d "$HOME/.oh-my-zsh/custom/themes/powerlevel10k" ]; then
-    echo "Installing Powerlevel10k theme..."
-    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/.oh-my-zsh/custom/themes/powerlevel10k
-    echo "û Powerlevel10k installed"
-else
-    echo "û Powerlevel10k already installed"
-fi
-
 # Install zsh plugins
 echo "Installing zsh plugins..."
 if [ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions" ]; then
