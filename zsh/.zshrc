@@ -9,7 +9,7 @@
 export ZSH="$HOME/.oh-my-zsh"
 
 # Theme
-ZSH_THEME="bira"
+ZSH_THEME="agnoster"
 
 # Plugins
 plugins=(
