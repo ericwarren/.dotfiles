@@ -64,15 +64,7 @@ install_system_packages() {
         tmux tree htop neofetch \
         fonts-powerline xclip xsel \
         wl-clipboard tlp tlp-rdw \
-        ubuntu-restricted-extras# CPU model and frequencies
-lscpu | grep -E "(Model name|CPU MHz|CPU max MHz|CPU min MHz)"
-
-# Available CPU frequencies
-cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
-
-# Current CPU governor options
-cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
-
+        ubuntu-restricted-extras
 
     print_success "Essential packages installed"
 }
@@ -155,7 +147,11 @@ install_nodejs() {
         print_success "NVM already installed"
         export NVM_DIR="$HOME/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+<<<<<<< HEAD
  fi
+=======
+    fi
+>>>>>>> e18d378 (updated x1 setup)
 
     # Install latest LTS Node.js
     echo "Installing latest LTS Node.js..."
