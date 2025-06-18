@@ -1,0 +1,15 @@
+[font]
+# Font family - common options:
+# "JetBrains Mono", "Fira Code", "Source Code Pro", "Ubuntu Mono", "DejaVu Sans Mono"
+family = "CaskaydiaCove Nerd Font Mono"
+
+# Font size
+size = 12.0
+
+[font.bold]
+family = "CaskaydiaCove Nerd Font Mono"
+style = "Bold"
+
+[font.italic]
+family = "CaskaydiaCove Nerd Font Mono"
+style = "Italic"
