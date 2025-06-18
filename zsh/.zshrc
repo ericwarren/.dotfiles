@@ -6,6 +6,8 @@ export ZSH="$HOME/.oh-my-zsh"
 # Theme
 ZSH_THEME=""
 
+autoload -U colors && colors
+
 # Custom function for git status with Nerd Font icons
 git_prompt_info_custom() {
     if git rev-parse --git-dir > /dev/null 2>&1; then
@@ -32,7 +34,6 @@ plugins=(
     zsh-autosuggestions
     zsh-syntax-highlighting
     docker
-    rust
     node
     python
 )
