@@ -8,6 +8,8 @@ ZSH_THEME=""
 
 autoload -U colors && colors
 
+# Agnoster-style two-line prompt with detailed git info
+
 # Custom function for git status with Nerd Font icons
 git_prompt_info_custom() {
     if git rev-parse --git-dir > /dev/null 2>&1; then
@@ -16,17 +18,32 @@ git_prompt_info_custom() {
         local behind=$(git rev-list --count HEAD..@{upstream} 2>/dev/null)
         local git_status=""
 
-        [[ $ahead -gt 0 ]] && git_status+=$'\uf062'"$ahead"
-        [[ $behind -gt 0 ]] && git_status+=$'\uf063'"$behind"
-        [[ -n $(git status --porcelain) ]] && git_status+=$'\uf444'
+        [[ $ahead -gt 0 ]] && git_status+=" "$'\uf062'"$ahead"
+        [[ $behind -gt 0 ]] && git_status+=" "$'\uf063'"$behind"
+        [[ -n $(git status --porcelain) ]] && git_status+=" "$'\uf444'
 
-        echo "%{$fg[blue]%}"$'\ue0a0'" $branch%{$fg[red]%}$git_status%{$reset_color%}"
+        # Git segment - white text on green background with chevron
+        echo "%{$bg[green]%}%{$fg[white]%} "$'\ue0a0'" $branch$git_status %{$reset_color%}%{$fg[green]%}▶%{$reset_color%}"
     fi
 }
 
-# Two-line prompt
-PROMPT="%{$fg[cyan]%}"$'\uf007'" %n@%m%{$reset_color%} %{$fg[yellow]%}"$'\uf07b'" %~%{$reset_color%} \$(git_prompt_info_custom)
-%{$fg[green]%}"$'\uf061'" %{$reset_color%}"
+# User segment
+prompt_context() {
+    if [[ "$USER" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
+        # User segment - white text on black background with chevron
+        echo "%{$bg[black]%}%{$fg[white]%} "$'\uf007'" %n@%m %{$reset_color%}%{$fg[black]%}▶%{$reset_color%}"
+    fi
+}
+
+# Directory segment
+prompt_dir() {
+    # Blue background with white text and chevron
+    echo "%{$bg[blue]%}%{$fg[white]%} "$'\uf07b'" %~ %{$reset_color%}%{$fg[blue]%}▶%{$reset_color%}"
+}
+
+# Two-line agnoster-style prompt
+PROMPT='$(prompt_context)$(prompt_dir)$(git_prompt_info_custom)
+%{$fg[cyan]%}'$'\uf061'' %{$reset_color%}'
 
 # Plugins
 plugins=(

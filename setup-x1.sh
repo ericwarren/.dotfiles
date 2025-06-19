@@ -69,6 +69,41 @@ install_system_packages() {
     print_success "Essential packages installed"
 }
 
+setup_sway(){
+    # Update system
+    sudo apt update
+
+    # Core Sway and utilities
+    sudo apt install sway waybar foot wofi grim slurp swaylock swayidle swaybg
+
+    # File management and system tools
+    sudo apt install thunar brightnessctl pavucontrol thermald acpi-call-dkms
+
+    # Network and Bluetooth management
+    sudo apt install network-manager-gnome bluez bluez-tools blueman iwgtk
+
+    # Notifications and media
+    sudo apt install mako-notifier intel-media-va-driver vainfo
+
+    # Audio (choose one - PipeWire is recommended)
+    sudo apt install pipewire pipewire-pulse pipewire-audio-client-libraries wireplumber
+
+    # Optional but useful
+    sudo apt install wdisplays fprintd libpam-fprintd firefox
+
+    # Make WiFi script executable
+    chmod +x ~/.dotfiles/sway/.config/sway/scripts/wifi-menu.sh
+
+    # Create Pictures directory for screenshots
+    mkdir -p ~/Pictures
+
+    # Set up environment variables
+    echo 'export QT_QPA_PLATFORM=wayland' >> ~/.profile
+    echo 'export GDK_BACKEND=wayland' >> ~/.profile
+    echo 'export SDL_VIDEODRIVER=wayland' >> ~/.profile
+    echo 'export CLUTTER_BACKEND=wayland' >> ~/.profile
+}
+
 install_neovim() {
     print_header "📝 Installing Neovim"
 
@@ -92,6 +127,13 @@ install_neovim() {
     # Create config directory
     mkdir -p ~/.config/nvim/lua
     print_success "Neovim config directory created"
+}
+
+install_chrome() {
+    wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo sudo tee /etc/apt/sources.list.d/google-chrome.list
+    sudo apt update
+    sudo apt install google-chrome-stable
 }
 
 install_dotnet() {
@@ -127,8 +169,6 @@ install_dotnet() {
 
     print_success ".NET development tools installed"
 }
-
-
 
 install_nodejs() {
     print_header "📗 Installing Node.js via NVM"
@@ -237,8 +277,6 @@ setup_zsh() {
     print_success "Zsh plugins installed"
 }
 
-
-
 setup_dotfiles() {
     print_header "🔗 Setting Up Dotfiles"
 
@@ -246,7 +284,7 @@ setup_dotfiles() {
 
     # Check for dotfile packages
     available_packages=()
-    for pkg in git zsh neovim tmux; do
+    for pkg in git zsh neovim tmux sway; do
         if [ -d "$script_dir/$pkg" ]; then
             available_packages+=("$pkg")
         fi
@@ -277,7 +315,7 @@ setup_dotfiles() {
         done
     else
         echo "Skipping dotfiles setup"
-        echo "You can apply them later with: stow git zsh neovim tmux"
+        echo "You can apply them later with: stow git zsh neovim tmux sway"
     fi
 }
 
@@ -331,6 +369,8 @@ main() {
 
     # Installation steps
     install_system_packages
+    install_chrome
+    setup_sway
     install_neovim
     install_dotnet
     install_nodejs

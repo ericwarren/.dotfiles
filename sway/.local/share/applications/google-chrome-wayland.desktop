@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Google Chrome (Wayland)
+Exec=google-chrome --enable-features=UseOzonePlatform,VaapiVideoDecoder --ozone-platform=wayland --enable-gpu-rasterization --enable-zero-copy --ignore-gpu-blocklist %U
+Icon=google-chrome
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;
