@@ -77,39 +77,17 @@ install_alacritty(){
     fc-cache -fv
 }
 
-setup_sway(){
-    # Update system
+install_hyprland() {
+    print_header "🌊 Installing Hyprland"
+
     sudo apt update
 
-    # Core Sway and utilities
-    sudo apt install sway waybar foot wofi grim slurp swaylock swayidle swaybg
+    # Install Hyprland and essential
+    sudo apt install -y hyprland waybar wofi mako-notifier grim slurp \
+        thunar brightnessctl wayland-protocols xdg-desktop-portal-hyprland \
+        xdg-desktop-portal-gtk
 
-    # File management and system tools
-    sudo apt install thunar brightnessctl pavucontrol thermald acpi-call-dkms
-
-    # Network and Bluetooth management
-    sudo apt install network-manager-gnome bluez bluez-tools blueman iwgtk
-
-    # Notifications and media
-    sudo apt install mako-notifier intel-media-va-driver vainfo
-
-    # Audio (choose one - PipeWire is recommended)
-    sudo apt install pipewire pipewire-pulse pipewire-audio-client-libraries wireplumber
-
-    # Optional but useful
-    sudo apt install wdisplays fprintd libpam-fprintd firefox
-
-    # Make WiFi script executable
-    chmod +x ~/.dotfiles/sway/.config/sway/scripts/wifi-menu.sh
-
-    # Create Pictures directory for screenshots
-    mkdir -p ~/Pictures
-
-    # Set up environment variables
-    echo 'export QT_QPA_PLATFORM=wayland' >> ~/.profile
-    echo 'export GDK_BACKEND=wayland' >> ~/.profile
-    echo 'export SDL_VIDEODRIVER=wayland' >> ~/.profile
-    echo 'export CLUTTER_BACKEND=wayland' >> ~/.profile
+    print_success "Hyprland installed"
 }
 
 install_neovim() {
@@ -288,7 +266,7 @@ setup_dotfiles() {
 
     # Check for dotfile packages
     available_packages=()
-    for pkg in git zsh neovim tmux; do
+    for pkg in git zsh neovim tmux hyprland; do
         if [ -d "$script_dir/$pkg" ]; then
             available_packages+=("$pkg")
         fi
