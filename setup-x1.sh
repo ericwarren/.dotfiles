@@ -80,14 +80,14 @@ install_alacritty(){
 install_hyprland() {
     print_header "🌊 Installing Hyprland"
 
-    sudo apt update
+    # Install Hyprland and all dependencies
+    sudo apt install -y \
+        hyprland waybar wofi mako-notifier grim slurp \
+        thunar brightnessctl wayland-protocols \
+        xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
+        swaylock swayidle
 
-    # Install Hyprland and essential
-    sudo apt install -y hyprland waybar wofi mako-notifier grim slurp \
-        thunar brightnessctl wayland-protocols xdg-desktop-portal-hyprland \
-        xdg-desktop-portal-gtk
-
-    print_success "Hyprland installed"
+    print_success "Hyprland and dependencies installed"
 }
 
 install_neovim() {
