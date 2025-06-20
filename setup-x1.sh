@@ -64,7 +64,7 @@ install_system_packages() {
         fonts-powerline xclip xsel \
         wl-clipboard tlp tlp-rdw \
         ubuntu-restricted-extras \
-        gnome-tweaks
+        gnome-tweaks minicom
 
     print_success "Essential packages installed"
 }
