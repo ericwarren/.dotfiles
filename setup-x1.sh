@@ -1,4 +1,3 @@
-#!/bin/bash
 
 # Ubuntu Development Environment Setup Script
 # Designed for Ubuntu 22.04 LTS and Ubuntu 24.04 LTS
@@ -68,6 +67,108 @@ install_system_packages() {
         gnome-tweaks
 
     print_success "Essential packages installed"
+}
+
+install_pfsense_qemu() {
+    print_header "🔥 Installing pfSense on QEMU"
+
+    # Install QEMU and virtualization tools
+    echo "Installing QEMU and virtualization packages..."
+    sudo apt install -y \
+        qemu-kvm qemu-utils qemu-system-x86 \
+        libvirt-daemon-system libvirt-clients \
+        bridge-utils virt-manager \
+        ovmf # UEFI firmware for VMs
+
+    # Add user to libvirt group
+    sudo usermod -a -G libvirt $USER
+    sudo usermod -a -G kvm $USER
+
+    print_success "QEMU and virtualization tools installed"
+
+    # Create directory for VM images
+    mkdir -p ~/VMs/pfsense
+    cd ~/VMs/pfsense
+
+    # Download pfSense ISO (latest community edition)
+    echo "Downloading pfSense ISO..."
+    PFSENSE_VERSION="2.7.2"  # Update this to latest version
+    PFSENSE_ISO="pfSense-CE-${PFSENSE_VERSION}-RELEASE-amd64.iso"
+    PFSENSE_URL="https://atxfiles.netgate.com/mirror/downloads/${PFSENSE_ISO}.gz"
+
+    if [ ! -f "${PFSENSE_ISO}" ]; then
+        wget "${PFSENSE_URL}" -O "${PFSENSE_ISO}.gz"
+        gunzip "${PFSENSE_ISO}.gz"
+        print_success "pfSense ISO downloaded"
+    else
+        print_success "pfSense ISO already exists"
+    fi
+
+    # Create virtual disk
+    echo "Creating virtual disk for pfSense..."
+    qemu-img create -f qcow2 pfsense.qcow2 20G
+
+    # Create startup script
+    cat > start_pfsense.sh << 'EOF'
+#!/bin/bash
+# pfSense QEMU startup script
+# Usage: ./start_pfsense.sh [install|run]
+
+VM_NAME="pfSense"
+DISK="pfsense.qcow2"
+ISO="pfSense-CE-2.7.2-RELEASE-amd64.iso"  # Update version as needed
+MEMORY="2048"
+CPUS="2"
+
+# Network configuration
+# Creates two networks: WAN (NAT) and LAN (internal)
+WAN_NET="-netdev user,id=wan,hostfwd=tcp::8443-:443,hostfwd=tcp::8080-:80"
+LAN_NET="-netdev user,id=lan,net=192.168.100.0/24,dhcpstart=192.168.100.10"
+
+case "$1" in
+    "install")
+        echo "Starting pfSense installation..."
+        qemu-system-x86_64 \
+            -name "$VM_NAME" \
+            -m "$MEMORY" \
+            -smp "$CPUS" \
+            -hda "$DISK" \
+            -cdrom "$ISO" \
+            -boot d \
+            $WAN_NET -device e1000,netdev=wan \
+            $LAN_NET -device e1000,netdev=lan \
+            -vga std \
+            -enable-kvm
+        ;;
+    "run"|*)
+        echo "Starting pfSense..."
+        qemu-system-x86_64 \
+            -name "$VM_NAME" \
+            -m "$MEMORY" \
+            -smp "$CPUS" \
+            -hda "$DISK" \
+            $WAN_NET -device e1000,netdev=wan \
+            $LAN_NET -device e1000,netdev=lan \
+            -vga std \
+            -enable-kvm \
+            -daemonize
+        echo "pfSense started in background"
+        echo "Web interface: https://localhost:8443"
+        echo "Default login: admin/pfsense"
+        ;;
+esac
+EOF
+
+    chmod +x start_pfsense.sh
+    print_success "pfSense VM setup complete"
+
+    echo -e "\n${GREEN}pfSense Installation Instructions:${NC}"
+    echo "1. Run installation: ./start_pfsense.sh install"
+    echo "2. Follow pfSense setup wizard in the VM"
+    echo "3. After installation: ./start_pfsense.sh run"
+    echo "4. Access web interface: https://localhost:8443"
+    echo "5. Default credentials: admin/pfsense"
+    echo -e "\n${YELLOW}Note: You may need to logout/login for group membership to take effect${NC}"
 }
 
 install_alacritty(){
@@ -324,6 +425,7 @@ show_completion_message() {
     echo "  • Neovim $(nvim --version | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
     echo "  • Node.js $(node --version 2>/dev/null || echo 'latest') via NVM"
+    echo "  • pfSense virtualization environment (QEMU/KVM)"
     echo "  • Python development tools (isolated environment)"
     echo "  • Zsh with Oh My Zsh"
 
@@ -353,12 +455,12 @@ main() {
     install_system_packages
     install_chrome
     install_alacritty
-    #setup_sway
     install_neovim
     install_dotnet
     install_nodejs
     setup_python_tools
     setup_zsh
+    install_pfsense_qemu
     setup_dotfiles
     setup_shell
 
