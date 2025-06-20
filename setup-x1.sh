@@ -64,9 +64,17 @@ install_system_packages() {
         tmux tree htop neofetch \
         fonts-powerline xclip xsel \
         wl-clipboard tlp tlp-rdw \
-        ubuntu-restricted-extras
+        ubuntu-restricted-extras \
+        gnome-tweaks
 
     print_success "Essential packages installed"
+}
+
+install_alacritty(){
+    sudo apt install alacritty
+    wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/CascadiaCode.zip
+    unzip CascadiaCode.zip -d ~/.local/share/fonts/ && rm CascadiaCode.zip
+    fc-cache -fv
 }
 
 setup_sway(){
@@ -130,7 +138,7 @@ install_neovim() {
 }
 
 install_chrome() {
-    wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+    wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/google.gpg >/dev/null
     echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo sudo tee /etc/apt/sources.list.d/google-chrome.list
     sudo apt update
     sudo apt install google-chrome-stable
@@ -187,11 +195,7 @@ install_nodejs() {
         print_success "NVM already installed"
         export NVM_DIR="$HOME/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-<<<<<<< HEAD
- fi
-=======
     fi
->>>>>>> e18d378 (updated x1 setup)
 
     # Install latest LTS Node.js
     echo "Installing latest LTS Node.js..."
@@ -284,7 +288,7 @@ setup_dotfiles() {
 
     # Check for dotfile packages
     available_packages=()
-    for pkg in git zsh neovim tmux sway; do
+    for pkg in git zsh neovim tmux; do
         if [ -d "$script_dir/$pkg" ]; then
             available_packages+=("$pkg")
         fi
@@ -370,7 +374,8 @@ main() {
     # Installation steps
     install_system_packages
     install_chrome
-    setup_sway
+    install_alacritty
+    #setup_sway
     install_neovim
     install_dotnet
     install_nodejs
