@@ -45,39 +45,6 @@ check_ubuntu_version() {
     fi
 }
 
-remap_caps() {
-    sudo apt install interception-tools
-
-
-    echo "🔧 Installing dependencies..."
-    sudo apt update
-    sudo apt install -y build-essential cmake libevdev-dev libudev-dev git
-
-    echo "📦 Cloning caps2esc plugin..."
-    TMP_DIR=$(mktemp -d)
-    cd "$TMP_DIR"
-    git clone https://gitlab.com/interception/linux/plugins/caps2esc.git
-    cd caps2esc
-
-    echo "🔨 Building caps2esc..."
-    make
-
-    echo "📁 Installing caps2esc to /usr/local/bin..."
-    sudo make install
-
-    echo "🧹 Cleaning up temporary files..."
-    cd ~
-    rm -rf "$TMP_DIR"
-
-    echo "✅ Verifying installation..."
-    if command -v caps2esc >/dev/null 2>&1; then
-        echo "✅ caps2esc installed successfully at $(command -v caps2esc)"
-    else
-        echo "❌ caps2esc installation failed."
-        exit 1
-    fi
-}
-
 install_system_packages() {
     print_header "📦 Installing System Packages"
 
@@ -487,7 +454,6 @@ main() {
 
     # Installation steps
     install_system_packages
-    remap_caps
     install_chrome
     install_alacritty
     install_neovim
