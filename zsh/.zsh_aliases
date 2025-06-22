@@ -31,3 +31,6 @@ alias ni='npm install'
 alias ns='npm start'
 alias nt='npm test'
 alias nr='npm run'
+
+# Qutebrowser
+alias qb='~/.local/share/qutebrowser-env/bin/qutebrowser >/dev/null 2>&1 & disown'

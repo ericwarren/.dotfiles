@@ -179,6 +179,104 @@ install_alacritty(){
     fc-cache -fv
 }
 
+install_qutebrowser() {
+    print_header "🌐 Installing Qutebrowser"
+
+    # Install Qt dependencies and development packages
+    echo "Installing Qt and Python dependencies..."
+    sudo apt install -y \
+        python3-pip python3-venv python3-dev \
+        python3-pyqt5 python3-pyqt5.qtwebengine \
+        python3-pyqt5.qtwebkit python3-pyqt5.qtmultimedia \
+        qtbase5-dev qtwebengine5-dev \
+        python3-pyqt6 python3-pyqt6.qtwebengine
+
+    # Create qutebrowser virtual environment
+    echo "Creating qutebrowser virtual environment..."
+    QUTE_VENV_DIR="$HOME/.local/share/qutebrowser-env"
+
+    if [ -d "$QUTE_VENV_DIR" ]; then
+        print_warning "Qutebrowser venv already exists, removing old installation..."
+        rm -rf "$QUTE_VENV_DIR"
+    fi
+
+    # Create venv with system site packages (for Qt access)
+    python3 -m venv "$QUTE_VENV_DIR" --system-site-packages
+
+    # Activate and install qutebrowser
+    echo "Installing qutebrowser in virtual environment..."
+    source "$QUTE_VENV_DIR/bin/activate"
+    pip install --upgrade pip
+    pip install qutebrowser
+
+    # Verify installation
+    QUTE_VERSION=$("$QUTE_VENV_DIR/bin/qutebrowser" --version 2>/dev/null | head -n1 || echo "unknown")
+    deactivate
+
+    if [ "$QUTE_VERSION" != "unknown" ]; then
+        print_success "Qutebrowser installed: $QUTE_VERSION"
+    else
+        print_error "Qutebrowser installation failed"
+        return 1
+    fi
+
+    # Create convenient aliases
+    echo "Setting up qutebrowser aliases..."
+
+    # Add aliases to shell configs
+    QUTE_ALIAS_NORMAL="alias qutebrowser='$QUTE_VENV_DIR/bin/qutebrowser'"
+    QUTE_ALIAS_BG="alias qb='nohup $QUTE_VENV_DIR/bin/qutebrowser >/dev/null 2>&1 & disown'"
+
+    # Add to zshrc if it exists
+    if [ -f "$HOME/.zshrc" ]; then
+        if ! grep -q "qutebrowser-env" "$HOME/.zshrc"; then
+            echo "" >> "$HOME/.zshrc"
+            echo "# Qutebrowser aliases" >> "$HOME/.zshrc"
+            echo "$QUTE_ALIAS_NORMAL" >> "$HOME/.zshrc"
+            echo "$QUTE_ALIAS_BG" >> "$HOME/.zshrc"
+            print_success "Added qutebrowser aliases to .zshrc"
+        fi
+    fi
+
+    # Add to bashrc if it exists
+    if [ -f "$HOME/.bashrc" ]; then
+        if ! grep -q "qutebrowser-env" "$HOME/.bashrc"; then
+            echo "" >> "$HOME/.bashrc"
+            echo "# Qutebrowser aliases" >> "$HOME/.bashrc"
+            echo "$QUTE_ALIAS_NORMAL" >> "$HOME/.bashrc"
+            echo "$QUTE_ALIAS_BG" >> "$HOME/.bashrc"
+            print_success "Added qutebrowser aliases to .bashrc"
+        fi
+    fi
+
+    # Create desktop entry for application launcher
+    echo "Creating desktop entry..."
+    mkdir -p "$HOME/.local/share/applications"
+
+    cat > "$HOME/.local/share/applications/qutebrowser.desktop" << EOF
+[Desktop Entry]
+Name=qutebrowser
+Comment=A keyboard-driven, vim-like browser
+Exec=$QUTE_VENV_DIR/bin/qutebrowser %u
+Icon=qutebrowser
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+EOF
+
+    print_success "Desktop entry created for application launcher"
+
+    # Create config directory
+    mkdir -p "$HOME/.config/qutebrowser"
+
+    print_success "Qutebrowser installation complete!"
+    echo -e "\n${GREEN}Usage:${NC}"
+    echo "  • qutebrowser    - Launch qutebrowser normally"
+    echo "  • qb             - Launch qutebrowser in background"
+    echo "  • Access via app launcher (wofi/rofi)"
+    echo -e "\n${YELLOW}Note:${NC} Restart your terminal or run 'source ~/.zshrc' to use aliases"
+}
+
 install_hyprland() {
     print_header "🌊 Installing Hyprland"
 
@@ -456,6 +554,7 @@ main() {
     install_system_packages
     install_chrome
     install_alacritty
+    install_qutebrowser
     install_neovim
     install_dotnet
     install_nodejs

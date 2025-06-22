@@ -1,8 +1,12 @@
-# Qutebrowser configuration file
+# Qutebrowser configuration file for v3.5.1
+
+# Load autoconfig settings
+config.load_autoconfig()
 
 # Set default search engine
 c.url.searchengines = {
-    'DEFAULT': 'https://duckduckgo.com/?q={}',
+    'DEFAULT': 'https://www.google.com/search?q={}',
+    'ddg': 'https://duckduckgo.com/?q={}',
     'g': 'https://www.google.com/search?q={}',
     'gh': 'https://github.com/search?q={}',
     'so': 'https://stackoverflow.com/search?q={}',
@@ -31,12 +35,14 @@ c.tabs.new_position.unrelated = 'last'
 # Font settings for developers
 c.fonts.default_family = ['JetBrains Mono', 'Source Code Pro', 'Fira Code', 'monospace']
 c.fonts.default_size = '10pt'
-c.fonts.web.family.monospace = 'JetBrains Mono, Source Code Pro, Fira Code, monospace'
+# Correct option for v3.5.1
+c.fonts.web.family.fixed = 'JetBrains Mono, Source Code Pro, Fira Code, monospace'
 
 # Dark mode preference
 c.colors.webpage.darkmode.enabled = True
 c.colors.webpage.darkmode.policy.images = 'never'
-c.colors.webpage.darkmode.policy.page = 'auto'
+# For v3.5.1, use 'smart' instead of 'auto'
+c.colors.webpage.darkmode.policy.page = 'smart'
 
 # Privacy settings
 c.content.headers.do_not_track = True
@@ -44,8 +50,7 @@ c.content.cookies.accept = 'no-3rdparty'
 c.content.geolocation = 'ask'
 c.content.notifications.enabled = 'ask'
 
-# Development-friendly settings
-c.content.developer_extras = True
+# Development-friendly settings (developer tools are always available in v3.5.1)
 c.content.javascript.enabled = True
 c.content.autoplay = False
 
@@ -66,16 +71,17 @@ c.statusbar.position = 'bottom'
 c.content.cache.size = 52428800  # 50 MB
 c.session.lazy_restore = True
 
-# Security settings
-c.content.ssl_strict = 'ask'
-c.content.host_blocking.enabled = True
-c.content.host_blocking.lists = [
+# Security settings for v3.5.1
+c.content.tls.certificate_errors = 'ask'
+
+# Ad blocking (updated syntax for v3.5.1)
+c.content.blocking.enabled = True
+c.content.blocking.hosts.lists = [
     'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts',
 ]
 
 # Key bindings for developers
 config.bind('pw', 'spawn --userscript password_fill')
-config.bind('<Ctrl-Shift-I>', 'devtools')
 config.bind('<F12>', 'devtools')
 config.bind('xb', 'config-cycle statusbar.show always never')
 config.bind('xt', 'config-cycle tabs.show always switching never')
@@ -83,13 +89,13 @@ config.bind('xx', 'config-cycle statusbar.show always never;; config-cycle tabs.
 
 # Quick bookmark shortcuts
 config.bind(',g', 'open https://github.com')
-config.bind(',gh', 'open https://github.com/{}'.format('YOUR_USERNAME'))  # Replace with your GitHub username
+config.bind(',gh', 'open https://github.com/YOUR_USERNAME')  # Replace with your GitHub username
 config.bind(',so', 'open https://stackoverflow.com')
 config.bind(',mdn', 'open https://developer.mozilla.org')
 config.bind(',rust', 'open https://doc.rust-lang.org')
 config.bind(',py', 'open https://docs.python.org/3/')
 
-# Gruvbox-inspired color scheme for developers
+# Gruvbox-inspired color scheme
 # Define color palette
 base03 = '#282828'
 base02 = '#32302f'
@@ -109,24 +115,17 @@ cyan = '#8ec07c'
 green = '#b8bb26'
 yellow = '#fabd2f'
 
-# Apply color scheme
-# Background color of the completion widget
-c.colors.completion.bg = base03
-# Text color of completion widget
-c.colors.completion.fg = base3
-# Background color of the completion widget for odd rows
-c.colors.completion.odd.bg = base02
-# Text color of the completion widget for odd rows
-c.colors.completion.odd.fg = base3
-# Color of the scrollbar in the completion view
-c.colors.completion.scrollbar.bg = base03
-c.colors.completion.scrollbar.fg = base0
-
-# Completion categories
+# Completion colors (v3.5.1 syntax)
 c.colors.completion.category.bg = blue
 c.colors.completion.category.fg = base03
 c.colors.completion.category.border.bottom = blue
 c.colors.completion.category.border.top = blue
+
+c.colors.completion.even.bg = base02
+c.colors.completion.fg = base3
+c.colors.completion.odd.bg = base03
+c.colors.completion.scrollbar.bg = base03
+c.colors.completion.scrollbar.fg = base0
 
 # Selected completion item
 c.colors.completion.item.selected.bg = base01
