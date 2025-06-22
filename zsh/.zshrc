@@ -1,13 +1,31 @@
-# Enhanced .zshrc with Powerlevel10k-style git status
+# Enhanced .zshrc with True Color (24-bit) support
 # Path to your oh-my-zsh installation
 export ZSH="$HOME/.oh-my-zsh"
 
 # Theme
 ZSH_THEME=""
 
+# Enable true color support
+export COLORTERM=truecolor
+
 autoload -U colors && colors
 
-# Enhanced git status function with Powerlevel10k-style features
+# True color helper functions
+# Usage: $(true_color_bg "255" "100" "50") for RGB background
+# Usage: $(true_color_fg "255" "100" "50") for RGB foreground
+true_color_bg() {
+    echo "\033[48;2;${1};${2};${3}m"
+}
+
+true_color_fg() {
+    echo "\033[38;2;${1};${2};${3}m"
+}
+
+color_reset() {
+    echo "\033[0m"
+}
+
+# Enhanced git status function with true color Powerlevel10k-style features
 git_prompt_info_enhanced() {
     # Check if we're in a git repository
     if ! git rev-parse --git-dir > /dev/null 2>&1; then
@@ -110,32 +128,36 @@ git_prompt_info_enhanced() {
         git_color="green"
     fi
 
-    # Determine colors based on git status
+    # True color definitions for git status
     local bg_color fg_color
     case $git_color in
         "green")
-            bg_color="%{$BG[28]%}"    # Dark green
-            fg_color="%{$FG[255]%}"   # White
+            # Clean git - nice green
+            bg_color="$(true_color_bg "76" "175" "80")"   # Material Green
+            fg_color="$(true_color_fg "255" "255" "255")" # White
             ;;
         "yellow")
-            bg_color="%{$BG[214]%}"   # Orange/yellow
-            fg_color="%{$FG[16]%}"    # Black
+            # Changes - orange/yellow
+            bg_color="$(true_color_bg "255" "152" "0")"   # Material Orange
+            fg_color="$(true_color_fg "0" "0" "0")"       # Black
             ;;
         "red")
-            bg_color="%{$BG[196]%}"   # Bright red
-            fg_color="%{$FG[255]%}"   # White
+            # Conflicts/issues - red
+            bg_color="$(true_color_bg "244" "67" "54")"   # Material Red
+            fg_color="$(true_color_fg "255" "255" "255")" # White
             ;;
         *)
-            bg_color="%{$BG[68]%}"    # Blue fallback
-            fg_color="%{$FG[255]%}"   # White
+            # Default - blue
+            bg_color="$(true_color_bg "33" "150" "243")"  # Material Blue
+            fg_color="$(true_color_fg "255" "255" "255")" # White
             ;;
     esac
 
-    # Build final git segment
-    echo "${bg_color}${fg_color}  $branch$git_state$tracking$stash_indicator$status_indicators %{$reset_color%}"
+    # Build final git segment with Git icon
+    echo "%{${bg_color}${fg_color}%}  $branch$git_state$tracking$stash_indicator$status_indicators %{$(color_reset)%}"
 }
 
-# Enhanced directory segment with git-aware shortening
+# Enhanced directory segment with true colors
 prompt_dir_enhanced() {
     local current_dir="$PWD"
     local display_dir=""
@@ -159,24 +181,40 @@ prompt_dir_enhanced() {
             display_dir="$git_basename$relative_path"
         fi
     else
-        # Not in git repo - just show current directory without complex shortening
-        display_dir="$current_dir"
+        # Not in git repo - show basename and parent
+        if [[ "$current_dir" == "~" ]]; then
+            display_dir="~"
+        else
+            local parent=$(dirname "$current_dir")
+            local basename=$(basename "$current_dir")
+            if [[ "$parent" == "/" ]] || [[ "$parent" == "~" ]]; then
+                display_dir="$current_dir"
+            else
+                display_dir="$(basename "$parent")/$basename"
+            fi
+        fi
     fi
 
-    # Directory segment - better blue
-    echo "%{$bg[blue]%}%{$fg[white]%}  $display_dir %{$reset_color%}"
+    # Directory segment - Material Blue
+    local dir_bg="$(true_color_bg "63" "81" "181")"  # Material Indigo
+    local dir_fg="$(true_color_fg "255" "255" "255")"
+    echo "%{${dir_bg}${dir_fg}%}  $display_dir %{$(color_reset)%}"
 }
 
-# User segment
+# User segment with true colors
 prompt_context() {
-    echo "%{$bg[black]%}%{$fg[white]%}  %n@%m %{$reset_color%}"
+    local user_bg="$(true_color_bg "55" "71" "79")"    # Material Blue Grey 800
+    local user_fg="$(true_color_fg "255" "255" "255")"
+    echo "%{${user_bg}${user_fg}%}  %n@%m %{$(color_reset)%}"
 }
 
 # Python virtual environment indicator
 prompt_virtualenv() {
     if [[ -n "$VIRTUAL_ENV" ]]; then
         local venv_name=$(basename "$VIRTUAL_ENV")
-        echo "%{$BG[37]%}%{$FG[16]%}  $venv_name %{$reset_color%}"
+        local venv_bg="$(true_color_bg "76" "175" "80")"   # Material Green
+        local venv_fg="$(true_color_fg "255" "255" "255")"
+        echo "%{${venv_bg}${venv_fg}%}  $venv_name %{$(color_reset)%}"
     fi
 }
 
@@ -184,7 +222,9 @@ prompt_virtualenv() {
 prompt_node() {
     if [[ -f package.json ]] && command -v node > /dev/null 2>&1; then
         local node_version=$(node --version | sed 's/v//')
-        echo "%{$BG[34]%}%{$FG[255]%}  $node_version %{$reset_color%}"
+        local node_bg="$(true_color_bg "102" "187" "106")"  # Node green
+        local node_fg="$(true_color_fg "255" "255" "255")"
+        echo "%{${node_bg}${node_fg}%} ⬢ $node_version %{$(color_reset)%}"
     fi
 }
 
@@ -193,7 +233,9 @@ prompt_dotnet() {
     if [[ -f *.csproj ]] || [[ -f *.sln ]] || [[ -f global.json ]] && command -v dotnet > /dev/null 2>&1; then
         local dotnet_version=$(dotnet --version 2>/dev/null)
         if [[ -n "$dotnet_version" ]]; then
-            echo "%{$BG[99]%}%{$FG[255]%}  $dotnet_version %{$reset_color%}"
+            local dotnet_bg="$(true_color_bg "156" "39" "176")"  # .NET purple
+            local dotnet_fg="$(true_color_fg "255" "255" "255")"
+            echo "%{${dotnet_bg}${dotnet_fg}%}  $dotnet_version %{$(color_reset)%}"
         fi
     fi
 }
@@ -202,7 +244,9 @@ prompt_dotnet() {
 prompt_rust() {
     if [[ -f Cargo.toml ]] && command -v rustc > /dev/null 2>&1; then
         local rust_version=$(rustc --version | awk '{print $2}')
-        echo "%{$BG[208]%}%{$FG[16]%}  $rust_version %{$reset_color%}"
+        local rust_bg="$(true_color_bg "222" "165" "132")"  # Rust orange
+        local rust_fg="$(true_color_fg "0" "0" "0")"
+        echo "%{${rust_bg}${rust_fg}%}  $rust_version %{$(color_reset)%}"
     fi
 }
 
@@ -215,7 +259,8 @@ precmd() {
     if [ $timer ]; then
         local elapsed=$((SECONDS - timer))
         if [ $elapsed -gt 3 ]; then
-            timer_show=" %{$fg[yellow]%}${elapsed}s%{$reset_color%}"
+            local time_color="$(true_color_fg "255" "193" "7")"  # Amber
+            timer_show=" %{${time_color}%}⏱ ${elapsed}s%{$(color_reset)%}"
         else
             timer_show=""
         fi
@@ -223,12 +268,18 @@ precmd() {
     fi
 }
 
-# Clean prompt with single chevron after git status
-PROMPT='$(prompt_context)$(prompt_dir_enhanced)$(prompt_virtualenv)$(prompt_node)$(prompt_dotnet)$(prompt_rust)$(git_prompt_info_enhanced)%{$FG[214]%}'$'\uE0B0''%{$reset_color%}${timer_show}
-%{$fg[cyan]%}➜ %{$reset_color%}'
+# Powerline arrow separator
+powerline_arrow() {
+    local arrow_color="$(true_color_fg "255" "193" "7")"  # Golden arrow
+    echo "%{${arrow_color}%}\uE0B0%{$(color_reset)%}"
+}
 
-# Right prompt with time and exit code
-RPROMPT='%(?..%{$fg[red]%}✗ %?%{$reset_color%} )%{$fg[grey]%}%T%{$reset_color%}'
+# Clean prompt with powerline-style separator
+PROMPT='$(prompt_context)$(prompt_dir_enhanced)$(prompt_virtualenv)$(prompt_node)$(prompt_dotnet)$(prompt_rust)$(git_prompt_info_enhanced)$(powerline_arrow)${timer_show}
+%{$(true_color_fg "0" "188" "212")%}➜%{$(color_reset)%} '
+
+# Right prompt with time and exit code using true colors
+RPROMPT='%(?..%{$(true_color_fg "244" "67" "54")%}✗ %?%{$(color_reset)%} )%{$(true_color_fg "158" "158" "158")%}%T%{$(color_reset)%}'
 
 # Plugins
 plugins=(
@@ -248,6 +299,10 @@ source $ZSH/oh-my-zsh.sh
 export EDITOR='nvim'
 export VISUAL='nvim'
 export DEFAULT_USER="$USER"
+
+# Enable true color support for various applications
+export TERM=xterm-256color
+export COLORTERM=truecolor
 
 # Development paths
 export PATH="$HOME/.cargo/bin:$PATH"
@@ -286,3 +341,12 @@ alias gca='git commit -a'
 alias gcm='git commit -m'
 alias gd='git diff'
 alias gdc='git diff --cached'
+
+# Test true color support function
+test_true_color() {
+    echo "Testing True Color Support:"
+    echo "$(true_color_bg "255" "0" "0")$(true_color_fg "255" "255" "255") Red Background $(color_reset)"
+    echo "$(true_color_bg "0" "255" "0")$(true_color_fg "0" "0" "0") Green Background $(color_reset)"
+    echo "$(true_color_bg "0" "0" "255")$(true_color_fg "255" "255" "255") Blue Background $(color_reset)"
+    echo "$(true_color_bg "123" "45" "67")$(true_color_fg "255" "255" "255") Custom RGB Background $(color_reset)"
+}
