@@ -1,0 +1,28 @@
+#!/bin/bash
+# Hyprland Logout Menu
+# Save as ~/.local/bin/logout-menu and make executable: chmod +x ~/.local/bin/logout-menu
+
+options="Logout\nRestart\nShutdown\nSuspend\nLock"
+
+choice=$(echo -e "$options" | wofi --dmenu --prompt "Power Menu" --width 200 --height 250)
+
+case "$choice" in
+    "Logout")
+        hyprctl dispatch exit
+        ;;
+    "Restart")
+        systemctl reboot
+        ;;
+    "Shutdown")
+        systemctl poweroff
+        ;;
+    "Suspend")
+        systemctl suspend
+        ;;
+    "Lock")
+        ~/.local/bin/blur-lock
+        ;;
+    *)
+        # Do nothing if cancelled
+        ;;
+esac

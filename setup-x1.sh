@@ -285,11 +285,46 @@ install_hyprland() {
         hyprland waybar wofi mako-notifier grim slurp \
         thunar brightnessctl wayland-protocols \
         xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
-        swaylock swayidle imagemagick
+        swaylock swayidle imagemagick blueman pavucontrol
 
     mkdir -p ~/.local/bin
 
     print_success "Hyprland and dependencies installed"
+}
+
+setup_brightness_control() {
+    print_header "💡 Setting Up Brightness Control"
+
+    # Install brightnessctl if not already installed
+    if ! command -v brightnessctl &> /dev/null; then
+        echo "Installing brightnessctl..."
+        sudo apt install -y brightnessctl
+    else
+        print_success "brightnessctl already installed"
+    fi
+
+    # Add user to video group
+    echo "Adding $USER to video group..."
+    sudo usermod -a -G video $USER
+    print_success "Added $USER to video group"
+
+    # Create udev rule for brightness control
+    echo "Creating udev rule for brightness permissions..."
+    sudo tee /etc/udev/rules.d/90-backlight.rules << 'EOF'
+SUBSYSTEM=="backlight", ACTION=="add", \
+  RUN+="/bin/chgrp video %S%p/brightness", \
+  RUN+="/bin/chmod g+w %S%p/brightness"
+EOF
+    print_success "Created udev rule for brightness control"
+
+    # Reload udev rules
+    echo "Reloading udev rules..."
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger --subsystem-match=backlight
+    print_success "Udev rules reloaded"
+
+    print_success "Brightness control setup complete"
+    print_warning "You'll need to logout/login for group membership to take effect"
 }
 
 install_neovim() {
@@ -563,6 +598,8 @@ main() {
     install_nodejs
     setup_python_tools
     setup_zsh
+    install_hyprland
+    setup_brightness_control
     install_pfsense_qemu
     setup_dotfiles
     setup_shell
