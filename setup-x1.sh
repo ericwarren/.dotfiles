@@ -497,6 +497,7 @@ setup_dotfiles() {
                 echo "  You can resolve conflicts manually with: stow -v $pkg"
             fi
         done
+        stow -v -t / tlp
     else
         echo "Skipping dotfiles setup"
         echo "You can apply them later with: stow git zsh neovim tmux sway"
