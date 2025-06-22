@@ -1,0 +1,28 @@
+#!/bin/bash
+# Save as ~/.local/bin/blur-lock
+# Make executable: chmod +x ~/.local/bin/blur-lock
+
+SCREENSHOT="/tmp/lockscreen.png"
+
+# Take screenshot and apply blur in one command for better performance
+grim "$SCREENSHOT" && \
+convert "$SCREENSHOT" \
+  -blur 0x8 \
+  -brightness-contrast -10x-5 \
+  "$SCREENSHOT" && \
+swaylock -f \
+  -i "$SCREENSHOT" \
+  --ring-color 7aa2f7 \
+  --key-hl-color ff9e64 \
+  --text-color c0caf5 \
+  --inside-color 24283b \
+  --line-color 414868 \
+  --separator-color 414868 \
+  --indicator-radius 120 \
+  --indicator-thickness 8 \
+  --font "Inter" \
+  --font-size 14 \
+  --show-failed-attempts
+
+# Clean up
+rm -f "$SCREENSHOT" 2>/dev/null

@@ -285,7 +285,9 @@ install_hyprland() {
         hyprland waybar wofi mako-notifier grim slurp \
         thunar brightnessctl wayland-protocols \
         xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
-        swaylock swayidle
+        swaylock swayidle imagemagick
+
+    mkdir -p ~/.local/bin
 
     print_success "Hyprland and dependencies installed"
 }
@@ -466,7 +468,7 @@ setup_dotfiles() {
 
     # Check for dotfile packages
     available_packages=()
-    for pkg in git zsh neovim tmux hyprland; do
+    for pkg in git zsh neovim tmux hyprland qutebrowser; do
         if [ -d "$script_dir/$pkg" ]; then
             available_packages+=("$pkg")
         fi
@@ -474,7 +476,7 @@ setup_dotfiles() {
 
     if [ ${#available_packages[@]} -eq 0 ]; then
         print_warning "No dotfile packages found in $script_dir"
-        print_warning "Expected directories: git/, zsh/, neovim/, tmux/"
+        print_warning "Expected directories: git/, zsh/, neovim/, tmux/, hyprland/, qutebrowser/"
         return
     fi
 
