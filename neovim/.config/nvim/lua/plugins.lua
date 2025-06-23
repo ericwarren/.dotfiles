@@ -27,14 +27,14 @@ return require('lazy').setup({
 
   {
     'neovim/nvim-lspconfig',
-    dependencies = { 
+    dependencies = {
       'mason-lspconfig.nvim',
       'hrsh7th/cmp-nvim-lsp',
     },
     config = function()
       local lspconfig = require('lspconfig')
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      
+
       -- LSP servers with enhanced capabilities
       lspconfig.rust_analyzer.setup({
         capabilities = capabilities,
@@ -56,7 +56,7 @@ return require('lazy').setup({
         on_attach = function(client, bufnr)
           -- Enable completion triggered by <c-x><c-o>
           vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
-          
+
           -- Format on save for C# files
           if client.server_capabilities.documentFormattingProvider then
             vim.api.nvim_create_autocmd("BufWritePre", {
@@ -84,7 +84,7 @@ return require('lazy').setup({
     config = function()
       local cmp = require('cmp')
       local luasnip = require('luasnip')
-      
+
       cmp.setup({
         snippet = {
           expand = function(args)
@@ -152,14 +152,14 @@ return require('lazy').setup({
     build = ':TSUpdate',
     config = function()
       require('nvim-treesitter.configs').setup({
-        ensure_installed = { 
-          'lua', 
-          'vim', 
-          'vimdoc', 
-          'rust', 
-          'typescript', 
+        ensure_installed = {
+          'lua',
+          'vim',
+          'vimdoc',
+          'rust',
+          'typescript',
           'javascript',
-          'python', 
+          'python',
           'c_sharp',
           'markdown',
           'markdown_inline',
@@ -182,7 +182,7 @@ return require('lazy').setup({
     'tpope/vim-fugitive',
     cmd = { 'Git', 'G', 'Gdiff', 'Gblame', 'Gwrite' },
   },
-  
+
   {
     'lewis6991/gitsigns.nvim',
     config = function()
@@ -311,6 +311,40 @@ return require('lazy').setup({
       -- Add keymap for NvimTree
       vim.keymap.set('n', '<leader>e', ':NvimTreeToggle<CR>', { silent = true })
     end
+  },
+
+  -- Color highlighter - shows hex colors inline
+  {
+    'NvChad/nvim-colorizer.lua',
+    event = { 'BufReadPost', 'BufNewFile' },
+    config = function()
+      require('colorizer').setup({
+        filetypes = {
+          '*', -- Enable for all filetypes
+          css = { rgb_fn = true }, -- Enable parsing rgb(...) functions in css
+          html = { names = false }, -- Disable parsing "names" like Blue or Gray
+          javascript = { RRGGBBAA = true }, -- Enable 8-digit hex colors
+          typescript = { RRGGBBAA = true },
+        },
+        user_default_options = {
+          RGB = true, -- #RGB hex codes
+          RRGGBB = true, -- #RRGGBB hex codes
+          names = false, -- "Name" codes like Blue or red
+          RRGGBBAA = true, -- #RRGGBBAA hex codes
+          AARRGGBB = false, -- 0xAARRGGBB hex codes
+          rgb_fn = true, -- CSS rgb() and rgba() functions
+          hsl_fn = true, -- CSS hsl() and hsla() functions
+          css = true, -- Enable all CSS features: rgb_fn, hsl_fn, names, RGB, RRGGBB
+          css_fn = true, -- Enable all CSS *functions*: rgb_fn, hsl_fn
+          mode = 'background', -- Set the display mode: 'foreground', 'background', 'virtualtext'
+          tailwind = true, -- Enable tailwind colors
+          sass = { enable = true, parsers = { 'css' } }, -- Enable sass colors
+          virtualtext = '■', -- Character to use for virtual text
+          always_update = false -- Update color values even if buffer is not focused
+        },
+        buftypes = {}, -- Exclude certain buffer types
+      })
+    end,
   },
 
   -- Color scheme

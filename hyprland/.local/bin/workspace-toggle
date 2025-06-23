@@ -1,0 +1,114 @@
+#!/bin/bash
+# Smart toggle with manual Alacritty workspace management
+# Save as ~/.local/bin/smart-toggle
+
+current_class=$(hyprctl activewindow -j | jq -r '.class')
+current_workspace=$(hyprctl activewindow -j | jq -r '.workspace.id')
+
+echo "Current: $current_class on workspace $current_workspace"
+
+# Function to wait for and focus a window
+wait_and_focus() {
+    local target_class="$1"
+    local max_attempts=15
+
+    for i in $(seq 1 $max_attempts); do
+        if hyprctl clients | grep -qi "$target_class"; then
+            sleep 0.1
+            hyprctl dispatch focuswindow "class:$target_class"
+            return 0
+        fi
+        sleep 0.2
+    done
+    return 1
+}
+
+# Function to get or create fullscreen Alacritty on workspace 9
+get_fullscreen_alacritty() {
+    echo "Getting fullscreen Alacritty on workspace 9..."
+
+    # Check if there's already an Alacritty on workspace 9
+    if hyprctl clients -j | jq -e '.[] | select(.class == "Alacritty" and .workspace.id == 9)' > /dev/null; then
+        echo "Found existing Alacritty on workspace 9"
+        hyprctl dispatch workspace 9
+        hyprctl dispatch focuswindow "class:Alacritty"
+    else
+        # Check if there's an Alacritty on another workspace we can move
+        local alacritty_address=$(hyprctl clients -j | jq -r '.[] | select(.class == "Alacritty") | .address' | head -1)
+
+        if [[ -n "$alacritty_address" ]]; then
+            echo "Moving existing Alacritty to workspace 9"
+            hyprctl dispatch focuswindow "address:$alacritty_address"
+            hyprctl dispatch movetoworkspacesilent 9
+            hyprctl dispatch workspace 9
+            hyprctl dispatch focuswindow "class:Alacritty"
+        else
+            echo "Launching new Alacritty on workspace 9"
+            hyprctl dispatch workspace 9
+            sleep 0.2
+            alacritty > /dev/null 2>&1 &
+            wait_and_focus "Alacritty"
+        fi
+    fi
+}
+
+# Check current context and decide behavior
+case "$current_workspace" in
+    "1")
+        # On workspace 1 - side-by-side context
+        if [[ "$current_class" == "google-chrome" ]]; then
+            echo "Switching from Chrome to Alacritty on workspace 1..."
+            if hyprctl clients -j | jq -e '.[] | select(.class == "Alacritty" and .workspace.id == 1)' > /dev/null; then
+                hyprctl dispatch focuswindow "class:Alacritty"
+            else
+                # Launch new Alacritty on workspace 1 (will stay due to current workspace)
+                alacritty > /dev/null 2>&1 &
+                wait_and_focus "Alacritty"
+            fi
+        elif [[ "$current_class" == "Alacritty" ]]; then
+            echo "From workspace 1 Alacritty, going to qutebrowser..."
+            hyprctl dispatch workspace 8
+            if hyprctl clients | grep -qi "org.qutebrowser.qutebrowser"; then
+                hyprctl dispatch focuswindow "class:org.qutebrowser.qutebrowser"
+            else
+                ~/.local/share/qutebrowser-env/bin/qutebrowser > /dev/null 2>&1 &
+                wait_and_focus "org.qutebrowser.qutebrowser"
+            fi
+        else
+            echo "On workspace 1, going to Chrome..."
+            if hyprctl clients -j | jq -e '.[] | select(.class == "google-chrome" and .workspace.id == 1)' > /dev/null; then
+                hyprctl dispatch focuswindow "class:google-chrome"
+            else
+                google-chrome > /dev/null 2>&1 &
+                wait_and_focus "google-chrome"
+            fi
+        fi
+        ;;
+    "8")
+        # On qutebrowser workspace - go to fullscreen Alacritty
+        echo "Switching from qutebrowser to fullscreen Alacritty..."
+        get_fullscreen_alacritty
+        ;;
+    "9")
+        # On fullscreen Alacritty workspace - go back to qutebrowser
+        echo "Switching from fullscreen Alacritty to qutebrowser..."
+        hyprctl dispatch workspace 8
+        if hyprctl clients | grep -qi "org.qutebrowser.qutebrowser"; then
+            hyprctl dispatch focuswindow "class:org.qutebrowser.qutebrowser"
+        else
+            ~/.local/share/qutebrowser-env/bin/qutebrowser > /dev/null 2>&1 &
+            wait_and_focus "org.qutebrowser.qutebrowser"
+        fi
+        ;;
+    *)
+        # From any other workspace - default behavior (go to qutebrowser)
+        echo "From other workspace, going to qutebrowser..."
+        hyprctl dispatch workspace 8
+        if hyprctl clients | grep -qi "org.qutebrowser.qutebrowser"; then
+            hyprctl dispatch focuswindow "class:org.qutebrowser.qutebrowser"
+        else
+            ~/.local/share/qutebrowser-env/bin/qutebrowser > /dev/null 2>&1 &
+            wait_and_focus "org.qutebrowser.qutebrowser"
+        fi
+        ;;
+esac
