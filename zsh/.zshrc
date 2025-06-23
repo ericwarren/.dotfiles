@@ -3,12 +3,7 @@
 export ZSH="$HOME/.oh-my-zsh"
 
 # Theme
-ZSH_THEME="agnoster"
-
-# Enable true color support
-export COLORTERM=truecolor
-
-autoload -U colors && colors
+ZSH_THEME=""
 
 # Plugins
 plugins=(
@@ -56,4 +51,9 @@ fi
 # WSL specific settings
 if grep -q Microsoft /proc/version 2>/dev/null; then
     export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0
+fi
+
+# Initialize Starship prompt (MUST be at the end)
+if command -v starship &> /dev/null; then
+    eval "$(starship init zsh)"
 fi

@@ -460,7 +460,7 @@ setup_python_tools() {
 }
 
 setup_zsh() {
-    print_header "🐚 Setting Up Zsh with Oh My Zsh"
+    print_header "🐚 Setting Up Zsh with Oh My Zsh and Starship"
 
     # Install Oh My Zsh if not present
     if [ ! -d "$HOME/.oh-my-zsh" ]; then
@@ -494,6 +494,31 @@ setup_zsh() {
     fi
 
     print_success "Zsh plugins installed"
+
+    # Check if starship is already installed
+    if command -v starship &> /dev/null; then
+        print_success "Starship already installed: $(starship --version)"
+        return
+    fi
+
+    echo "Installing Starship prompt..."
+
+    # Install starship using the official installer
+    if curl -sS https://starship.rs/install.sh | sh; then
+        print_success "Starship installed successfully"
+    else
+        print_error "Failed to install Starship"
+        return 1
+    fi
+
+    # Verify installation
+    if command -v starship &> /dev/null; then
+        STARSHIP_VERSION=$(starship --version | head -n1)
+        print_success "Starship installed: $STARSHIP_VERSION"
+    else
+        print_error "Starship installation verification failed"
+        return 1
+    fi
 }
 
 setup_dotfiles() {
