@@ -110,6 +110,8 @@ format = '[[ $symbol $branch ](fg:tokyo_fg bg:tokyo_bg2)]($style)'
 [git_status]
 style = "bg:color_aqua"
 format = '[[($all_status$ahead_behind )](fg:tokyo_fg bg:tokyo_bg2)]($style)'
+ahead = ""
+behind = ""
 
 [nodejs]
 symbol = ""
