@@ -3,7 +3,7 @@
 export ZSH="$HOME/.oh-my-zsh"
 
 # Theme
-ZSH_THEME="robbyrussell"
+ZSH_THEME="agnoster"
 
 # Enable true color support
 export COLORTERM=truecolor
