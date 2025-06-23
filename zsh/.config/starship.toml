@@ -7,7 +7,7 @@ $username\
 $hostname\
 [](bg:tokyo_bg fg:tokyo_blue)\
 $directory\
-[](fg:tokyo_bg bg:tokyo_bg)\
+[](fg:tokyo_bg bg:tokyo_bg2)\
 $git_branch\
 $git_status\
 [](fg:tokyo_bg2 bg:color_blue)\
