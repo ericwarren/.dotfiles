@@ -22,7 +22,7 @@ tmux new-session -d -s "$SESSION_NAME" -c "$PWD"
 tmux rename-window -t "$SESSION_NAME:1" "dev"
 
 # Create layout: Editor (60%) | Build/Run (40% split vertically)
-tmux split-window -h -p 30 -t "$SESSION_NAME:1"           # Split horizontally
+tmux split-window -h -p 10 -t "$SESSION_NAME:1"           # Split horizontally
 tmux split-window -v -p 50 -t "$SESSION_NAME:1.2"         # Split right pane vertically
 
 # Set up panes
