@@ -1,0 +1,21 @@
+#!/bin/bash
+# Check lid and monitor status
+
+echo "=== Lid Status ==="
+cat /proc/acpi/button/lid/LID*/state 2>/dev/null || echo "No lid info available"
+
+echo -e "\n=== Monitor Status ==="
+if command -v hyprctl >/dev/null 2>&1; then
+    hyprctl monitors
+else
+    echo "Hyprland not running"
+fi
+
+echo -e "\n=== Service Status ==="
+systemctl --user is-active lid-handler.service
+
+echo -e "\n=== Recent Lid Events ==="
+tail -10 ~/.local/share/lid-events.log 2>/dev/null || echo "No lid events logged yet"
+
+echo -e "\n=== Recent Suspend Events ==="
+tail -10 ~/.local/share/suspend.log 2>/dev/null || echo "No suspend events logged yet"

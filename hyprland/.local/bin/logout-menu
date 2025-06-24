@@ -17,7 +17,7 @@ case "$choice" in
         systemctl poweroff
         ;;
     "Suspend")
-        systemctl suspend
+        ~/.local/bin/safe-suspend
         ;;
     "Lock")
         ~/.local/bin/blur-lock

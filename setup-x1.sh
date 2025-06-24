@@ -577,6 +577,27 @@ setup_shell() {
     fi
 }
 
+setup_lid_management(){
+    sudo stow -v -t / powermanagement
+
+    if ! command -v acpi_listen >/dev/null 2>&1; then
+        echo "Installing acpid..."
+        sudo apt update && sudo apt install -y acpid
+    fi
+
+    # Enable and start services
+    sudo systemctl enable acpid
+    sudo systemctl start acpid
+
+    # User service
+    systemctl --user daemon-reload
+    systemctl --user enable lid-handler.service
+    systemctl --user start lid-handler.service
+
+    # Restart logind to apply changes
+    sudo systemctl restart systemd-logind
+}
+
 show_completion_message() {
     print_header "🎉 Setup Complete!"
 
@@ -627,6 +648,7 @@ main() {
     setup_brightness_control
     install_pfsense_qemu
     setup_dotfiles
+    setup_lid_management
     setup_shell
 
     # Completion
