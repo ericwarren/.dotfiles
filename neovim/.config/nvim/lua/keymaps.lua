@@ -1,3 +1,5 @@
+require('dotnet')
+
 local keymap = vim.keymap
 
 -- General keymaps
@@ -99,9 +101,9 @@ keymap.set("v", "<A-k>", ":m '<-2<CR>gv=gv")
 -- Language-specific keymaps
 
 -- C# specific
-keymap.set("n", "<leader>dr", "<cmd>!dotnet run<cr>")
-keymap.set("n", "<leader>db", "<cmd>!dotnet build<cr>")
-keymap.set("n", "<leader>dt", "<cmd>!dotnet test<cr>")
+--keymap.set("n", "<leader>dr", "<cmd>!dotnet run<cr>")
+--keymap.set("n", "<leader>db", "<cmd>!dotnet build<cr>")
+--keymap.set("n", "<leader>dt", "<cmd>!dotnet test<cr>")
 
 -- Python specific
 keymap.set("n", "<leader>pr", "<cmd>!python %<cr>")

@@ -1,6 +1,6 @@
 #!/bin/bash
+# Enhanced .NET Development tmux session script with Neovim integration
 # Save as ~/.local/bin/dotnet-session and make executable: chmod +x ~/.local/bin/dotnet-session
-# .NET Development tmux session script
 # Usage: dotnet-session [project-name]
 
 PROJECT_NAME=${1:-dotnet-dev}
@@ -15,37 +15,80 @@ fi
 
 echo "Creating new .NET development session: $SESSION_NAME"
 
-# Create new session
-tmux new-session -d -s "$SESSION_NAME" -c "$PWD"
+# Find project directory (look for .csproj or .sln files)
+PROJECT_DIR="$PWD"
+if [ -n "$(find . -maxdepth 2 -name "*.csproj" -o -name "*.sln" 2>/dev/null | head -1)" ]; then
+    PROJECT_DIR="$PWD"
+elif [ -n "$1" ] && [ -d "$1" ]; then
+    PROJECT_DIR="$(realpath "$1")"
+    cd "$PROJECT_DIR"
+fi
 
-# Window 1: Development
+echo "Using project directory: $PROJECT_DIR"
+
+# Create new session with main window
+tmux new-session -d -s "$SESSION_NAME" -c "$PROJECT_DIR"
+
+# Window 1: Development (Editor + Output panes)
 tmux rename-window -t "$SESSION_NAME:1" "dev"
 
-# Create layout: Editor (60%) | Build/Run (40% split vertically)
-tmux split-window -h -p 10 -t "$SESSION_NAME:1"           # Split horizontally
-tmux split-window -v -p 50 -t "$SESSION_NAME:1.2"         # Split right pane vertically
+# Create the layout: Editor (70%) | Output panes (30% split into 3)
+tmux split-window -h -p 30 -t "$SESSION_NAME:1"           # Split horizontally (editor | output area)
+tmux split-window -v -p 67 -t "$SESSION_NAME:1.2"         # Split output area into 3 vertical panes
+tmux split-window -v -p 50 -t "$SESSION_NAME:1.3"
 
-# Set up panes
+# Set up pane titles and commands
+tmux select-pane -t "$SESSION_NAME:1.1" -T "editor"
 tmux send-keys -t "$SESSION_NAME:1.1" "clear && echo 'Starting Neovim...' && nvim ." Enter
-tmux send-keys -t "$SESSION_NAME:1.2" "clear && echo 'Build/Watch pane - run: dotnet watch build'" Enter
-tmux send-keys -t "$SESSION_NAME:1.3" "clear && echo 'Run/Test pane - run: dotnet run or dotnet test'" Enter
+
+tmux select-pane -t "$SESSION_NAME:1.2" -T "dotnet-run"
+tmux send-keys -t "$SESSION_NAME:1.2" "clear && echo 'dotnet run output - Use <leader>dr in Neovim to run'" Enter
+
+tmux select-pane -t "$SESSION_NAME:1.3" -T "dotnet-build"
+tmux send-keys -t "$SESSION_NAME:1.3" "clear && echo 'dotnet build/test output - Use <leader>db or <leader>dt in Neovim'" Enter
+
+tmux select-pane -t "$SESSION_NAME:1.4" -T "dotnet-watch"
+tmux send-keys -t "$SESSION_NAME:1.4" "clear && echo 'dotnet watch output - Use <leader>dw in Neovim'" Enter
 
 # Window 2: Git/Tools
-tmux new-window -t "$SESSION_NAME" -n "git"
+tmux new-window -t "$SESSION_NAME" -n "git" -c "$PROJECT_DIR"
 tmux send-keys -t "$SESSION_NAME:git" "clear && git status" Enter
 
-# Window 3: Database (if needed)
-tmux new-window -t "$SESSION_NAME" -n "db"
-tmux send-keys -t "$SESSION_NAME:db" "clear && echo 'Database tools - SQL Server, migrations, etc.'" Enter
+# Window 3: Database/Tools
+tmux new-window -t "$SESSION_NAME" -n "tools" -c "$PROJECT_DIR"
+tmux send-keys -t "$SESSION_NAME:tools" "clear && echo 'Database tools, package management, etc.'" Enter
+tmux send-keys -t "$SESSION_NAME:tools" "echo 'Available commands:'" Enter
+tmux send-keys -t "$SESSION_NAME:tools" "echo '  dotnet add package <name>  # Add NuGet package'" Enter
+tmux send-keys -t "$SESSION_NAME:tools" "echo '  dotnet ef migrations add <name>  # Add EF migration'" Enter
+tmux send-keys -t "$SESSION_NAME:tools" "echo '  dotnet ef database update  # Update database'" Enter
+
+# Window 4: Terminal (for manual commands)
+tmux new-window -t "$SESSION_NAME" -n "term" -c "$PROJECT_DIR"
+tmux send-keys -t "$SESSION_NAME:term" "clear" Enter
+
+# Set up status bar to show pane titles
+tmux set-option -t "$SESSION_NAME" pane-border-status top
+tmux set-option -t "$SESSION_NAME" pane-border-format "#{pane_title}"
 
 # Focus on development window and editor pane
 tmux select-window -t "$SESSION_NAME:dev"
 tmux select-pane -t "$SESSION_NAME:dev.1"
 
 echo "Session created! Layout:"
-echo "  Window 1 (dev): Neovim | Watch Build | Run/Test"
-echo "  Window 2 (git): Git operations"
-echo "  Window 3 (db):  Database tools"
+echo "  Window 1 (dev):   Neovim | dotnet run | dotnet build | dotnet watch"
+echo "  Window 2 (git):   Git operations"
+echo "  Window 3 (tools): Database and package management"
+echo "  Window 4 (term):  General terminal"
+echo ""
+echo "Neovim keybindings:"
+echo "  <leader>dr  - Run project (outputs to dotnet-run pane)"
+echo "  <leader>db  - Build project (outputs to dotnet-build pane)"
+echo "  <leader>dt  - Test project (outputs to dotnet-build pane)"
+echo "  <leader>dw  - Watch run (outputs to dotnet-watch pane)"
+echo "  <leader>ds  - Stop watch processes"
+echo "  <F5>        - Quick run"
+echo "  <F6>        - Quick build"
+echo "  <F7>        - Quick test"
 
 # Attach to session
 tmux attach-session -t "$SESSION_NAME"
