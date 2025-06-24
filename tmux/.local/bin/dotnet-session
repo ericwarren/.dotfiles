@@ -1,0 +1,51 @@
+#!/bin/bash
+# Save as ~/.local/bin/dotnet-session and make executable: chmod +x ~/.local/bin/dotnet-session
+# .NET Development tmux session script
+# Usage: dotnet-session [project-name]
+
+PROJECT_NAME=${1:-dotnet-dev}
+SESSION_NAME="$PROJECT_NAME"
+
+# Check if session already exists
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    echo "Session $SESSION_NAME already exists. Attaching..."
+    tmux attach-session -t "$SESSION_NAME"
+    exit 0
+fi
+
+echo "Creating new .NET development session: $SESSION_NAME"
+
+# Create new session
+tmux new-session -d -s "$SESSION_NAME" -c "$PWD"
+
+# Window 1: Development
+tmux rename-window -t "$SESSION_NAME:1" "dev"
+
+# Create layout: Editor (60%) | Build/Run (40% split vertically)
+tmux split-window -h -p 30 -t "$SESSION_NAME:1"           # Split horizontally
+tmux split-window -v -p 50 -t "$SESSION_NAME:1.2"         # Split right pane vertically
+
+# Set up panes
+tmux send-keys -t "$SESSION_NAME:1.1" "clear && echo 'Starting Neovim...' && nvim ." Enter
+tmux send-keys -t "$SESSION_NAME:1.2" "clear && echo 'Build/Watch pane - run: dotnet watch build'" Enter
+tmux send-keys -t "$SESSION_NAME:1.3" "clear && echo 'Run/Test pane - run: dotnet run or dotnet test'" Enter
+
+# Window 2: Git/Tools
+tmux new-window -t "$SESSION_NAME" -n "git"
+tmux send-keys -t "$SESSION_NAME:git" "clear && git status" Enter
+
+# Window 3: Database (if needed)
+tmux new-window -t "$SESSION_NAME" -n "db"
+tmux send-keys -t "$SESSION_NAME:db" "clear && echo 'Database tools - SQL Server, migrations, etc.'" Enter
+
+# Focus on development window and editor pane
+tmux select-window -t "$SESSION_NAME:dev"
+tmux select-pane -t "$SESSION_NAME:dev.1"
+
+echo "Session created! Layout:"
+echo "  Window 1 (dev): Neovim | Watch Build | Run/Test"
+echo "  Window 2 (git): Git operations"
+echo "  Window 3 (db):  Database tools"
+
+# Attach to session
+tmux attach-session -t "$SESSION_NAME"

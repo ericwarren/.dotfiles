@@ -83,6 +83,7 @@ keymap.set("n", "<leader>tv", "<cmd>ToggleTerm direction=vertical size=40<cr>")
 keymap.set("n", "<leader>w", "<cmd>w<cr>")
 keymap.set("n", "<leader>q", "<cmd>q<cr>")
 keymap.set("n", "<leader>x", "<cmd>x<cr>")
+keymap.set("i", "<C-s>", "<Esc><cmd>w<cr>", { desc = "Save and go to normal" })
 
 -- Clear search highlights
 keymap.set("n", "<leader>nh", "<cmd>nohl<cr>")
@@ -96,12 +97,6 @@ keymap.set("v", "<A-j>", ":m '>+1<CR>gv=gv")
 keymap.set("v", "<A-k>", ":m '<-2<CR>gv=gv")
 
 -- Language-specific keymaps
-
--- Rust specific
-keymap.set("n", "<leader>rr", "<cmd>!cargo run<cr>")
-keymap.set("n", "<leader>rb", "<cmd>!cargo build<cr>")
-keymap.set("n", "<leader>rt", "<cmd>!cargo test<cr>")
-keymap.set("n", "<leader>rc", "<cmd>!cargo check<cr>")
 
 -- C# specific
 keymap.set("n", "<leader>dr", "<cmd>!dotnet run<cr>")
