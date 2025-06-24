@@ -593,9 +593,6 @@ setup_lid_management(){
     systemctl --user daemon-reload
     systemctl --user enable lid-handler.service
     systemctl --user start lid-handler.service
-
-    # Restart logind to apply changes
-    sudo systemctl restart systemd-logind
 }
 
 show_completion_message() {
