@@ -18,8 +18,8 @@ c.url.searchengines = {
 }
 
 # Set start pages
-c.url.start_pages = ['https://duckduckgo.com']
-c.url.default_page = 'https://duckduckgo.com'
+c.url.start_pages = ['https://www.google.com']
+c.url.default_page = 'https://www.google.com'
 
 # Download directory
 c.downloads.location.directory = '~/Downloads'
@@ -88,8 +88,7 @@ config.bind('xt', 'config-cycle tabs.show always switching never')
 config.bind('xx', 'config-cycle statusbar.show always never;; config-cycle tabs.show always switching never')
 
 # Quick bookmark shortcuts
-config.bind(',g', 'open https://github.com')
-config.bind(',gh', 'open https://github.com/YOUR_USERNAME')  # Replace with your GitHub username
+config.bind(',gh', 'open https://github.com/ericwarren')  # Replace with your GitHub username
 config.bind(',so', 'open https://stackoverflow.com')
 config.bind(',mdn', 'open https://developer.mozilla.org')
 config.bind(',rust', 'open https://doc.rust-lang.org')

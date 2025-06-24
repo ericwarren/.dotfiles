@@ -114,6 +114,15 @@ require('lazy').setup(require('plugins'), {
   },
 })
 
+-- Add this AFTER your lazy.nvim setup
+vim.api.nvim_create_autocmd("VimEnter", {
+    callback = function()
+        vim.defer_fn(function()
+            require('dotnet')
+        end, 500)  -- Wait 500ms after Neovim fully loads
+    end,
+})
+
 -- Auto commands for better experience
 local augroup = vim.api.nvim_create_augroup
 local autocmd = vim.api.nvim_create_autocmd

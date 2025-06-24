@@ -1,5 +1,3 @@
-require('dotnet')
-
 local keymap = vim.keymap
 
 -- General keymaps
