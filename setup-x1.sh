@@ -393,6 +393,20 @@ install_dotnet() {
     print_success ".NET development tools installed"
 }
 
+install_rust() {
+    print_header "🦀 Installing Rust"
+
+    if command -v rustc &> /dev/null; then
+        print_success "Rust already installed: $(rustc --version)"
+        return
+    fi
+
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source "$HOME/.cargo/env"
+
+    print_success "Rust installed: $(rustc --version)"
+}
+
 install_nodejs() {
     print_header "📗 Installing Node.js via NVM"
 
@@ -638,6 +652,7 @@ main() {
     install_qutebrowser
     install_neovim
     install_dotnet
+    install_rust
     install_nodejs
     setup_python_tools
     setup_zsh

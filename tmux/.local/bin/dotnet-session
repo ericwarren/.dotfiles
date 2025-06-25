@@ -46,128 +46,56 @@ tmux new-session -d -s "$SESSION_NAME" -c "$PROJECT_DIR"
 # Window 1: Main Development (3-pane layout)
 tmux rename-window -t "$SESSION_NAME:1" "dev"
 
-# Create the 3-pane layout with absolute sizing for better control
-# Pane 1: Neovim (65% left)
-# Pane 2: Claude Code (75% of right side, top)
-# Pane 3: dotnet watch (25% of right side, bottom)
-
-# Create the 3-pane layout step by step with proper timing
+# Create the 3-pane layout
 echo "Creating 3-pane development layout..."
 
-# Start with just the main pane, then build carefully
-# Split 1: Create right side (start with conservative 40% to ensure it works)
-tmux split-window -h -p 40 -c "$PROJECT_DIR" -t "$SESSION_NAME:1"
+# First, split vertically to create left and right sections
+# -h means horizontal split (creates left|right panes)
+tmux split-window -h -p 30 -c "$PROJECT_DIR" -t "$SESSION_NAME:1"
 
-# Small delay to let tmux process
-sleep 0.5
+# Now we have:
+# Pane 1 (left, 65%): Will be Neovim
+# Pane 2 (right, 35%): Will be split again
 
-# Split 2: Split the right pane vertically (watch pane gets 30% of right side)
-tmux split-window -v -p 30 -c "$PROJECT_DIR" -t "$SESSION_NAME:1.2"
+# Split the right pane horizontally to create top and bottom sections
+# -v means vertical split (creates top/bottom panes)
+tmux split-window -v -p 25 -c "$PROJECT_DIR" -t "$SESSION_NAME:1.2"
 
-# Another small delay
-sleep 0.5
+# Now we should have:
+# Pane 1 (left, 65%): Neovim
+# Pane 2 (top-right, 75% of right): Claude Code
+# Pane 3 (bottom-right, 25% of right): dotnet watch
 
-# Now manually resize to get the proportions we actually want
-# Method: resize main pane to be much larger than right side
-tmux resize-pane -t "$SESSION_NAME:1.1" -R 15
-sleep 0.3
-
-# Verify we have 3 panes before continuing
+# Verify layout
 PANE_COUNT=$(tmux list-panes -t "$SESSION_NAME:1" | wc -l)
 if [ "$PANE_COUNT" -ne 3 ]; then
-    echo "❌ Layout creation failed. Got $PANE_COUNT panes instead of 3"
-    exit 1
+    echo "⚠️  Layout creation issue. Got $PANE_COUNT panes, expected 3"
 fi
 
-echo "✅ Layout created: 3 panes"
-
-# IMPORTANT: Set up panes one at a time with delays to prevent jumbling
-# Pane 1: Neovim (set title first, then content)
+# Set up panes one at a time
+# Pane 1: Neovim - DON'T START IT YET
 tmux select-pane -t "$SESSION_NAME:1.1" -T "neovim"
-sleep 0.2
-
-# Auto-start Neovim properly
-tmux send-keys -t "$SESSION_NAME:1.1" "clear" Enter
-sleep 0.2
 tmux send-keys -t "$SESSION_NAME:1.1" "cd '$PROJECT_DIR'" Enter
-sleep 0.3
-tmux send-keys -t "$SESSION_NAME:1.1" "nvim ." Enter
+# Leave nvim command ready but don't execute it
+tmux send-keys -t "$SESSION_NAME:1.1" "nvim ."
 
 # Pane 2: Claude Code
 tmux select-pane -t "$SESSION_NAME:1.2" -T "claude-code"
-sleep 0.2
 tmux send-keys -t "$SESSION_NAME:1.2" "clear" Enter
-sleep 0.2
-
-# Send shorter, pane-friendly content
-tmux send-keys -t "$SESSION_NAME:1.2" "cat << 'EOF'" Enter
-tmux send-keys -t "$SESSION_NAME:1.2" "🤖 Claude Code Ready" Enter
-tmux send-keys -t "$SESSION_NAME:1.2" "" Enter
-tmux send-keys -t "$SESSION_NAME:1.2" "Usage:" Enter
-tmux send-keys -t "$SESSION_NAME:1.2" "cc \"add tests\"" Enter
-tmux send-keys -t "$SESSION_NAME:1.2" "cc \"refactor X\"" Enter
-tmux send-keys -t "$SESSION_NAME:1.2" "cc \"fix errors\"" Enter
-tmux send-keys -t "$SESSION_NAME:1.2" "" Enter
-tmux send-keys -t "$SESSION_NAME:1.2" "Ready! 🚀" Enter
-tmux send-keys -t "$SESSION_NAME:1.2" "EOF" Enter
 
 # Pane 3: dotnet watch
 tmux select-pane -t "$SESSION_NAME:1.3" -T "dotnet-watch"
-sleep 0.2
 tmux send-keys -t "$SESSION_NAME:1.3" "clear" Enter
-sleep 0.2
-
-# Send shorter watch content
-tmux send-keys -t "$SESSION_NAME:1.3" "cat << 'EOF'" Enter
-tmux send-keys -t "$SESSION_NAME:1.3" "🔥 watch output" Enter
-tmux send-keys -t "$SESSION_NAME:1.3" "" Enter
-tmux send-keys -t "$SESSION_NAME:1.3" "Nvim keys:" Enter
-tmux send-keys -t "$SESSION_NAME:1.3" "<leader>dw" Enter
-tmux send-keys -t "$SESSION_NAME:1.3" "<leader>ds" Enter
-tmux send-keys -t "$SESSION_NAME:1.3" "<F8>" Enter
-tmux send-keys -t "$SESSION_NAME:1.3" "" Enter
-tmux send-keys -t "$SESSION_NAME:1.3" "Ready ⚡" Enter
-tmux send-keys -t "$SESSION_NAME:1.3" "EOF" Enter
 
 # Window 2: Git & Version Control
 tmux new-window -t "$SESSION_NAME" -n "git" -c "$PROJECT_DIR"
-tmux send-keys -t "$SESSION_NAME:git" "clear && git status" Enter
-tmux send-keys -t "$SESSION_NAME:git" "echo ''" Enter
-tmux send-keys -t "$SESSION_NAME:git" "echo '📚 Git shortcuts:'" Enter
-tmux send-keys -t "$SESSION_NAME:git" "echo '  git s          # status'" Enter
-tmux send-keys -t "$SESSION_NAME:git" "echo '  git lol        # pretty log'" Enter
-tmux send-keys -t "$SESSION_NAME:git" "echo '  git cm \"msg\"   # add all & commit'" Enter
-tmux send-keys -t "$SESSION_NAME:git" "echo '  git co -b feat # new branch'" Enter
-tmux send-keys -t "$SESSION_NAME:git" "echo '  git up         # pull rebase'" Enter
+tmux send-keys -t "$SESSION_NAME:git" "git status" Enter
 
 # Window 3: .NET Commands & Package Management
 tmux new-window -t "$SESSION_NAME" -n "dotnet" -c "$PROJECT_DIR"
-tmux send-keys -t "$SESSION_NAME:dotnet" "clear" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '🔷 .NET Project: $PROJECT_NAME'" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo ''" Enter
-
-# Show project info if available
-if [ -f "*.csproj" ] || [ -n "$(find . -maxdepth 1 -name "*.csproj" 2>/dev/null)" ]; then
-    tmux send-keys -t "$SESSION_NAME:dotnet" "dotnet --info | head -5" Enter
-    tmux send-keys -t "$SESSION_NAME:dotnet" "echo ''" Enter
-fi
-
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '⚡ Manual commands (Neovim uses popups):'" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '  dotnet run              # Run the application'" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '  dotnet build            # Build project'" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '  dotnet test             # Run tests'" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '  dotnet clean            # Clean artifacts'" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '  dotnet add package <pkg> # Add NuGet package'" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo ''" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '🗄️  Entity Framework:'" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '  dotnet ef migrations add <name>     # Add migration'" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '  dotnet ef database update           # Update database'" Enter
-tmux send-keys -t "$SESSION_NAME:dotnet" "echo '  dotnet ef migrations remove         # Remove last migration'" Enter
 
 # Window 4: General Terminal
 tmux new-window -t "$SESSION_NAME" -n "term" -c "$PROJECT_DIR"
-tmux send-keys -t "$SESSION_NAME:term" "clear" Enter
-tmux send-keys -t "$SESSION_NAME:term" "echo '💻 General terminal for misc tasks'" Enter
 
 # Configure session settings
 # Show pane titles
@@ -186,26 +114,7 @@ tmux set-option -t "$SESSION_NAME" window-status-current-style "bg=blue,fg=white
 tmux select-window -t "$SESSION_NAME:dev"
 tmux select-pane -t "$SESSION_NAME:dev.1"
 
-# Manual layout fine-tuning - apply the sizes we actually want
-echo "Fine-tuning layout proportions..."
-sleep 1
-
-# Try multiple approaches to get 65/35 split
-tmux resize-pane -t "$SESSION_NAME:1.1" -x 65%  2>/dev/null || \
-tmux resize-pane -t "$SESSION_NAME:1.1" -R 20   2>/dev/null || \
-tmux resize-pane -t "$SESSION_NAME:1.1" -R 15
-
-# Make watch pane smaller (8-10 lines is ideal)
-sleep 0.3
-tmux resize-pane -t "$SESSION_NAME:1.3" -y 8  2>/dev/null || \
-tmux resize-pane -t "$SESSION_NAME:1.3" -U 5  2>/dev/null
-
-# Final verification
-sleep 0.5
-echo "=== Final Layout ==="
-tmux list-panes -t "$SESSION_NAME:1" -F 'Pane #{pane_index}: #{pane_width}x#{pane_height}'
-
-# Session info
+# Session info - THIS IS WHAT THE USER ACTUALLY SEES
 echo ""
 echo "🎯 Session '$SESSION_NAME' created successfully!"
 echo ""
@@ -225,17 +134,17 @@ echo "  2. git:    Git operations and version control"
 echo "  3. dotnet: Manual .NET commands and EF tools"
 echo "  4. term:   General terminal for misc tasks"
 echo ""
-echo "🤖 Workflow:"
-echo "  • Edit/review code in Neovim (left pane)"
-echo "  • Send AI requests to Claude Code (top right)"
-echo "  • Monitor live changes with dotnet watch (bottom right)"
-echo "  • All other .NET commands use convenient popups"
+echo "🤖 Claude Code Usage:"
+echo "  cc \"add tests for UserService\""
+echo "  cc \"refactor this method\""
+echo "  cc \"fix the validation errors\""
 echo ""
 echo "⌨️  Key bindings in Neovim:"
 echo "  <leader>dw  - Start dotnet watch run (→ bottom right pane)"
 echo "  <leader>dr  - Run project (→ popup)"
 echo "  <leader>db  - Build project (→ popup)"
 echo "  <leader>dt  - Test project (→ popup)"
+echo "  <leader>ds  - Stop watch"
 echo "  <F8>        - Quick watch run"
 echo "  <F5>        - Quick run"
 echo ""
@@ -244,7 +153,9 @@ echo "  Ctrl+a + h/j/k/l  Navigate panes (vim-style)"
 echo "  Ctrl+a + 1/2/3/4  Switch windows"
 echo "  Ctrl+a + z        Zoom current pane"
 echo ""
-echo "🚀 Starting session..."
+echo "⚠️  NOTE: Press Enter in the left pane to start Neovim"
+echo ""
+echo "🚀 Attaching to session..."
 
 # Small delay to let user read the info
 sleep 2

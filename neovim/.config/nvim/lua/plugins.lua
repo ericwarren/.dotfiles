@@ -313,6 +313,63 @@ return require('lazy').setup({
     end
   },
 
+  -- Add this to your plugins.lua - just the basic plugin setup
+{
+  'akinsho/toggleterm.nvim',
+  version = "*",
+  config = function()
+    require("toggleterm").setup({
+      -- Size can be a number or function
+      size = function(term)
+        if term.direction == "horizontal" then
+          return 15
+        elseif term.direction == "vertical" then
+          return vim.o.columns * 0.4
+        end
+      end,
+
+      open_mapping = [[<c-\>]],
+      hide_numbers = true,
+      shade_terminals = true,
+      shading_factor = 2,
+      start_in_insert = true,
+      insert_mappings = true,
+      terminal_mappings = true,
+      persist_size = true,
+      persist_mode = true,
+      direction = 'float',
+      close_on_exit = true,
+      shell = vim.o.shell,
+
+      float_opts = {
+        border = 'curved',
+        width = 0.8,
+        height = 0.8,
+        winblend = 3,
+      },
+
+      winbar = {
+        enabled = true,
+        name_formatter = function(term)
+          return term.name
+        end
+      },
+    })
+
+    -- Basic navigation keymaps that apply to all terminals
+    vim.keymap.set("t", "<C-h>", [[<Cmd>wincmd h<CR>]])
+    vim.keymap.set("t", "<C-j>", [[<Cmd>wincmd j<CR>]])
+    vim.keymap.set("t", "<C-k>", [[<Cmd>wincmd k<CR>]])
+    vim.keymap.set("t", "<C-l>", [[<Cmd>wincmd l<CR>]])
+    vim.keymap.set("t", "<esc><esc>", [[<C-\><C-n>]])
+
+    -- Basic toggles
+    vim.keymap.set({"n", "t"}, "<leader>tf", "<cmd>ToggleTerm direction=float<CR>", {desc = "Toggle floating terminal"})
+    vim.keymap.set({"n", "t"}, "<leader>th", "<cmd>ToggleTerm direction=horizontal<CR>", {desc = "Toggle horizontal terminal"})
+    vim.keymap.set({"n", "t"}, "<leader>tv", "<cmd>ToggleTerm direction=vertical<CR>", {desc = "Toggle vertical terminal"})
+  end
+},
+
   -- Color highlighter - shows hex colors inline
   {
     'NvChad/nvim-colorizer.lua',
