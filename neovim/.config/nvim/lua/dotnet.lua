@@ -1,6 +1,6 @@
 -- ~/.config/nvim/lua/dotnet.lua
--- Enhanced .NET integration for Neovim with Zellij + popup support
--- Watch commands go to dedicated Zellij panes, others use popups
+-- Enhanced .NET integration for Neovim with tmux + popup support
+-- Watch commands go to dedicated tmux panes, others use popups
 
 local M = {}
 
@@ -9,9 +9,9 @@ if vim.g.dotnet_setup_done then
     return M
 end
 
--- Check if we're in a Zellij session
-local function in_zellij()
-    return vim.env.ZELLIJ ~= nil
+-- Check if we're in a tmux session
+local function in_tmux()
+    return vim.env.TMUX ~= nil
 end
 
 -- Find project directory
@@ -29,57 +29,27 @@ local function find_project_dir()
     return vim.fn.getcwd()
 end
 
--- Execute command in Zellij pane (for watch commands)
-local function run_in_zellij_pane(pane_name, cmd)
-    if not in_zellij() then
-        vim.notify("Not in Zellij session", vim.log.levels.WARN)
+-- Execute command in tmux pane (for watch commands)
+local function run_in_tmux_pane(pane_name, cmd)
+    if not in_tmux() then
+        vim.notify("Not in tmux session", vim.log.levels.WARN)
         return false
     end
 
     local project_dir = find_project_dir()
-
-    -- Navigate to the specific pane based on layout
-    -- From neovim pane: move right to claude-code, then down to dotnet-watch
+    
+    -- Get current tmux session name
+    local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
+    
+    -- Send command to the specific pane by name
     if pane_name == "dotnet-watch" then
-        -- Move right to the right column, then down to bottom pane
-        vim.fn.system('zellij action move-focus right')
-        vim.fn.system('zellij action move-focus down')
+        vim.fn.system(string.format("tmux send-keys -t '%s:dev.3' 'cd %s && %s' Enter", session_name, project_dir, cmd))
     elseif pane_name == "claude-code" then
-        -- Just move right to claude-code pane
-        vim.fn.system('zellij action move-focus right')
-    elseif pane_name == "test-watch" then
-        -- This requires switching to Tests tab first
-        vim.fn.system('zellij action go-to-tab-name "Tests"')
-        -- test-watch should be focused by default on Tests tab
+        vim.fn.system(string.format("tmux send-keys -t '%s:dev.2' 'cd %s && %s' Enter", session_name, project_dir, cmd))
     else
         -- Unknown pane name, return false
         return false
     end
-
-    -- Give a moment for focus to change
-    vim.fn.system('sleep 0.1')
-
-    -- Clear the pane and navigate to project directory
-    vim.fn.system('zellij action write-chars "clear"')
-    vim.fn.system('zellij action write 13')  -- Enter key (carriage return)
-
-    -- Wait a moment for clear to execute
-    vim.fn.system('sleep 0.1')
-
-    -- Navigate to project directory
-    local cd_cmd = string.format('cd "%s"', project_dir)
-    vim.fn.system(string.format('zellij action write-chars "%s"', cd_cmd))
-    vim.fn.system('zellij action write 13')  -- Enter key
-
-    -- Wait a moment for cd to execute
-    vim.fn.system('sleep 0.1')
-
-    -- Send the actual command
-    vim.fn.system(string.format('zellij action write-chars "%s"', cmd))
-    vim.fn.system('zellij action write 13')  -- Enter key
-
-    -- Return focus to neovim pane
-    vim.fn.system('zellij action move-focus left')
 
     return true
 end
@@ -97,14 +67,15 @@ local function run_in_popup(cmd, title)
     )
 
     -- Use a floating terminal for the popup
-    if in_zellij() then
-        -- In Zellij, use a floating pane
-        local zellij_cmd = string.format(
-            'zellij action new-pane --floating --name "%s" -- bash -c \'%s\'',
-            title,
-            popup_cmd
+    if in_tmux() then
+        -- In tmux, create a new popup window
+        local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
+        local tmux_cmd = string.format(
+            "tmux display-popup -E -t '%s' 'bash -c \"%s\"'",
+            session_name,
+            popup_cmd:gsub('"', '\\"')
         )
-        vim.fn.system(zellij_cmd)
+        vim.fn.system(tmux_cmd)
     else
         -- Fallback to ToggleTerm floating
         local Terminal = require('toggleterm.terminal').Terminal
@@ -214,47 +185,38 @@ M.restore = function()
     run_in_popup("dotnet restore", "dotnet restore")
 end
 
--- Watch commands - these go to Zellij panes
+-- Watch commands - these go to tmux panes
 M.watch_run = function()
-    if in_zellij() then
-        -- Use the exact pane name from dotnet-dev.kdl
-        local success = run_in_zellij_pane("dotnet-watch", "dotnet watch run")
+    if in_tmux() then
+        -- Send to the dotnet-watch pane (pane 3 in dev window)
+        local success = run_in_tmux_pane("dotnet-watch", "dotnet watch run")
         if success then
             vim.notify("Started dotnet watch run in dotnet-watch pane", vim.log.levels.INFO)
         else
-            -- Fallback: create a new floating pane
-            local project_dir = find_project_dir()
-            local cmd = string.format(
-                'zellij action new-pane --floating --name "dotnet-watch" -- bash -c "cd %s && dotnet watch run"',
-                project_dir
-            )
-            vim.fn.system(cmd)
-            vim.notify("Started dotnet watch run in new floating pane", vim.log.levels.INFO)
+            -- Fallback: use popup
+            run_in_popup("dotnet watch run", "dotnet watch run")
+            vim.notify("Started dotnet watch run in popup", vim.log.levels.INFO)
         end
     else
-        -- Fallback for non-Zellij environments
+        -- Fallback for non-tmux environments
         run_with_output("dotnet watch run", "Watch Run")
     end
 end
 
 M.watch_test = function()
-    if in_zellij() then
+    if in_tmux() then
         -- Try test-watch pane first (from Tests tab), then dotnet-watch pane
-        local success = run_in_zellij_pane("test-watch", "dotnet watch test")
+        local success = run_in_tmux_pane("test-watch", "dotnet watch test")
         if not success then
-            success = run_in_zellij_pane("dotnet-watch", "dotnet watch test")
+            success = run_in_tmux_pane("dotnet-watch", "dotnet watch test")
         end
 
         if success then
             vim.notify("Started dotnet watch test", vim.log.levels.INFO)
         else
-            local project_dir = find_project_dir()
-            local cmd = string.format(
-                'zellij action new-pane --floating --name "test-watch" -- bash -c "cd %s && dotnet watch test"',
-                project_dir
-            )
-            vim.fn.system(cmd)
-            vim.notify("Started dotnet watch test in new floating pane", vim.log.levels.INFO)
+            -- Fallback: use popup
+            run_in_popup("dotnet watch test", "dotnet watch test")
+            vim.notify("Started dotnet watch test in popup", vim.log.levels.INFO)
         end
     else
         run_with_output("dotnet watch test", "Watch Test")
@@ -262,22 +224,13 @@ M.watch_test = function()
 end
 
 M.stop_watch = function()
-    if in_zellij() then
-        -- Stop watch in dotnet-watch pane (main Development tab)
-        vim.fn.system('zellij action move-focus right')  -- to claude-code
-        vim.fn.system('zellij action move-focus down')   -- to dotnet-watch
-        vim.fn.system('zellij action write 3')  -- Ctrl+C
+    if in_tmux() then
+        -- Send Ctrl+C to dotnet-watch pane
+        local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
+        vim.fn.system(string.format("tmux send-keys -t '%s:dev.3' C-c", session_name))
         vim.notify("Stopped watch in dotnet-watch pane", vim.log.levels.INFO)
-        
-        -- Also try to stop in test-watch pane (Tests tab)
-        vim.fn.system('zellij action go-to-tab-name "Tests"')
-        vim.fn.system('zellij action write 3')  -- Ctrl+C
-        vim.notify("Stopped watch in test-watch pane", vim.log.levels.INFO)
-        
-        -- Return to Development tab
-        vim.fn.system('zellij action go-to-tab-name "Development"')
     else
-        vim.notify("Stop watch only works in Zellij", vim.log.levels.WARN)
+        vim.notify("Stop watch only works in tmux", vim.log.levels.WARN)
     end
 end
 
@@ -323,71 +276,68 @@ M.ef_list_migrations = function()
     run_in_popup("dotnet ef migrations list", "List Migrations")
 end
 
--- Zellij-specific commands
+-- tmux-specific commands
 M.focus_watch_pane = function()
-    if in_zellij() then
-        -- Navigate to dotnet-watch pane: right then down
-        vim.fn.system('zellij action move-focus right')
-        vim.fn.system('zellij action move-focus down')
+    if in_tmux() then
+        -- Navigate to dotnet-watch pane (pane 3)
+        local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
+        vim.fn.system(string.format("tmux select-pane -t '%s:dev.3'", session_name))
         vim.notify("Focused dotnet-watch pane", vim.log.levels.INFO)
     end
 end
 
 M.focus_claude_pane = function()
-    if in_zellij() then
-        -- Navigate to claude-code pane: just right
-        vim.fn.system('zellij action move-focus right')
+    if in_tmux() then
+        -- Navigate to claude-code pane (pane 2)
+        local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
+        vim.fn.system(string.format("tmux select-pane -t '%s:dev.2'", session_name))
         vim.notify("Focused claude-code pane", vim.log.levels.INFO)
     end
 end
 
 M.focus_neovim_pane = function()
-    if in_zellij() then
-        -- Navigate back to neovim pane: left (assuming we're in right column)
-        vim.fn.system('zellij action move-focus left')
+    if in_tmux() then
+        -- Navigate back to neovim pane (pane 1)
+        local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
+        vim.fn.system(string.format("tmux select-pane -t '%s:dev.1'", session_name))
         vim.notify("Focused neovim pane", vim.log.levels.INFO)
     end
 end
 
 M.new_floating_terminal = function()
-    if in_zellij() then
-        vim.fn.system('zellij action new-pane --floating --name "dev-temp"')
+    if in_tmux() then
+        local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
+        vim.fn.system(string.format("tmux display-popup -t '%s'", session_name))
     end
 end
 
 -- Debug function to show current layout
 M.list_panes = function()
-    if in_zellij() then
-        vim.notify("Current Zellij layout:", vim.log.levels.INFO)
-        local layout = vim.fn.system('zellij action dump-layout')
-        -- Display layout in a popup
-        run_with_output('zellij action dump-layout', 'Zellij Layout')
+    if in_tmux() then
+        vim.notify("Current tmux panes:", vim.log.levels.INFO)
+        run_with_output('tmux list-panes -s', 'tmux Panes')
     else
-        vim.notify("Not in Zellij session", vim.log.levels.WARN)
+        vim.notify("Not in tmux session", vim.log.levels.WARN)
     end
 end
 
 -- Function to manually send command to current pane
 M.send_to_current_pane = function(cmd)
-    if in_zellij() then
-        vim.fn.system(string.format('zellij action write-chars "%s"', cmd))
-        vim.fn.system('zellij action write-chars "\\n"')
+    if in_tmux() then
+        vim.fn.system(string.format('tmux send-keys "%s" Enter', cmd))
         vim.notify("Sent to current pane: " .. cmd, vim.log.levels.INFO)
     else
-        vim.notify("Not in Zellij session", vim.log.levels.WARN)
+        vim.notify("Not in tmux session", vim.log.levels.WARN)
     end
 end
 
 -- Simple watch command that uses current pane
 M.watch_run_here = function()
-    if in_zellij() then
+    if in_tmux() then
         local project_dir = find_project_dir()
-        vim.fn.system('zellij action write-chars "clear"')
-        vim.fn.system('zellij action write 13')  -- Enter key
-        vim.fn.system(string.format('zellij action write-chars "cd \\"%s\\""', project_dir))
-        vim.fn.system('zellij action write 13')  -- Enter key
-        vim.fn.system('zellij action write-chars "dotnet watch run"')
-        vim.fn.system('zellij action write 13')  -- Enter key
+        vim.fn.system('tmux send-keys "clear" Enter')
+        vim.fn.system(string.format('tmux send-keys "cd \\"%s\\"" Enter', project_dir))
+        vim.fn.system('tmux send-keys "dotnet watch run" Enter')
         vim.notify("Started dotnet watch run in current pane", vim.log.levels.INFO)
     else
         run_with_output("dotnet watch run", "Watch Run")
@@ -431,10 +381,10 @@ M.setup = function()
     vim.keymap.set("n", "<leader>dc", M.clean, { desc = "Clean .NET project (popup)" })
     vim.keymap.set("n", "<leader>dR", M.restore, { desc = "Restore packages (popup)" })
 
-    -- Watch commands (go to Zellij panes if available)
-    vim.keymap.set("n", "<leader>dw", M.watch_run, { desc = "Start dotnet watch run (Zellij pane)" })
-    vim.keymap.set("n", "<leader>dW", M.watch_test, { desc = "Start dotnet watch test (Zellij pane)" })
-    vim.keymap.set("n", "<leader>ds", M.stop_watch, { desc = "Stop watch (Zellij)" })
+    -- Watch commands (go to tmux panes if available)
+    vim.keymap.set("n", "<leader>dw", M.watch_run, { desc = "Start dotnet watch run (tmux pane)" })
+    vim.keymap.set("n", "<leader>dW", M.watch_test, { desc = "Start dotnet watch test (tmux pane)" })
+    vim.keymap.set("n", "<leader>ds", M.stop_watch, { desc = "Stop watch (tmux)" })
 
     -- Package management (popups)
     vim.keymap.set("n", "<leader>dpa", M.add_package, { desc = "Add NuGet package (popup)" })
@@ -447,15 +397,15 @@ M.setup = function()
     vim.keymap.set("n", "<leader>der", M.ef_remove_migration, { desc = "Remove last EF migration (popup)" })
     vim.keymap.set("n", "<leader>del", M.ef_list_migrations, { desc = "List EF migrations (popup)" })
 
-    -- Zellij integration
-    if in_zellij() then
+    -- tmux integration
+    if in_tmux() then
         vim.keymap.set("n", "<leader>dfw", M.focus_watch_pane, { desc = "Focus dotnet-watch pane" })
         vim.keymap.set("n", "<leader>dfc", M.focus_claude_pane, { desc = "Focus claude-code pane" })
         vim.keymap.set("n", "<leader>dfn", M.focus_neovim_pane, { desc = "Focus neovim pane" })
-        vim.keymap.set("n", "<leader>dft", M.new_floating_terminal, { desc = "New floating terminal (Zellij)" })
+        vim.keymap.set("n", "<leader>dft", M.new_floating_terminal, { desc = "New floating terminal (tmux)" })
 
         -- Debug commands
-        vim.keymap.set("n", "<leader>dlp", M.list_panes, { desc = "List Zellij panes (debug)" })
+        vim.keymap.set("n", "<leader>dlp", M.list_panes, { desc = "List tmux panes (debug)" })
         vim.keymap.set("n", "<leader>dwh", M.watch_run_here, { desc = "Watch run in current pane" })
         vim.keymap.set("n", "<leader>dsc", function()
             vim.ui.input({prompt = "Command: "}, function(cmd)
@@ -473,13 +423,13 @@ M.setup = function()
     vim.keymap.set("n", "<F5>", M.run, { desc = "Quick run (popup)" })
     vim.keymap.set("n", "<F6>", M.build, { desc = "Quick build (popup)" })
     vim.keymap.set("n", "<F7>", M.test, { desc = "Quick test (popup)" })
-    vim.keymap.set("n", "<F8>", M.watch_run, { desc = "Quick watch (Zellij pane)" })
+    vim.keymap.set("n", "<F8>", M.watch_run, { desc = "Quick watch (tmux pane)" })
 
     -- Show environment info
-    if in_zellij() then
-        vim.notify("🚀 .NET + Zellij integration loaded", vim.log.levels.INFO)
+    if in_tmux() then
+        vim.notify("🚀 .NET + tmux integration loaded", vim.log.levels.INFO)
     else
-        vim.notify("🔧 .NET integration loaded (no Zellij)", vim.log.levels.INFO)
+        vim.notify("🔧 .NET integration loaded (no tmux)", vim.log.levels.INFO)
     end
 
     vim.g.dotnet_setup_done = true

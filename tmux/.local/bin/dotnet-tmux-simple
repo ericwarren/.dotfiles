@@ -1,0 +1,33 @@
+#!/bin/bash
+# Simple tmux-only .NET development session launcher
+# Usage: dotnet-tmux-simple [project-name]
+
+PROJECT_NAME=${1:-dotnet-dev}
+
+# Check if session already exists
+if tmux has-session -t "$PROJECT_NAME" 2>/dev/null; then
+    echo "Session $PROJECT_NAME already exists. Attaching..."
+    tmux attach-session -t "$PROJECT_NAME"
+    exit 0
+fi
+
+echo "Creating new .NET development session: $PROJECT_NAME"
+
+# Try the "tiled" approach - create 3 panes and let tmux arrange them
+tmux new-session -d -s "$PROJECT_NAME" -c "$PWD" \; \
+  split-window -c "$PWD" \; \
+  split-window -c "$PWD" \; \
+  select-layout main-vertical \; \
+  resize-pane -t 0 -x 60% \; \
+  select-pane -t 1 \; \
+  resize-pane -y 70% \; \
+  select-pane -t 0 \; \
+  rename-window "dev"
+
+echo "Layout created successfully!"
+echo "  - Top left: Neovim"
+echo "  - Bottom left: Small terminal"  
+echo "  - Right: Claude Code"
+
+# Attach to the session
+tmux attach-session -t "$PROJECT_NAME"

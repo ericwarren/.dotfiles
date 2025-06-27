@@ -32,6 +32,7 @@ export COLORTERM=truecolor
 export PATH="$HOME/.cargo/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
+export PATH="$HOME/.local/share/gem/ruby/3.3.0/bin:$PATH"
 
 # Load NVM
 export NVM_DIR="$HOME/.nvm"

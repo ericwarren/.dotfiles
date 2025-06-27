@@ -65,7 +65,8 @@ install_system_packages() {
         fonts-powerline xclip xsel \
         wl-clipboard tlp tlp-rdw \
         ubuntu-restricted-extras \
-        gnome-tweaks minicom
+        gnome-tweaks minicom \
+        ruby-full
 
     print_success "Essential packages installed"
 }
@@ -474,6 +475,20 @@ install_zellij() {
     print_success "Zellij installed"
 }
 
+install_tmuxinator() {
+    print_header "🖥️ Installing tmuxinator"
+
+    if command -v tmuxinator &> /dev/null; then
+        print_success "tmuxinator already installed: $(tmuxinator version)"
+        return
+    fi
+
+    echo "Installing tmuxinator via gem..."
+    gem install tmuxinator
+
+    print_success "tmuxinator installed: $(tmuxinator version)"
+}
+
 install_nodejs() {
     print_header "📗 Installing Node.js via NVM"
 
@@ -731,6 +746,7 @@ main() {
     install_dotnet
     install_docker
     install_zellij
+    install_tmuxinator
     install_nodejs
     setup_python_tools
     setup_zsh

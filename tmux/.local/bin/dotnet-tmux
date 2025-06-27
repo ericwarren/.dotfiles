@@ -1,0 +1,16 @@
+#!/bin/bash
+# Simple tmuxinator-based .NET development session launcher
+# Usage: dotnet-tmux [project-name]
+
+PROJECT_NAME=${1:-dotnet-dev}
+
+# Check if session already exists
+if tmux has-session -t "$PROJECT_NAME" 2>/dev/null; then
+    echo "Session $PROJECT_NAME already exists. Attaching..."
+    tmux attach-session -t "$PROJECT_NAME"
+    exit 0
+fi
+
+# Start new session with tmuxinator
+echo "Creating new .NET development session: $PROJECT_NAME"
+tmuxinator start dotnet-dev --name "$PROJECT_NAME"
