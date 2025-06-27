@@ -1,0 +1,45 @@
+#!/bin/bash
+# ~/.local/bin/dotnet-zellij-correct
+# Correct syntax for Zellij 0.42.2
+# Usage: dotnet-zellij-correct [project-name] [project-path]
+
+PROJECT_NAME=${1:-$(basename "$PWD")}
+PROJECT_PATH=${2:-"$PWD"}
+SESSION_NAME="dotnet-$PROJECT_NAME"
+
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+echo -e "${BLUE}🚀 Zellij .NET Development (v0.42.2)${NC}"
+echo "Project: $PROJECT_NAME"
+echo "Path: $PROJECT_PATH"
+echo "Session: $SESSION_NAME"
+
+# Check if layout file exists
+LAYOUT_FILE="$HOME/.config/zellij/layouts/dotnet-dev.kdl"
+if [ ! -f "$LAYOUT_FILE" ]; then
+    echo -e "${RED}❌ Layout file missing: $LAYOUT_FILE${NC}"
+    echo -e "${YELLOW}Create it first!${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Found layout file${NC}"
+
+# Check for existing session
+if zellij list-sessions 2>/dev/null | grep -q "^$SESSION_NAME "; then
+    echo -e "${YELLOW}📋 Session exists, attaching...${NC}"
+    cd "$PROJECT_PATH"
+    exec zellij attach "$SESSION_NAME"
+fi
+
+# Create new session with correct syntax for v0.42.2
+echo -e "${GREEN}🆕 Creating new session...${NC}"
+cd "$PROJECT_PATH"
+
+# The correct syntax for Zellij 0.41+ is:
+# Use --new-session-with-layout instead of --layout --session
+exec zellij --new-session-with-layout dotnet-dev --session "$SESSION_NAME"

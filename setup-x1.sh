@@ -393,7 +393,7 @@ install_dotnet() {
     print_success ".NET development tools installed"
 }
 
-install_rust() {
+install_zellij() {
     print_header "🦀 Installing Rust"
 
     if command -v rustc &> /dev/null; then
@@ -405,6 +405,10 @@ install_rust() {
     source "$HOME/.cargo/env"
 
     print_success "Rust installed: $(rustc --version)"
+
+    cargo install --locked zellij
+
+    print_success "Zellij installed"
 }
 
 install_nodejs() {
@@ -542,7 +546,7 @@ setup_dotfiles() {
 
     # Check for dotfile packages
     available_packages=()
-    for pkg in git zsh neovim tmux hyprland qutebrowser; do
+    for pkg in git zsh neovim tmux hyprland qutebrowser zellij; do
         if [ -d "$script_dir/$pkg" ]; then
             available_packages+=("$pkg")
         fi
@@ -652,7 +656,7 @@ main() {
     install_qutebrowser
     install_neovim
     install_dotnet
-    install_rust
+    install_zellij
     install_nodejs
     setup_python_tools
     setup_zsh

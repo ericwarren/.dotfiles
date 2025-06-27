@@ -1,0 +1,151 @@
+// ~/.config/zellij/config.kdl
+// Optimized Zellij configuration for .NET development (v0.42.2 compatible)
+
+// Use compact UI for more screen space
+simplified_ui false
+pane_frames true
+
+// Theme - matches your existing tokyonight setup
+theme "gruvbox-dark"
+
+// Default layout for .NET development
+default_layout "dotnet-dev"
+
+// Shell configuration
+default_shell "/usr/bin/zsh"
+scrollback_editor "nvim"
+
+// Clipboard integration for Wayland
+copy_command "wl-copy"
+copy_on_select true
+
+// Performance settings
+scrollback_lines_to_serialize 10000
+
+// Session behavior
+on_force_close "detach"
+mirror_session false
+default_mode "normal"
+
+// Key bindings optimized for development
+keybinds clear-defaults=true {
+    normal {
+        // Session management
+        bind "Ctrl o" { SwitchToMode "Session"; }
+        bind "Ctrl q" { Quit; }
+
+        // Pane navigation (vim-style)
+        bind "Alt h" { MoveFocus "Left"; }
+        bind "Alt l" { MoveFocus "Right"; }
+        bind "Alt j" { MoveFocus "Down"; }
+        bind "Alt k" { MoveFocus "Up"; }
+
+        // Pane creation
+        bind "Alt |" { NewPane "Right"; }
+        bind "Alt -" { NewPane "Down"; }
+        bind "Alt x" { CloseFocus; }
+
+        // Tab management
+        bind "Alt t" { NewTab; }
+        bind "Alt w" { CloseTab; }
+        bind "Alt 1" { GoToTab 1; }
+        bind "Alt 2" { GoToTab 2; }
+        bind "Alt 3" { GoToTab 3; }
+        bind "Alt 4" { GoToTab 4; }
+        bind "Alt 5" { GoToTab 5; }
+
+        // Resize mode
+        bind "Alt r" { SwitchToMode "Resize"; }
+
+        // Floating panes (great for quick commands)
+        bind "Alt f" { ToggleFloatingPanes; }
+        bind "Alt F" { NewPane "Right"; ToggleFloatingPanes; }
+
+        // Full screen
+        bind "F11" { TogglePaneFrames; }
+        bind "Alt z" { ToggleFocusFullscreen; }
+
+        // Search in scrollback
+        bind "Ctrl f" { SwitchToMode "Search"; }
+
+        // Useful development shortcuts
+        bind "Alt c" { WriteChars "cc "; }  // Quick Claude Code prefix
+        bind "Alt d" { WriteChars "dotnet "; }  // Quick dotnet prefix
+        bind "Alt g" { WriteChars "git "; }  // Quick git prefix
+    }
+
+    resize {
+        bind "Esc" { SwitchToMode "Normal"; }
+        bind "h" "Left" { Resize "Increase Left"; }
+        bind "j" "Down" { Resize "Increase Down"; }
+        bind "k" "Up" { Resize "Increase Up"; }
+        bind "l" "Right" { Resize "Increase Right"; }
+        bind "H" { Resize "Decrease Left"; }
+        bind "J" { Resize "Decrease Down"; }
+        bind "K" { Resize "Decrease Up"; }
+        bind "L" { Resize "Decrease Right"; }
+        bind "=" "+" { Resize "Increase"; }
+        bind "-" { Resize "Decrease"; }
+    }
+
+    session {
+        bind "Esc" { SwitchToMode "Normal"; }
+        bind "d" { Detach; }
+        bind "w" {
+            LaunchOrFocusPlugin "session-manager" {
+                floating true
+                move_to_focused_tab true
+            };
+        }
+    }
+
+    search {
+        bind "Esc" { SwitchToMode "Normal"; }
+        bind "n" { Search "down"; }
+        bind "N" { Search "up"; }
+        bind "c" { SearchToggleOption "CaseSensitivity"; }
+        bind "w" { SearchToggleOption "Wrap"; }
+        bind "o" { SearchToggleOption "WholeWord"; }
+    }
+}
+
+// Plugin configuration (updated syntax for v0.42.2)
+plugins {
+    tab-bar { path "tab-bar"; }
+    status-bar { path "status-bar"; }
+    strider { path "strider"; }
+    compact-bar { path "compact-bar"; }
+    session-manager { path "session-manager"; }
+    plugin-manager { path "plugin-manager"; }
+}
+
+// Theme definitions (you can customize these)
+themes {
+    gruvbox-dark {
+        fg 213 196 161
+        bg 40 40 40
+        black 60 56 54
+        red 204 36 29
+        green 152 151 26
+        yellow 215 153 33
+        blue 69 133 136
+        magenta 177 98 134
+        cyan 104 157 106
+        white 251 241 199
+        orange 214 93 14
+    }
+
+    tokyonight-dark {
+        fg 169 177 214
+        bg 26 27 38
+        black 56 62 90
+        red 247 118 142
+        green 158 206 106
+        yellow 224 175 104
+        blue 122 162 247
+        magenta 187 154 247
+        cyan 42 195 222
+        white 192 202 245
+        orange 255 158 100
+    }
+}
