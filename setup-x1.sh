@@ -393,6 +393,69 @@ install_dotnet() {
     print_success ".NET development tools installed"
 }
 
+install_docker() {
+    print_header "🐳 Installing Docker (without Docker Desktop)"
+
+    if command -v docker &> /dev/null; then
+        print_success "Docker already installed: $(docker --version)"
+        return
+    fi
+
+    # Remove any old Docker installations
+    echo "Removing old Docker installations..."
+    sudo apt remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
+
+    # Install prerequisites
+    echo "Installing Docker prerequisites..."
+    sudo apt update
+    sudo apt install -y \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release
+
+    # Add Docker's official GPG key
+    echo "Adding Docker's GPG key..."
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+    # Set up Docker repository
+    echo "Setting up Docker repository..."
+    echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+        $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    # Install Docker Engine
+    echo "Installing Docker Engine..."
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+    # Add user to docker group
+    echo "Adding $USER to docker group..."
+    sudo usermod -aG docker $USER
+
+    # Enable and start Docker service
+    echo "Enabling Docker service..."
+    sudo systemctl enable docker
+    sudo systemctl start docker
+
+    # Install Docker Compose (standalone)
+    echo "Installing Docker Compose..."
+    DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+
+    # Verify installation
+    DOCKER_VERSION=$(docker --version)
+    COMPOSE_VERSION=$(docker-compose --version)
+    
+    print_success "Docker installed: $DOCKER_VERSION"
+    print_success "Docker Compose installed: $COMPOSE_VERSION"
+    
+    print_warning "You'll need to logout/login for docker group membership to take effect"
+    print_success "Docker installation complete (without Docker Desktop)"
+}
+
 install_zellij() {
     print_header "🦀 Installing Rust"
 
@@ -622,6 +685,7 @@ show_completion_message() {
     echo "  • Essential development tools and packages"
     echo "  • Neovim $(nvim --version | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
+    echo "  • Docker Engine $(docker --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • Node.js $(node --version 2>/dev/null || echo 'latest') via NVM"
     echo "  • pfSense virtualization environment (QEMU/KVM)"
     echo "  • Python development tools (isolated environment)"
@@ -656,6 +720,7 @@ main() {
     install_qutebrowser
     install_neovim
     install_dotnet
+    install_docker
     install_zellij
     install_nodejs
     setup_python_tools
