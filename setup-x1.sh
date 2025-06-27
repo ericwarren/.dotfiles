@@ -683,13 +683,18 @@ show_completion_message() {
 
     echo "📋 What was installed:"
     echo "  • Essential development tools and packages"
+    echo "  • Google Chrome $(google-chrome --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+\.\d+' || echo 'latest')"
+    echo "  • Alacritty terminal emulator with Cascadia Code Nerd Font"
+    echo "  • Qutebrowser $(qutebrowser --version 2>/dev/null | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • Neovim $(nvim --version | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
     echo "  • Docker Engine $(docker --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
+    echo "  • Rust $(rustc --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' || echo 'latest') with Zellij"
     echo "  • Node.js $(node --version 2>/dev/null || echo 'latest') via NVM"
-    echo "  • pfSense virtualization environment (QEMU/KVM)"
     echo "  • Python development tools (isolated environment)"
-    echo "  • Zsh with Oh My Zsh"
+    echo "  • Zsh with Oh My Zsh and Starship prompt"
+    echo "  • Hyprland wayland compositor with accessories"
+    echo "  • pfSense virtualization environment (QEMU/KVM)"
 
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
@@ -698,6 +703,10 @@ show_completion_message() {
     echo -e "\n💡 Useful commands:"
     echo "  • nvm list         - Show installed Node.js versions"
     echo "  • dotnet --info    - Show .NET information"
+    echo "  • docker --version - Check Docker version"
+    echo "  • cargo --version  - Check Rust/Cargo version"
+    echo "  • zellij --version - Check Zellij version"
+    echo "  • starship --version - Check Starship version"
     echo "  • nvim --version   - Check Neovim version"
 
     if [ "$SHELL" != "$(which zsh)" ]; then
