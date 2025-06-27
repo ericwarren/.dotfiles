@@ -132,8 +132,9 @@
         "tooltip-format": "{ifname} via {gwaddr} \uf0ac",
         "format-linked": "{ifname} (No IP) \uf127",
         "format-disconnected": "Disconnected \uf127",
-        "format-alt": "{ifname}: {ipaddr}/{cidr}"
+        "on-click": "~/.local/bin/wifi-manager menu"
     },
+
 
     "pulseaudio": {
         "format": "{volume}% {icon} {format_source}",
