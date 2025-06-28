@@ -1,6 +1,7 @@
 -- ~/.config/nvim/lua/dotnet.lua
 -- Enhanced .NET integration for Neovim with tmux + popup support
 -- Watch commands go to dedicated tmux panes, others use popups
+-- CORRECTED FOR 1-BASED PANE INDEXING
 
 local M = {}
 
@@ -37,11 +38,15 @@ local function run_in_tmux_pane(pane_name, cmd)
     end
 
     local project_dir = find_project_dir()
-    
+
     -- Get current tmux session name
     local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
-    
+
     -- Send command to the specific pane by name
+    -- ACTUAL LAYOUT FROM dotnet-tmux:
+    -- Pane 1: Neovim (left)
+    -- Pane 2: Lower-right 
+    -- Pane 3: Upper-right
     if pane_name == "dotnet-watch" then
         vim.fn.system(string.format("tmux send-keys -t '%s:dev.3' 'cd %s && %s' Enter", session_name, project_dir, cmd))
     elseif pane_name == "claude-code" then
@@ -188,10 +193,10 @@ end
 -- Watch commands - these go to tmux panes
 M.watch_run = function()
     if in_tmux() then
-        -- Send to the dotnet-watch pane (pane 3 in dev window)
+        -- Send to the dotnet-watch pane (pane 3 in dev window - upper right)
         local success = run_in_tmux_pane("dotnet-watch", "dotnet watch run")
         if success then
-            vim.notify("Started dotnet watch run in dotnet-watch pane", vim.log.levels.INFO)
+            vim.notify("Started dotnet watch run in terminal pane", vim.log.levels.INFO)
         else
             -- Fallback: use popup
             run_in_popup("dotnet watch run", "dotnet watch run")
@@ -225,10 +230,10 @@ end
 
 M.stop_watch = function()
     if in_tmux() then
-        -- Send Ctrl+C to dotnet-watch pane
+        -- Send Ctrl+C to dotnet-watch pane (pane 3)
         local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
         vim.fn.system(string.format("tmux send-keys -t '%s:dev.3' C-c", session_name))
-        vim.notify("Stopped watch in dotnet-watch pane", vim.log.levels.INFO)
+        vim.notify("Stopped watch in terminal pane", vim.log.levels.INFO)
     else
         vim.notify("Stop watch only works in tmux", vim.log.levels.WARN)
     end
@@ -276,19 +281,19 @@ M.ef_list_migrations = function()
     run_in_popup("dotnet ef migrations list", "List Migrations")
 end
 
--- tmux-specific commands
+-- tmux-specific commands (CORRECTED FOR 1-BASED INDEXING)
 M.focus_watch_pane = function()
     if in_tmux() then
-        -- Navigate to dotnet-watch pane (pane 3)
+        -- Navigate to terminal pane (pane 3 - upper right)
         local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
         vim.fn.system(string.format("tmux select-pane -t '%s:dev.3'", session_name))
-        vim.notify("Focused dotnet-watch pane", vim.log.levels.INFO)
+        vim.notify("Focused terminal pane", vim.log.levels.INFO)
     end
 end
 
 M.focus_claude_pane = function()
     if in_tmux() then
-        -- Navigate to claude-code pane (pane 2)
+        -- Navigate to claude-code pane (pane 2 - lower right)
         local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
         vim.fn.system(string.format("tmux select-pane -t '%s:dev.2'", session_name))
         vim.notify("Focused claude-code pane", vim.log.levels.INFO)
@@ -297,7 +302,7 @@ end
 
 M.focus_neovim_pane = function()
     if in_tmux() then
-        -- Navigate back to neovim pane (pane 1)
+        -- Navigate back to neovim pane (pane 1 - left)
         local session_name = vim.fn.system("tmux display-message -p '#S'"):gsub("\n", "")
         vim.fn.system(string.format("tmux select-pane -t '%s:dev.1'", session_name))
         vim.notify("Focused neovim pane", vim.log.levels.INFO)
@@ -399,7 +404,7 @@ M.setup = function()
 
     -- tmux integration
     if in_tmux() then
-        vim.keymap.set("n", "<leader>dfw", M.focus_watch_pane, { desc = "Focus dotnet-watch pane" })
+        vim.keymap.set("n", "<leader>dfw", M.focus_watch_pane, { desc = "Focus terminal pane" })
         vim.keymap.set("n", "<leader>dfc", M.focus_claude_pane, { desc = "Focus claude-code pane" })
         vim.keymap.set("n", "<leader>dfn", M.focus_neovim_pane, { desc = "Focus neovim pane" })
         vim.keymap.set("n", "<leader>dft", M.new_floating_terminal, { desc = "New floating terminal (tmux)" })
@@ -427,7 +432,7 @@ M.setup = function()
 
     -- Show environment info
     if in_tmux() then
-        vim.notify("🚀 .NET + tmux integration loaded", vim.log.levels.INFO)
+        vim.notify("🚀 .NET + tmux integration loaded (1-based panes)", vim.log.levels.INFO)
     else
         vim.notify("🔧 .NET integration loaded (no tmux)", vim.log.levels.INFO)
     end
