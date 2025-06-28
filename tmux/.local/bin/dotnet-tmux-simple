@@ -13,21 +13,17 @@ fi
 
 echo "Creating new .NET development session: $PROJECT_NAME"
 
-# Try the "tiled" approach - create 3 panes and let tmux arrange them
+# Create the correct 3-pane layout: left column split + right column
 tmux new-session -d -s "$PROJECT_NAME" -c "$PWD" \; \
-  split-window -c "$PWD" \; \
-  split-window -c "$PWD" \; \
-  select-layout main-vertical \; \
-  resize-pane -t 0 -x 60% \; \
-  select-pane -t 1 \; \
-  resize-pane -y 70% \; \
+  split-window -h -p 40 -c "$PWD" \; \
+  split-window -v -p 30 -c "$PWD" -t "$PROJECT_NAME:1.2" \; \
   select-pane -t 0 \; \
   rename-window "dev"
 
 echo "Layout created successfully!"
-echo "  - Top left: Neovim"
-echo "  - Bottom left: Small terminal"  
-echo "  - Right: Claude Code"
+echo "  - Left (60%): Neovim"
+echo "  - Top right (70%): Claude Code"  
+echo "  - Bottom right (30%): Terminal"
 
 # Attach to the session
 tmux attach-session -t "$PROJECT_NAME"

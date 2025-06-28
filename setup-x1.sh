@@ -457,7 +457,7 @@ install_docker() {
     print_success "Docker installation complete (without Docker Desktop)"
 }
 
-install_zellij() {
+install_rust() {
     print_header "🦀 Installing Rust"
 
     if command -v rustc &> /dev/null; then
@@ -469,25 +469,8 @@ install_zellij() {
     source "$HOME/.cargo/env"
 
     print_success "Rust installed: $(rustc --version)"
-
-    cargo install --locked zellij
-
-    print_success "Zellij installed"
 }
 
-install_tmuxinator() {
-    print_header "🖥️ Installing tmuxinator"
-
-    if command -v tmuxinator &> /dev/null; then
-        print_success "tmuxinator already installed: $(tmuxinator version)"
-        return
-    fi
-
-    echo "Installing tmuxinator via gem..."
-    gem install tmuxinator
-
-    print_success "tmuxinator installed: $(tmuxinator version)"
-}
 
 install_nodejs() {
     print_header "📗 Installing Node.js via NVM"
@@ -624,7 +607,7 @@ setup_dotfiles() {
 
     # Check for dotfile packages
     available_packages=()
-    for pkg in git zsh neovim tmux hyprland qutebrowser zellij; do
+    for pkg in git zsh neovim tmux hyprland qutebrowser; do
         if [ -d "$script_dir/$pkg" ]; then
             available_packages+=("$pkg")
         fi
@@ -704,7 +687,7 @@ show_completion_message() {
     echo "  • Neovim $(nvim --version | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
     echo "  • Docker Engine $(docker --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
-    echo "  • Rust $(rustc --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' || echo 'latest') with Zellij"
+    echo "  • Rust $(rustc --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • Node.js $(node --version 2>/dev/null || echo 'latest') via NVM"
     echo "  • Python development tools (isolated environment)"
     echo "  • Zsh with Oh My Zsh and Starship prompt"
@@ -720,7 +703,6 @@ show_completion_message() {
     echo "  • dotnet --info    - Show .NET information"
     echo "  • docker --version - Check Docker version"
     echo "  • cargo --version  - Check Rust/Cargo version"
-    echo "  • zellij --version - Check Zellij version"
     echo "  • starship --version - Check Starship version"
     echo "  • nvim --version   - Check Neovim version"
 
@@ -745,8 +727,7 @@ main() {
     install_neovim
     install_dotnet
     install_docker
-    install_zellij
-    install_tmuxinator
+    install_rust
     install_nodejs
     setup_python_tools
     setup_zsh
