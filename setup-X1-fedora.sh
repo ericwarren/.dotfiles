@@ -230,7 +230,7 @@ install_qemu() {
     echo "Installing QEMU and virtualization packages..."
     sudo dnf install -y \
         qemu qemu-kvm qemu-system-x86 qemu-img \
-        libvirt libvirt-daemon-system libvirt-daemon-kvm \
+        libvirt libvirt-daemon libvirt-daemon-kvm \
         virt-manager virt-install virt-viewer \
         bridge-utils edk2-ovmf
 
