@@ -61,7 +61,7 @@ install_system_packages() {
         ca-certificates gnupg \
         unzip stow \
         python3 python3-pip python3-virtualenv \
-        tmux tree htop neofetch \
+        tmux tree htop \
         fontawesome-fonts powerline-fonts \
         wl-clipboard
 
