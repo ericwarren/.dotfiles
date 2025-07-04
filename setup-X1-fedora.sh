@@ -258,6 +258,7 @@ install_pfsense_qemu() {
 
     # Create directory for VM images
     mkdir -p ~/VMs/pfsense
+    ORIGINAL_DIR=$(pwd)
     cd ~/VMs/pfsense
 
     # Download pfSense ISO (latest community edition)
@@ -332,12 +333,16 @@ EOF
     chmod +x start_pfsense.sh
     print_success "pfSense VM setup complete"
 
+    # Change back to original directory
+    cd "$ORIGINAL_DIR"
+
     echo -e "\n${GREEN}pfSense Installation Instructions:${NC}"
-    echo "1. Run installation: ./start_pfsense.sh install"
-    echo "2. Follow pfSense setup wizard in the VM"
-    echo "3. After installation: ./start_pfsense.sh run"
-    echo "4. Access web interface: https://localhost:8443"
-    echo "5. Default credentials: admin/pfsense"
+    echo "1. cd ~/VMs/pfsense/"
+    echo "2. Run installation: ./start_pfsense.sh install"
+    echo "3. Follow pfSense setup wizard in the VM"
+    echo "4. After installation: ./start_pfsense.sh run"
+    echo "5. Access web interface: https://localhost:8443"
+    echo "6. Default credentials: admin/pfsense"
     echo -e "\n${YELLOW}Note: You may need to logout/login for group membership to take effect${NC}"
 }
 
