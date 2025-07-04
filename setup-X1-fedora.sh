@@ -112,8 +112,15 @@ install_chrome() {
     fi
 
     echo "Installing Google Chrome repository..."
-    sudo dnf install -y fedora-workstation-repositories
-    sudo dnf config-manager --set-enabled google-chrome
+    sudo rpm --import https://dl.google.com/linux/linux_signing_key.pub
+    sudo tee /etc/yum.repos.d/google-chrome.repo << 'EOF'
+[google-chrome]
+name=google-chrome
+baseurl=https://dl.google.com/linux/chrome/rpm/stable/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://dl.google.com/linux/linux_signing_key.pub
+EOF
 
     sudo dnf install -y google-chrome-stable
 
