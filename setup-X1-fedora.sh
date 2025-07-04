@@ -53,7 +53,7 @@ install_system_packages() {
     sudo dnf update -y
 
     echo "Installing development tools group..."
-    sudo dnf groupinstall -y "Development Tools"
+    sudo dnf group install -y "Development Tools"
 
     echo "Installing essential packages..."
     sudo dnf install -y \
