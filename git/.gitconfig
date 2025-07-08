@@ -1,6 +1,8 @@
 [user]
   name = Eric Warren
-  email = eric.warren7@gmail.com
+
+[include]
+  path = ~/.gitconfig_local
 
 [core]
   excludefiles = ~/.gitignore_global
