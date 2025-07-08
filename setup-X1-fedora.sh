@@ -63,7 +63,7 @@ install_system_packages() {
         python3 python3-pip python3-virtualenv \
         tmux tree htop \
         fontawesome-fonts powerline-fonts \
-        wl-clipboard
+        wl-clipboard xclip
 
     # Install RPM Fusion repositories for additional codecs
     echo "Installing RPM Fusion repositories..."
@@ -160,8 +160,6 @@ install_dotnet() {
     fi
 
     echo "Installing Microsoft package repository..."
-    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-    sudo wget -O /etc/yum.repos.d/microsoft-prod.repo https://packages.microsoft.com/config/fedora/40/prod.repo
 
     sudo dnf install -y dotnet-sdk-8.0
 
@@ -210,10 +208,10 @@ install_docker() {
     # Verify installation
     DOCKER_VERSION=$(docker --version)
     COMPOSE_VERSION=$(docker-compose --version)
-    
+
     print_success "Docker installed: $DOCKER_VERSION"
     print_success "Docker Compose installed: $COMPOSE_VERSION"
-    
+
     print_warning "You'll need to logout/login for docker group membership to take effect"
     print_success "Docker installation complete"
 }
@@ -245,10 +243,10 @@ install_qemu() {
 
     # Verify installation
     QEMU_VERSION=$(qemu-system-x86_64 --version | head -n1)
-    
+
     print_success "QEMU installed: $QEMU_VERSION"
     print_success "Virtualization tools installed"
-    
+
     print_warning "You'll need to logout/login for libvirt group membership to take effect"
     print_success "QEMU installation complete"
 }
