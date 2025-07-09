@@ -32,7 +32,7 @@ print_header() {
 # Confirm installation
 confirm_installation() {
     print_header "Minimal Arch Installation"
-    print_status "Installing only Hyprland and foot with essential dependencies"
+    print_status "Installing Hyprland, foot, and Google Chrome with essential dependencies"
     echo
     read -p "Continue? (y/n): " -n 1 -r
     echo
@@ -97,11 +97,42 @@ install_cascadia_font() {
     fi
 }
 
+# Install Google Chrome
+install_chrome() {
+    print_status "Installing Google Chrome..."
+    
+    # Check if yay is installed, if not install it
+    if ! command -v yay &> /dev/null; then
+        print_status "Installing yay AUR helper..."
+        if ! sudo pacman -S --noconfirm --needed base-devel git; then
+            print_error "Failed to install base-devel and git"
+            exit 1
+        fi
+        
+        # Install yay
+        cd /tmp
+        git clone https://aur.archlinux.org/yay.git
+        cd yay
+        makepkg -si --noconfirm
+        cd ~
+        rm -rf /tmp/yay
+        print_success "Yay installed"
+    fi
+    
+    # Install Google Chrome using yay
+    if yay -S --noconfirm google-chrome; then
+        print_success "Google Chrome installed"
+    else
+        print_error "Failed to install Google Chrome"
+        exit 1
+    fi
+}
+
 
 # Print completion message
 print_completion() {
     print_header "Installation complete!"
-    print_success "Hyprland and foot are now installed."
+    print_success "Hyprland, foot, and Google Chrome are now installed."
     echo
     print_status "To start Hyprland, type 'Hyprland' in the TTY"
     print_status "Next: Set up config files using stow"
@@ -115,6 +146,7 @@ main() {
     install_foot
     install_stow
     install_cascadia_font
+    install_chrome
     print_completion
 }
 
