@@ -1,8 +1,6 @@
 [user]
   name = Eric Warren
 
-[include]
-  path = ~/.gitconfig_local
 
 [core]
   excludefiles = ~/.gitignore_global
