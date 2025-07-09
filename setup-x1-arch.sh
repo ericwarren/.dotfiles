@@ -208,12 +208,51 @@ install_claude_code() {
             CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "installed")
             print_success "Claude Code version: $CLAUDE_VERSION"
         else
-            print_success "Claude Code installed (may need to restart terminal)"
+            print_success "Claude Code installed (restart terminal to use)"
         fi
     else
         print_error "Failed to install Claude Code"
         set -u  # Re-enable strict mode
         exit 1
+    fi
+    
+    # Re-enable strict mode
+    set -u
+}
+
+# Verify NVM installations
+verify_nvm_installations() {
+    print_status "Verifying Node.js and Claude Code installations..."
+    
+    # Temporarily disable strict mode for NVM usage
+    set +u
+    
+    # Source NVM
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    
+    # Check Node.js
+    if command -v node &> /dev/null; then
+        NODE_VERSION=$(node --version)
+        print_success "Node.js is available: $NODE_VERSION"
+    else
+        print_error "Node.js not found in current session"
+    fi
+    
+    # Check NPM
+    if command -v npm &> /dev/null; then
+        NPM_VERSION=$(npm --version)
+        print_success "NPM is available: $NPM_VERSION"
+    else
+        print_error "NPM not found in current session"
+    fi
+    
+    # Check Claude Code
+    if command -v claude &> /dev/null; then
+        CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "installed")
+        print_success "Claude Code is available: $CLAUDE_VERSION"
+    else
+        print_error "Claude Code not found in current session"
     fi
     
     # Re-enable strict mode
@@ -228,6 +267,14 @@ print_completion() {
     echo
     print_status "To start Hyprland, type 'Hyprland' in the TTY"
     print_status "Next: Set up config files using stow"
+    echo
+    print_header "Important: Node.js and Claude Code Setup"
+    print_status "To use Node.js and Claude Code, you need to source NVM:"
+    echo "  source ~/.nvm/nvm.sh"
+    echo "  source ~/.nvm/bash_completion"
+    echo
+    print_status "Or restart your terminal to automatically load NVM"
+    print_status "Then verify with: node --version && claude --version"
 }
 
 # Main function
@@ -242,6 +289,7 @@ main() {
     install_nvm
     install_node
     install_claude_code
+    verify_nvm_installations
     print_completion
 }
 
