@@ -97,6 +97,7 @@ install_cascadia_font() {
     fi
 }
 
+
 # Print completion message
 print_completion() {
     print_header "Installation complete!"
