@@ -3,35 +3,107 @@ set -euo pipefail
 
 # Minimal Arch Package Installation - Only Hyprland + Wezterm
 
-echo "=== Minimal Arch Installation ==="
-echo "Installing only Hyprland and wezterm with essential dependencies"
-echo
-read -p "Continue? (y/n): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 1
-fi
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Print functions
+print_status() {
+    echo -e "${BLUE}[*]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[!]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[✓]${NC} $1"
+}
+
+print_header() {
+    echo
+    echo -e "${BLUE}=== $1 ===${NC}"
+    echo
+}
+
+# Confirm installation
+confirm_installation() {
+    print_header "Minimal Arch Installation"
+    print_status "Installing only Hyprland and wezterm with essential dependencies"
+    echo
+    read -p "Continue? (y/n): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_error "Installation cancelled"
+        exit 1
+    fi
+}
 
 # Update system
-echo "Updating system..."
-sudo pacman -Syu --noconfirm
+update_system() {
+    print_status "Updating system..."
+    if sudo pacman -Syu --noconfirm; then
+        print_success "System updated"
+    else
+        print_error "Failed to update system"
+        exit 1
+    fi
+}
 
 # Install Hyprland
-echo "Installing Hyprland..."
-sudo pacman -S --noconfirm hyprland
+install_hyprland() {
+    print_status "Installing Hyprland..."
+    if sudo pacman -S --noconfirm hyprland; then
+        print_success "Hyprland installed"
+    else
+        print_error "Failed to install Hyprland"
+        exit 1
+    fi
+}
 
 # Install wezterm
-echo "Installing wezterm..."
-sudo pacman -S --noconfirm wezterm
+install_wezterm() {
+    print_status "Installing wezterm..."
+    if sudo pacman -S --noconfirm wezterm; then
+        print_success "Wezterm installed"
+    else
+        print_error "Failed to install wezterm"
+        exit 1
+    fi
+}
 
-# Install GNU Stow for dotfile management
-echo "Installing GNU Stow..."
-sudo pacman -S --noconfirm stow
+# Install GNU Stow
+install_stow() {
+    print_status "Installing GNU Stow for dotfile management..."
+    if sudo pacman -S --noconfirm stow; then
+        print_success "GNU Stow installed"
+    else
+        print_error "Failed to install GNU Stow"
+        exit 1
+    fi
+}
 
-echo
-echo "=== Installation complete! ==="
-echo
-echo "Hyprland and wezterm are now installed."
-echo "To start Hyprland, type 'Hyprland' in the TTY"
-echo
-echo "Next: Set up config files using stow"
+# Print completion message
+print_completion() {
+    print_header "Installation complete!"
+    print_success "Hyprland and wezterm are now installed."
+    echo
+    print_status "To start Hyprland, type 'Hyprland' in the TTY"
+    print_status "Next: Set up config files using stow"
+}
+
+# Main function
+main() {
+    confirm_installation
+    update_system
+    install_hyprland
+    install_wezterm
+    install_stow
+    print_completion
+}
+
+# Run main function
+main "$@"
