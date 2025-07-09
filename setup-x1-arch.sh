@@ -132,6 +132,9 @@ install_chrome() {
 install_nvm() {
     print_status "Installing NVM (Node Version Manager)..."
     
+    # Temporarily disable strict mode for NVM installation
+    set +u
+    
     # Download and install NVM
     if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash; then
         print_success "NVM installed"
@@ -144,13 +147,20 @@ install_nvm() {
         print_success "NVM sourced for current session"
     else
         print_error "Failed to install NVM"
+        set -u  # Re-enable strict mode
         exit 1
     fi
+    
+    # Re-enable strict mode
+    set -u
 }
 
 # Install Node.js using NVM
 install_node() {
     print_status "Installing Node.js LTS using NVM..."
+    
+    # Temporarily disable strict mode for NVM usage
+    set +u
     
     # Ensure NVM is available
     export NVM_DIR="$HOME/.nvm"
@@ -170,13 +180,20 @@ install_node() {
         print_success "NPM version: $NPM_VERSION"
     else
         print_error "Failed to install Node.js"
+        set -u  # Re-enable strict mode
         exit 1
     fi
+    
+    # Re-enable strict mode
+    set -u
 }
 
 # Install Claude Code
 install_claude_code() {
     print_status "Installing Claude Code..."
+    
+    # Temporarily disable strict mode for NVM usage
+    set +u
     
     # Ensure NVM is available
     export NVM_DIR="$HOME/.nvm"
@@ -195,8 +212,12 @@ install_claude_code() {
         fi
     else
         print_error "Failed to install Claude Code"
+        set -u  # Re-enable strict mode
         exit 1
     fi
+    
+    # Re-enable strict mode
+    set -u
 }
 
 
