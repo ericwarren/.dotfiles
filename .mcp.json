@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "context7": {
+      "transport": [
+        {
+          "type": "sse"
+        }
+      ],
+      "url": "https://mcp.context7.com/sse"
+    }
+  }
+}
