@@ -220,6 +220,35 @@ install_claude_code() {
     set -u
 }
 
+# Install system utilities
+install_system_utilities() {
+    print_status "Installing system utilities (SSH, TLP power management)..."
+    
+    # Install SSH utilities
+    if sudo pacman -S --noconfirm openssh; then
+        print_success "OpenSSH installed"
+    else
+        print_error "Failed to install OpenSSH"
+        exit 1
+    fi
+    
+    # Install TLP for power management
+    if sudo pacman -S --noconfirm tlp tlp-rdw powertop; then
+        print_success "TLP power management installed"
+        
+        # Enable TLP service
+        if sudo systemctl enable tlp; then
+            print_success "TLP service enabled"
+        else
+            print_error "Failed to enable TLP service"
+            exit 1
+        fi
+    else
+        print_error "Failed to install TLP"
+        exit 1
+    fi
+}
+
 # Verify NVM installations
 verify_nvm_installations() {
     print_status "Verifying Node.js and Claude Code installations..."
@@ -286,6 +315,7 @@ main() {
     install_stow
     install_cascadia_font
     install_chrome
+    install_system_utilities
     install_nvm
     install_node
     install_claude_code

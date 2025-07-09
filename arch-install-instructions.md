@@ -345,11 +345,6 @@ sudo pacman -S sof-firmware alsa-firmware alsa-ucm-conf \
     libva-intel-driver intel-gpu-tools
 ```
 
-### Power Management (optional but recommended):
-```bash
-sudo pacman -S tlp tlp-rdw powertop
-sudo systemctl enable tlp
-```
 
 ## Troubleshooting
 
