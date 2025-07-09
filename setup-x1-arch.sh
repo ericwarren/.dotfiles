@@ -32,7 +32,7 @@ print_header() {
 # Confirm installation
 confirm_installation() {
     print_header "Minimal Arch Installation"
-    print_status "Installing Hyprland, foot, and Google Chrome with essential dependencies"
+    print_status "Installing Hyprland, foot, Google Chrome, Node.js, and Claude Code with essential dependencies"
     echo
     read -p "Continue? (y/n): " -n 1 -r
     echo
@@ -128,11 +128,82 @@ install_chrome() {
     fi
 }
 
+# Install NVM (Node Version Manager)
+install_nvm() {
+    print_status "Installing NVM (Node Version Manager)..."
+    
+    # Download and install NVM
+    if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash; then
+        print_success "NVM installed"
+        
+        # Source NVM to make it available in current session
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+        
+        print_success "NVM sourced for current session"
+    else
+        print_error "Failed to install NVM"
+        exit 1
+    fi
+}
+
+# Install Node.js using NVM
+install_node() {
+    print_status "Installing Node.js LTS using NVM..."
+    
+    # Ensure NVM is available
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    
+    # Install latest LTS version of Node.js
+    if nvm install --lts; then
+        print_success "Node.js LTS installed"
+        
+        # Use the LTS version
+        nvm use --lts
+        
+        # Verify installation
+        NODE_VERSION=$(node --version)
+        NPM_VERSION=$(npm --version)
+        print_success "Node.js version: $NODE_VERSION"
+        print_success "NPM version: $NPM_VERSION"
+    else
+        print_error "Failed to install Node.js"
+        exit 1
+    fi
+}
+
+# Install Claude Code
+install_claude_code() {
+    print_status "Installing Claude Code..."
+    
+    # Ensure NVM is available
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    
+    # Install Claude Code globally
+    if npm install -g @anthropic-ai/claude-code; then
+        print_success "Claude Code installed"
+        
+        # Verify installation
+        if command -v claude &> /dev/null; then
+            CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "installed")
+            print_success "Claude Code version: $CLAUDE_VERSION"
+        else
+            print_success "Claude Code installed (may need to restart terminal)"
+        fi
+    else
+        print_error "Failed to install Claude Code"
+        exit 1
+    fi
+}
+
 
 # Print completion message
 print_completion() {
     print_header "Installation complete!"
-    print_success "Hyprland, foot, and Google Chrome are now installed."
+    print_success "Hyprland, foot, Google Chrome, Node.js, and Claude Code are now installed."
     echo
     print_status "To start Hyprland, type 'Hyprland' in the TTY"
     print_status "Next: Set up config files using stow"
@@ -147,6 +218,9 @@ main() {
     install_stow
     install_cascadia_font
     install_chrome
+    install_nvm
+    install_node
+    install_claude_code
     print_completion
 }
 
