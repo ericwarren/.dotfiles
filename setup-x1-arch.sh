@@ -232,9 +232,9 @@ install_system_utilities() {
         exit 1
     fi
     
-    # Install TLP for power management
-    if sudo pacman -S --noconfirm tlp tlp-rdw powertop; then
-        print_success "TLP power management installed"
+    # Install TLP for power management and clipboard utilities
+    if sudo pacman -S --noconfirm tlp tlp-rdw powertop wl-clipboard; then
+        print_success "TLP power management and clipboard utilities installed"
         
         # Enable TLP service
         if sudo systemctl enable tlp; then
