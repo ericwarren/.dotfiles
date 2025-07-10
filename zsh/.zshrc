@@ -10,14 +10,14 @@ plugins=(
     git
     zsh-autosuggestions
     zsh-syntax-highlighting
-    docker
-    node
-    python
-    dotnet
-    rust
 )
 
 source $ZSH/oh-my-zsh.sh
+
+# History settings
+HISTSIZE=10000
+SAVEHIST=10000
+setopt SHARE_HISTORY
 
 # Custom exports
 export EDITOR='nvim'
@@ -25,14 +25,11 @@ export VISUAL='nvim'
 export DEFAULT_USER="$USER"
 
 # Enable true color support for various applications
-export TERM=xterm-256color
+export TERM=alacritty
 export COLORTERM=truecolor
 
 # Development paths
-export PATH="$HOME/.cargo/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
-export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
-export PATH="$HOME/.local/share/gem/ruby/3.3.0/bin:$PATH"
+export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.local/share/nvim/mason/bin:$PATH"
 
 # Load NVM
 export NVM_DIR="$HOME/.nvm"

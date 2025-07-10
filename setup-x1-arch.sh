@@ -32,7 +32,7 @@ print_header() {
 # Confirm installation
 confirm_installation() {
     print_header "Minimal Arch Installation"
-    print_status "Installing Hyprland, alacritty, Google Chrome, Node.js, and Claude Code with essential dependencies"
+    print_status "Installing Hyprland, alacritty, zsh, oh-my-zsh, starship, Google Chrome, Node.js, and Claude Code with essential dependencies"
     echo
     read -p "Continue? (y/n): " -n 1 -r
     echo
@@ -86,13 +86,52 @@ install_stow() {
     fi
 }
 
-# Install Cascadia Code Nerd Font
-install_cascadia_font() {
-    print_status "Installing Cascadia Code Nerd Font..."
-    if sudo pacman -S --noconfirm ttf-cascadia-code-nerd; then
-        print_success "Cascadia Code Nerd Font installed"
+# Install zsh and shell tools
+install_zsh() {
+    print_status "Installing zsh shell..."
+    if sudo pacman -S --noconfirm zsh; then
+        print_success "Zsh installed"
     else
-        print_error "Failed to install Cascadia Code Nerd Font"
+        print_error "Failed to install zsh"
+        exit 1
+    fi
+}
+
+# Install oh-my-zsh
+install_oh_my_zsh() {
+    print_status "Installing oh-my-zsh..."
+    if sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended; then
+        print_success "Oh-my-zsh installed"
+        
+        # Install zsh plugins
+        print_status "Installing zsh plugins..."
+        git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+        git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+        print_success "Zsh plugins installed"
+    else
+        print_error "Failed to install oh-my-zsh"
+        exit 1
+    fi
+}
+
+# Install starship prompt
+install_starship() {
+    print_status "Installing starship prompt..."
+    if curl -sS https://starship.rs/install.sh | sh -s -- --yes; then
+        print_success "Starship installed"
+    else
+        print_error "Failed to install starship"
+        exit 1
+    fi
+}
+
+# Install fonts
+install_fonts() {
+    print_status "Installing fonts..."
+    if sudo pacman -S --noconfirm ttf-cascadia-code-nerd noto-fonts-emoji noto-fonts-extra; then
+        print_success "Cascadia Code Nerd Font and Noto fonts installed"
+    else
+        print_error "Failed to install fonts"
         exit 1
     fi
 }
@@ -346,10 +385,14 @@ verify_nvm_installations() {
 # Print completion message
 print_completion() {
     print_header "Installation complete!"
-    print_success "Hyprland, alacritty, Google Chrome, Node.js, and Claude Code are now installed."
+    print_success "Hyprland, alacritty, zsh, oh-my-zsh, starship, Google Chrome, Node.js, and Claude Code are now installed."
     echo
     print_status "To start Hyprland, type 'Hyprland' in the TTY"
     print_status "Next: Set up config files using stow"
+    echo
+    print_header "Important: Shell Setup"
+    print_status "To set zsh as default shell: chsh -s \$(which zsh)"
+    print_status "Then stow zsh config: stow zsh"
     echo
     print_header "Important: Node.js and Claude Code Setup"
     print_status "To use Node.js and Claude Code, you need to source NVM:"
@@ -367,7 +410,10 @@ main() {
     install_hyprland
     install_alacritty
     install_stow
-    install_cascadia_font
+    install_zsh
+    install_oh_my_zsh
+    install_starship
+    install_fonts
     install_chrome
     install_lightdm
     install_hyprland_ecosystem
