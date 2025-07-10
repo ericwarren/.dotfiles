@@ -4,3 +4,19 @@ nvim/.config/nvim/plugged/*
 # Runtime and cache directories
 **/.local/share/
 **/.local/state/
+
+# Source code directories (only dotfiles, not entire source repos)
+wezterm/target/
+wezterm/.git/
+wezterm/Cargo.lock
+
+# Build artifacts and compiled code
+**/target/
+**/.cargo/
+**/.git/
+
+# Temporary and backup files
+**/*~
+**/*.bak
+**/.*swp
+**/.*swo
