@@ -1,0 +1,37 @@
+#!/bin/bash
+# Toggle between different display configurations
+
+# Get current display configuration
+EXTERNAL=$(hyprctl monitors -j | jq -r '.[] | select(.name != "eDP-1") | .name' | head -n1)
+INTERNAL="eDP-1"
+
+if [ -z "$EXTERNAL" ]; then
+    notify-send "Display" "No external display detected"
+    exit 0
+fi
+
+# Check if external is active
+EXTERNAL_ACTIVE=$(hyprctl monitors -j | jq -r '.[] | select(.name == "'$EXTERNAL'") | .disabled')
+
+if [ "$EXTERNAL_ACTIVE" == "false" ]; then
+    # External is active, switch to internal only
+    hyprctl keyword monitor "$EXTERNAL,disable"
+    hyprctl keyword monitor "$INTERNAL,preferred,auto,1"
+    notify-send "Display" "Switched to internal display only"
+else
+    # External is disabled, switch to external only or mirror
+    # Check if internal is active
+    INTERNAL_ACTIVE=$(hyprctl monitors -j | jq -r '.[] | select(.name == "'$INTERNAL'") | .disabled')
+    
+    if [ "$INTERNAL_ACTIVE" == "false" ]; then
+        # Internal active, switch to external only
+        hyprctl keyword monitor "$INTERNAL,disable"
+        hyprctl keyword monitor "$EXTERNAL,preferred,auto,1"
+        notify-send "Display" "Switched to external display only"
+    else
+        # Both disabled, enable mirror mode
+        hyprctl keyword monitor "$INTERNAL,preferred,auto,1"
+        hyprctl keyword monitor "$EXTERNAL,preferred,auto,1,mirror,$INTERNAL"
+        notify-send "Display" "Switched to mirror mode"
+    fi
+fi
