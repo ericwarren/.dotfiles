@@ -49,4 +49,5 @@
 
 ;; Example packages (uncomment to use):
 ;; (package! evil-tutor)  ; Learn vim/evil
-;; (package! org-modern)  ; Modern org-mode UI
+(package! org-modern :recipe (:host github :repo "minad/org-modern"))
+(package! doom-themes)
