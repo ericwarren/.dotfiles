@@ -103,18 +103,35 @@ install_zsh() {
 # Install oh-my-zsh
 install_oh_my_zsh() {
     print_status "Installing oh-my-zsh..."
-    if sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended; then
-        print_success "Oh-my-zsh installed"
-
-        # Install zsh plugins
-        print_status "Installing zsh plugins..."
-        git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-        git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-        print_success "Zsh plugins installed"
+    
+    # Check if oh-my-zsh is already installed
+    if [ -d "$HOME/.oh-my-zsh" ]; then
+        print_success "Oh-my-zsh is already installed"
     else
-        print_error "Failed to install oh-my-zsh"
-        exit 1
+        if sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended; then
+            print_success "Oh-my-zsh installed"
+        else
+            print_error "Failed to install oh-my-zsh"
+            exit 1
+        fi
     fi
+
+    # Install zsh plugins (skip if already present)
+    print_status "Installing zsh plugins..."
+    
+    if [ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]; then
+        git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    else
+        print_success "zsh-autosuggestions already installed"
+    fi
+    
+    if [ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" ]; then
+        git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+    else
+        print_success "zsh-syntax-highlighting already installed"
+    fi
+    
+    print_success "Zsh plugins setup complete"
 }
 
 # Install starship prompt
@@ -181,18 +198,21 @@ install_doom_emacs() {
         [ -d "$HOME/.emacs.d" ] && mv "$HOME/.emacs.d" "$HOME/.emacs.d.bak.$(date +%Y%m%d%H%M%S)"
     fi
 
-    # Clone Doom Emacs
+    # Clone Doom Emacs to ~/.config/emacs
     print_status "Cloning Doom Emacs repository..."
-    if git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.dotfiles/emacs/.config/emacs; then
+    if git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.config/emacs; then
         print_success "Doom Emacs repository cloned"
 
+        # Set DOOMDIR to use our stowed config location
+        export DOOMDIR="$HOME/.config/doom"
+        
         # Run Doom install script
         print_status "Running Doom install script (this may take a while)..."
-        if ~/.dotfiles/emacs/.config/emacs/bin/doom install --yes; then
+        if DOOMDIR="$HOME/.config/doom" ~/.config/emacs/bin/doom install; then
             print_success "Doom Emacs installed successfully"
 
             # Add doom to PATH in current session
-            export PATH="$HOME/.dotfiles/emacs/.config/emacs/bin:$PATH"
+            export PATH="$HOME/.config/emacs/bin:$PATH"
             print_success "Doom binary added to PATH for current session"
         else
             print_error "Failed to run Doom install script"
@@ -492,9 +512,11 @@ print_completion() {
     print_status "Then verify with: node --version && claude --version"
     echo
     print_header "Important: Doom Emacs Setup"
-    print_status "Add Doom to your PATH by adding this to your shell config:"
+    print_status "Add these to your shell config (.zshrc, .bashrc, etc.):"
     echo "  export PATH=\"\$HOME/.config/emacs/bin:\$PATH\""
+    echo "  export DOOMDIR=\"\$HOME/.config/doom\""
     echo
+    print_status "Your Doom configuration is tracked in ~/.config/doom/"
     print_status "After stowing emacs config, run: doom sync"
     print_status "This will install all Doom packages and compile configuration"
 }

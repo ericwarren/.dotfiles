@@ -29,7 +29,10 @@ export TERM=alacritty
 export COLORTERM=truecolor
 
 # Development paths
-export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.local/share/nvim/mason/bin:$PATH"
+export PATH="$HOME/.config/emacs/bin:$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.local/share/nvim/mason/bin:$PATH"
+
+# Doom Emacs configuration directory
+export DOOMDIR="$HOME/.config/doom"
 
 # Load NVM
 export NVM_DIR="$HOME/.nvm"
