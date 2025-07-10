@@ -383,6 +383,25 @@ install_hyprland_ecosystem() {
     fi
 }
 
+# Configure PAM for hyprlock
+configure_hyprlock_pam() {
+    print_status "Configuring PAM for hyprlock..."
+    
+    # Create simplified PAM configuration for hyprlock
+    sudo tee /etc/pam.d/hyprlock > /dev/null <<'EOF'
+#%PAM-1.0
+auth required pam_unix.so
+account required pam_unix.so
+EOF
+    
+    if [ $? -eq 0 ]; then
+        print_success "PAM configuration for hyprlock created"
+    else
+        print_error "Failed to create PAM configuration for hyprlock"
+        exit 1
+    fi
+}
+
 # Install yay AUR helper
 install_yay() {
     print_status "Installing yay AUR helper..."
@@ -539,6 +558,7 @@ main() {
     install_chrome
     install_lightdm
     install_hyprland_ecosystem
+    configure_hyprlock_pam
     install_nvm
     install_node
     install_claude_code
