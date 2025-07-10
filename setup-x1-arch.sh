@@ -220,6 +220,60 @@ install_claude_code() {
     set -u
 }
 
+# Install LightDM display manager
+install_lightdm() {
+    print_status "Installing LightDM display manager..."
+    
+    # Install LightDM with GTK greeter
+    if sudo pacman -S --noconfirm lightdm lightdm-gtk-greeter; then
+        print_success "LightDM and GTK greeter installed"
+        
+        # Create Hyprland session file
+        print_status "Creating Hyprland session file..."
+        sudo mkdir -p /usr/share/wayland-sessions/
+        sudo tee /usr/share/wayland-sessions/hyprland.desktop > /dev/null <<EOF
+[Desktop Entry]
+Name=Hyprland
+Comment=Hyprland compositor
+Exec=Hyprland
+Type=Application
+EOF
+        print_success "Hyprland session file created"
+        
+        # Enable LightDM service
+        if sudo systemctl enable lightdm; then
+            print_success "LightDM service enabled"
+        else
+            print_error "Failed to enable LightDM service"
+            exit 1
+        fi
+    else
+        print_error "Failed to install LightDM"
+        exit 1
+    fi
+}
+
+# Install Hyprland ecosystem components
+install_hyprland_ecosystem() {
+    print_status "Installing Hyprland ecosystem components..."
+    
+    # Install core Hyprland ecosystem
+    if sudo pacman -S --noconfirm hyprlock hypridle hyprpicker waybar; then
+        print_success "Core Hyprland ecosystem installed"
+    else
+        print_error "Failed to install Hyprland ecosystem"
+        exit 1
+    fi
+    
+    # Install additional utilities
+    if sudo pacman -S --noconfirm rofi mako swww brightnessctl; then
+        print_success "Additional utilities installed"
+    else
+        print_error "Failed to install additional utilities"
+        exit 1
+    fi
+}
+
 # Install system utilities
 install_system_utilities() {
     print_status "Installing system utilities (SSH, TLP power management)..."
@@ -315,6 +369,8 @@ main() {
     install_stow
     install_cascadia_font
     install_chrome
+    install_lightdm
+    install_hyprland_ecosystem
     install_system_utilities
     install_nvm
     install_node
