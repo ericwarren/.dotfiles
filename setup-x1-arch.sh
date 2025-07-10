@@ -305,7 +305,7 @@ install_hyprland_ecosystem() {
     fi
     
     # Install additional utilities
-    if sudo pacman -S --noconfirm rofi mako swww brightnessctl jq; then
+    if sudo pacman -S --noconfirm rofi mako swww brightnessctl jq rofimoji wl-clipboard; then
         print_success "Additional utilities installed"
     else
         print_error "Failed to install additional utilities"
