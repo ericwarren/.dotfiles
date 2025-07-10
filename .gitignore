@@ -1,2 +1,6 @@
 nvim/.config/nvim/undodir/*
 nvim/.config/nvim/plugged/*
+
+# Runtime and cache directories
+**/.local/share/
+**/.local/state/
