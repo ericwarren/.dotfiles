@@ -81,14 +81,6 @@ require('lazy').setup(require('plugins'), {
     backdrop = 60,
   },
 
-  -- Development settings
-  dev = {
-    -- Directory where you store your local plugin projects
-    path = "~/dev/projects",
-    patterns = {}, -- For example {"folke"}
-    fallback = false,
-  },
-
   -- Install settings
   install = {
     -- Install missing plugins on startup
@@ -112,15 +104,6 @@ require('lazy').setup(require('plugins'), {
     enabled = true,
     notify = true, -- Get notified when config changes
   },
-})
-
--- Add this AFTER your lazy.nvim setup
-vim.api.nvim_create_autocmd("VimEnter", {
-    callback = function()
-        vim.defer_fn(function()
-            require('dotnet')
-        end, 500)  -- Wait 500ms after Neovim fully loads
-    end,
 })
 
 -- Auto commands for better experience
@@ -239,55 +222,6 @@ autocmd("TermOpen", {
     vim.opt_local.relativenumber = false
     vim.opt_local.scrolloff = 0
     vim.cmd("startinsert")
-  end,
-})
-
--- LSP auto commands
-local lsp_group = augroup("LspFormatting", { clear = true })
-
--- Format on save for specific file types
-autocmd("BufWritePre", {
-  group = lsp_group,
-  pattern = { "*.rs", "*.py", "*.ts", "*.js", "*.cs" },
-  callback = function()
-    vim.lsp.buf.format({ async = false })
-  end,
-})
-
--- Performance monitoring (optional - remove if you don't want it)
-if vim.env.NVIM_PROFILE then
-  local profile = require("profile")
-  profile.instrument_autocmds()
-  profile.instrument("*")
-  profile.start("*")
-  vim.api.nvim_create_autocmd("VimLeave", {
-    callback = function()
-      profile.stop()
-      profile.export("/tmp/nvim-profile.json")
-    end,
-  })
-end
-
--- Error handling for plugin loading
-vim.api.nvim_create_autocmd("User", {
-  pattern = "LazyDone",
-  callback = function()
-    -- Check for any plugin loading errors
-    local lazy = require("lazy")
-    local errors = {}
-    for _, plugin in pairs(lazy.plugins()) do
-      if plugin._.loaded == false and plugin._.dep ~= true then
-        table.insert(errors, plugin.name)
-      end
-    end
-
-    if #errors > 0 then
-      vim.notify(
-        "Failed to load plugins: " .. table.concat(errors, ", "),
-        vim.log.levels.WARN,
-        { title = "Plugin Loading" }
-      )
-    end
   end,
 })
 

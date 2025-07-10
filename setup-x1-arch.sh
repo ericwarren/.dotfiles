@@ -32,7 +32,7 @@ print_header() {
 # Confirm installation
 confirm_installation() {
     print_header "Minimal Arch Installation"
-    print_status "Installing Hyprland, alacritty, zsh, oh-my-zsh, starship, Google Chrome, Node.js, and Claude Code with essential dependencies"
+    print_status "Installing Hyprland, WezTerm, zsh, oh-my-zsh, starship, Neovim, Google Chrome, Node.js, and Claude Code with essential dependencies"
     echo
     read -p "Continue? (y/n): " -n 1 -r
     echo
@@ -64,13 +64,57 @@ install_hyprland() {
     fi
 }
 
-# Install alacritty
-install_alacritty() {
-    print_status "Installing alacritty..."
-    if sudo pacman -S --noconfirm alacritty; then
-        print_success "Alacritty installed"
+# Install WezTerm nightly
+install_wezterm() {
+    print_status "Installing WezTerm nightly from AUR..."
+    
+    # Check if yay is installed
+    if ! command -v yay &> /dev/null; then
+        print_status "Installing yay AUR helper..."
+        
+        # Install dependencies for building yay
+        if sudo pacman -S --noconfirm --needed git base-devel; then
+            # Clone and build yay
+            local yay_dir="/tmp/yay-build"
+            rm -rf "$yay_dir"
+            
+            if git clone https://aur.archlinux.org/yay.git "$yay_dir"; then
+                cd "$yay_dir"
+                if makepkg -si --noconfirm; then
+                    print_success "yay installed successfully"
+                    cd -
+                    rm -rf "$yay_dir"
+                else
+                    print_error "Failed to build yay"
+                    exit 1
+                fi
+            else
+                print_error "Failed to clone yay repository"
+                exit 1
+            fi
+        else
+            print_error "Failed to install build dependencies"
+            exit 1
+        fi
+    fi
+    
+    # Check if regular wezterm is installed and remove it
+    if pacman -Qi wezterm &> /dev/null; then
+        print_status "Removing existing wezterm package to install nightly..."
+        if sudo pacman -R --noconfirm wezterm; then
+            print_success "Removed existing wezterm package"
+        else
+            print_error "Failed to remove existing wezterm package"
+            exit 1
+        fi
+    fi
+    
+    # Install WezTerm nightly using yay
+    print_status "Installing WezTerm nightly (this may take a while)..."
+    if yay -S --noconfirm wezterm-git; then
+        print_success "WezTerm nightly installed successfully"
     else
-        print_error "Failed to install alacritty"
+        print_error "Failed to install WezTerm nightly"
         exit 1
     fi
 }
@@ -132,6 +176,17 @@ install_fonts() {
         print_success "Cascadia Code Nerd Font and Noto fonts installed"
     else
         print_error "Failed to install fonts"
+        exit 1
+    fi
+}
+
+# Install Neovim
+install_neovim() {
+    print_status "Installing Neovim..."
+    if sudo pacman -S --noconfirm neovim; then
+        print_success "Neovim installed"
+    else
+        print_error "Failed to install Neovim"
         exit 1
     fi
 }
@@ -385,14 +440,14 @@ verify_nvm_installations() {
 # Print completion message
 print_completion() {
     print_header "Installation complete!"
-    print_success "Hyprland, alacritty, zsh, oh-my-zsh, starship, Google Chrome, Node.js, and Claude Code are now installed."
+    print_success "Hyprland, WezTerm, zsh, oh-my-zsh, starship, Neovim, Google Chrome, Node.js, and Claude Code are now installed."
     echo
     print_status "To start Hyprland, type 'Hyprland' in the TTY"
     print_status "Next: Set up config files using stow"
     echo
     print_header "Important: Shell Setup"
     print_status "To set zsh as default shell: chsh -s \$(which zsh)"
-    print_status "Then stow zsh config: stow zsh"
+    print_status "Then stow configs: stow zsh neovim hyprland alacritty"
     echo
     print_header "Important: Node.js and Claude Code Setup"
     print_status "To use Node.js and Claude Code, you need to source NVM:"
@@ -408,12 +463,13 @@ main() {
     confirm_installation
     update_system
     install_hyprland
-    install_alacritty
+    install_wezterm
     install_stow
     install_zsh
     install_oh_my_zsh
     install_starship
     install_fonts
+    install_neovim
     install_chrome
     install_lightdm
     install_hyprland_ecosystem
