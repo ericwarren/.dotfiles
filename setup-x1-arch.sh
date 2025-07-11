@@ -31,8 +31,14 @@ print_header() {
 
 # Confirm installation
 confirm_installation() {
-    print_header "Minimal Arch Installation"
-    print_status "Installing Hyprland, WezTerm, Alacritty, zsh, oh-my-zsh, starship, Neovim, Emacs with Doom, Google Chrome, Node.js, and Claude Code with essential dependencies"
+    print_header "X1 Carbon Gen 9 Arch Installation"
+    print_status "Installing Hyprland, WezTerm, Alacritty, zsh, oh-my-zsh, starship, Neovim, Emacs with Doom,"
+    print_status "Google Chrome, Node.js, Claude Code, minicom, and X1 Carbon specific software:"
+    print_status "  - Fingerprint reader support (fprintd)"
+    print_status "  - ThinkPad battery management"
+    print_status "  - Bluetooth support"
+    print_status "  - Intel graphics tools"
+    print_status "  - Firmware update support (fwupd)"
     echo
     read -p "Continue? (y/n): " -n 1 -r
     echo
@@ -451,16 +457,16 @@ install_yay() {
 
 # Install system utilities
 install_system_utilities() {
-    print_status "Installing system utilities (SSH, TLP power management, AUR helper)..."
+    print_status "Installing system utilities (SSH, TLP power management, AUR helper, minicom)..."
     
     # Install yay first
     install_yay
 
-    # Install SSH utilities
-    if sudo pacman -S --noconfirm openssh; then
-        print_success "OpenSSH installed"
+    # Install SSH utilities and minicom
+    if sudo pacman -S --noconfirm openssh minicom; then
+        print_success "OpenSSH and minicom installed"
     else
-        print_error "Failed to install OpenSSH"
+        print_error "Failed to install OpenSSH and minicom"
         exit 1
     fi
 
@@ -520,11 +526,112 @@ verify_nvm_installations() {
     set -u
 }
 
+# Install X1 Carbon specific software
+install_x1_carbon_specific() {
+    print_header "Installing X1 Carbon Gen 9 Specific Software"
+    
+    # Fingerprint reader support
+    print_status "Installing fingerprint reader support..."
+    if sudo pacman -S --noconfirm fprintd imagemagick; then
+        print_success "Fingerprint reader support installed"
+    else
+        print_error "Failed to install fingerprint reader support"
+        exit 1
+    fi
+    
+    # ThinkPad-specific tools
+    print_status "Installing ThinkPad-specific tools..."
+    if sudo pacman -S --noconfirm s-tui stress; then
+        print_success "CPU monitoring tools installed"
+    else
+        print_error "Failed to install CPU monitoring tools"
+        exit 1
+    fi
+    
+    # Install tp-battery-mode from AUR
+    print_status "Installing ThinkPad battery management from AUR..."
+    if yay -S --noconfirm tp-battery-mode; then
+        print_success "ThinkPad battery management installed"
+    else
+        print_error "Failed to install ThinkPad battery management"
+        exit 1
+    fi
+    
+    # Bluetooth support
+    print_status "Installing Bluetooth support..."
+    if sudo pacman -S --noconfirm bluez bluez-utils blueman; then
+        print_success "Bluetooth support installed"
+        
+        # Enable bluetooth service
+        if sudo systemctl enable bluetooth; then
+            print_success "Bluetooth service enabled"
+        else
+            print_error "Failed to enable bluetooth service"
+            exit 1
+        fi
+    else
+        print_error "Failed to install Bluetooth support"
+        exit 1
+    fi
+    
+    # Webcam and audio utilities
+    print_status "Installing webcam and audio utilities..."
+    if sudo pacman -S --noconfirm v4l-utils guvcview pavucontrol; then
+        print_success "Webcam and audio utilities installed"
+    else
+        print_error "Failed to install webcam and audio utilities"
+        exit 1
+    fi
+    
+    # Touchpad gestures
+    print_status "Installing touchpad gesture support from AUR..."
+    # Both libinput-gestures and libinput-gestures-qt are in AUR
+    if yay -S --noconfirm libinput-gestures libinput-gestures-qt; then
+        print_success "libinput-gestures and libinput-gestures-qt installed"
+    else
+        print_error "Failed to install touchpad gesture support"
+        exit 1
+    fi
+    
+    # Intel graphics tools
+    print_status "Installing Intel graphics tools..."
+    if sudo pacman -S --noconfirm intel-gpu-tools vulkan-intel; then
+        print_success "Intel graphics tools installed"
+    else
+        print_error "Failed to install Intel graphics tools"
+        exit 1
+    fi
+    
+    # Firmware update support
+    print_status "Installing firmware update support..."
+    if sudo pacman -S --noconfirm fwupd; then
+        print_success "fwupd installed"
+        
+        # Enable firmware update service
+        if sudo systemctl enable fwupd; then
+            print_success "Firmware update service enabled"
+        else
+            print_error "Failed to enable firmware update service"
+            exit 1
+        fi
+    else
+        print_error "Failed to install fwupd"
+        exit 1
+    fi
+}
 
 # Print completion message
 print_completion() {
     print_header "Installation complete!"
-    print_success "Hyprland, WezTerm, Alacritty, zsh, oh-my-zsh, starship, Neovim, Emacs with Doom, Google Chrome, Node.js, and Claude Code are now installed."
+    print_success "All software has been successfully installed including X1 Carbon specific tools."
+    echo
+    print_status "Installed software includes:"
+    print_status "  - Hyprland, WezTerm, Alacritty"
+    print_status "  - Zsh with oh-my-zsh and starship"
+    print_status "  - Neovim and Emacs with Doom"
+    print_status "  - Google Chrome, Node.js, Claude Code"
+    print_status "  - Minicom and SSH utilities"
+    print_status "  - X1 Carbon tools: fingerprint reader, battery management, bluetooth"
     echo
     print_status "To start Hyprland, type 'Hyprland' in the TTY"
     print_status "Next: Set up config files using stow"
@@ -549,6 +656,11 @@ print_completion() {
     print_status "Your Doom configuration is tracked in ~/.config/doom/"
     print_status "After stowing emacs config, run: doom sync"
     print_status "This will install all Doom packages and compile configuration"
+    echo
+    print_header "X1 Carbon Specific Setup"
+    print_status "Fingerprint setup: sudo fprintd-enroll"
+    print_status "Battery thresholds: sudo tp-battery-mode -s 60 80"
+    print_status "Firmware updates: sudo fwupdmgr refresh && sudo fwupdmgr update"
 }
 
 # Main function
@@ -571,6 +683,7 @@ main() {
     install_lightdm
     install_hyprland_ecosystem
     configure_hyprlock_pam
+    install_x1_carbon_specific
     install_nvm
     install_node
     install_claude_code
