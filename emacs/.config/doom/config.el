@@ -43,7 +43,19 @@
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/org/")
+(setq org-default-notes-file (expand-file-name "inbox.org" org-directory))
+(setq org-agenda-files (list (expand-file-name "inbox.org" org-directory)))
 
+(after! org
+  (setq org-capture-templates
+        '(("t" "Todo" entry (file+headline "inbox.org" "Tasks")
+           "* TODO %?\n  %U\n  %a")
+          ("n" "Note" entry (file+headline "inbox.org" "Notes")
+           "* %?\nEntered on %U\n  %a"))))
+(map! :leader
+      :desc "Open Org Inbox"
+      "o o"
+      (lambda () (interactive) (find-file (expand-file-name "inbox.org" org-directory))))
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
