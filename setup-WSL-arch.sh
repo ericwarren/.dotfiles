@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Minimal Arch Package Installation - Only Hyprland + Alacritty
+# Minimal Arch Package Installation for WSL
 
 # Color codes for output
 RED='\033[0;31m'
@@ -31,8 +31,8 @@ print_header() {
 
 # Confirm installation
 confirm_installation() {
-    print_header "Minimal Arch Installation"
-    print_status "Installing Hyprland, WezTerm, Alacritty, zsh, oh-my-zsh, starship, Neovim, Emacs with Doom, Google Chrome, Node.js, and Claude Code with essential dependencies"
+    print_header "Minimal Arch Installation for WSL"
+    print_status "Installing zsh, oh-my-zsh, starship, Neovim, Emacs with Doom, Node.js, and Claude Code"
     echo
     read -p "Continue? (y/n): " -n 1 -r
     echo
@@ -49,42 +49,6 @@ update_system() {
         print_success "System updated"
     else
         print_error "Failed to update system"
-        exit 1
-    fi
-}
-
-# Install Hyprland
-install_hyprland() {
-    print_status "Installing Hyprland..."
-    if sudo pacman -S --noconfirm hyprland; then
-        print_success "Hyprland installed"
-    else
-        print_error "Failed to install Hyprland"
-        exit 1
-    fi
-}
-
-# Install WezTerm nightly
-install_wezterm() {
-    print_status "Installing WezTerm nightly from AUR..."
-    
-    # Install WezTerm nightly using yay
-    print_status "Installing WezTerm nightly (this may take a while)..."
-    if yay -S --noconfirm wezterm-git; then
-        print_success "WezTerm nightly installed successfully"
-    else
-        print_error "Failed to install WezTerm nightly"
-        exit 1
-    fi
-}
-
-# Install Alacritty
-install_alacritty() {
-    print_status "Installing Alacritty terminal emulator..."
-    if sudo pacman -S --noconfirm alacritty; then
-        print_success "Alacritty installed"
-    else
-        print_error "Failed to install Alacritty"
         exit 1
     fi
 }
@@ -235,19 +199,6 @@ install_doom_emacs() {
     fi
 }
 
-# Install Google Chrome
-install_chrome() {
-    print_status "Installing Google Chrome..."
-    
-    # Install Google Chrome using yay
-    if yay -S --noconfirm google-chrome; then
-        print_success "Google Chrome installed"
-    else
-        print_error "Failed to install Google Chrome"
-        exit 1
-    fi
-}
-
 # Install NVM (Node Version Manager)
 install_nvm() {
     print_status "Installing NVM (Node Version Manager)..."
@@ -340,143 +291,23 @@ install_claude_code() {
     set -u
 }
 
-# Install LightDM display manager
-install_lightdm() {
-    print_status "Installing LightDM display manager..."
-
-    # Install LightDM with GTK greeter
-    if sudo pacman -S --noconfirm lightdm lightdm-gtk-greeter; then
-        print_success "LightDM and GTK greeter installed"
-
-        # Create Hyprland session file
-        print_status "Creating Hyprland session file..."
-        sudo mkdir -p /usr/share/wayland-sessions/
-        sudo tee /usr/share/wayland-sessions/hyprland.desktop > /dev/null <<EOF
-[Desktop Entry]
-Name=Hyprland
-Comment=Hyprland compositor
-Exec=Hyprland
-Type=Application
-EOF
-        print_success "Hyprland session file created"
-
-        # Enable LightDM service
-        if sudo systemctl enable lightdm; then
-            print_success "LightDM service enabled"
-        else
-            print_error "Failed to enable LightDM service"
-            exit 1
-        fi
-    else
-        print_error "Failed to install LightDM"
-        exit 1
-    fi
-}
-
-# Install Hyprland ecosystem components
-install_hyprland_ecosystem() {
-    print_status "Installing Hyprland ecosystem components..."
-
-    # Install core Hyprland ecosystem
-    if sudo pacman -S --noconfirm hyprlock hypridle hyprpicker waybar; then
-        print_success "Core Hyprland ecosystem installed"
-    else
-        print_error "Failed to install Hyprland ecosystem"
-        exit 1
-    fi
-
-    # Install additional utilities
-    if sudo pacman -S --noconfirm rofi mako swww brightnessctl jq rofimoji wl-clipboard; then
-        print_success "Additional utilities installed"
-    else
-        print_error "Failed to install additional utilities"
-        exit 1
-    fi
-}
-
-# Configure PAM for hyprlock
-configure_hyprlock_pam() {
-    print_status "Configuring PAM for hyprlock..."
-    
-    # Create simplified PAM configuration for hyprlock
-    sudo tee /etc/pam.d/hyprlock > /dev/null <<'EOF'
-#%PAM-1.0
-auth required pam_unix.so
-account required pam_unix.so
-EOF
-    
-    if [ $? -eq 0 ]; then
-        print_success "PAM configuration for hyprlock created"
-    else
-        print_error "Failed to create PAM configuration for hyprlock"
-        exit 1
-    fi
-}
-
-# Install yay AUR helper
-install_yay() {
-    print_status "Installing yay AUR helper..."
-    
-    # Check if yay is already installed
-    if command -v yay &> /dev/null; then
-        print_success "yay is already installed"
-        return 0
-    fi
-    
-    # Install dependencies for building yay
-    if sudo pacman -S --noconfirm --needed git base-devel; then
-        # Clone and build yay
-        local yay_dir="/tmp/yay-build"
-        rm -rf "$yay_dir"
-        
-        if git clone https://aur.archlinux.org/yay.git "$yay_dir"; then
-            cd "$yay_dir"
-            if makepkg -si --noconfirm; then
-                print_success "yay installed successfully"
-                cd -
-                rm -rf "$yay_dir"
-            else
-                print_error "Failed to build yay"
-                exit 1
-            fi
-        else
-            print_error "Failed to clone yay repository"
-            exit 1
-        fi
-    else
-        print_error "Failed to install build dependencies"
-        exit 1
-    fi
-}
-
 # Install system utilities
 install_system_utilities() {
-    print_status "Installing system utilities (SSH, TLP power management, AUR helper)..."
+    print_status "Installing system utilities (SSH, git, base-devel)..."
     
-    # Install yay first
-    install_yay
-
-    # Install SSH utilities
-    if sudo pacman -S --noconfirm openssh; then
-        print_success "OpenSSH installed"
+    # Install build tools and SSH
+    if sudo pacman -S --noconfirm --needed git base-devel openssh; then
+        print_success "Development tools and SSH installed"
     else
-        print_error "Failed to install OpenSSH"
+        print_error "Failed to install development tools"
         exit 1
     fi
 
-    # Install TLP for power management and clipboard utilities
-    if sudo pacman -S --noconfirm tlp tlp-rdw powertop wl-clipboard; then
-        print_success "TLP power management and clipboard utilities installed"
-
-        # Enable TLP service
-        if sudo systemctl enable tlp; then
-            print_success "TLP service enabled"
-        else
-            print_error "Failed to enable TLP service"
-            exit 1
-        fi
+    # Install useful CLI tools
+    if sudo pacman -S --noconfirm ripgrep fd bat eza fzf tmux htop ncdu; then
+        print_success "CLI utilities installed"
     else
-        print_error "Failed to install TLP"
+        print_error "Failed to install CLI utilities"
         exit 1
     fi
 }
@@ -524,14 +355,13 @@ verify_nvm_installations() {
 # Print completion message
 print_completion() {
     print_header "Installation complete!"
-    print_success "Hyprland, WezTerm, Alacritty, zsh, oh-my-zsh, starship, Neovim, Emacs with Doom, Google Chrome, Node.js, and Claude Code are now installed."
+    print_success "zsh, oh-my-zsh, starship, Neovim, Emacs with Doom, Node.js, and Claude Code are now installed."
     echo
-    print_status "To start Hyprland, type 'Hyprland' in the TTY"
     print_status "Next: Set up config files using stow"
     echo
     print_header "Important: Shell Setup"
     print_status "To set zsh as default shell: chsh -s \$(which zsh)"
-    print_status "Then stow configs: stow zsh neovim emacs hyprland alacritty"
+    print_status "Then stow configs: stow zsh neovim emacs tmux"
     echo
     print_header "Important: Node.js and Claude Code Setup"
     print_status "To use Node.js and Claude Code, you need to source NVM:"
@@ -555,10 +385,7 @@ print_completion() {
 main() {
     confirm_installation
     update_system
-    install_system_utilities  # Install this early to get yay for AUR packages
-    install_hyprland
-    install_wezterm
-    install_alacritty
+    install_system_utilities
     install_stow
     install_zsh
     install_oh_my_zsh
@@ -567,10 +394,6 @@ main() {
     install_neovim
     install_emacs
     install_doom_emacs
-    install_chrome
-    install_lightdm
-    install_hyprland_ecosystem
-    configure_hyprlock_pam
     install_nvm
     install_node
     install_claude_code
