@@ -4,7 +4,7 @@
 
 options="Logout\nRestart\nShutdown\nSuspend\nLock"
 
-choice=$(echo -e "$options" | wofi --dmenu --prompt "Power Menu" --width 200 --height 250)
+choice=$(echo -e "$options" | rofi -dmenu -p "Power Menu" -theme-str 'window {width: 200px; height: 250px;}')
 
 case "$choice" in
     "Logout")

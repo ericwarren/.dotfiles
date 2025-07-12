@@ -392,7 +392,7 @@ install_hyprland_ecosystem() {
     fi
 
     # Install additional utilities
-    if sudo pacman -S --noconfirm rofi mako swww brightnessctl jq rofimoji wl-clipboard pamixer; then
+    if sudo pacman -S --noconfirm rofi mako swww brightnessctl jq rofimoji wl-clipboard pamixer nautilus; then
         print_success "Additional utilities installed"
     else
         print_error "Failed to install additional utilities"
@@ -463,10 +463,10 @@ install_system_utilities() {
     install_yay
 
     # Install SSH utilities and minicom
-    if sudo pacman -S --noconfirm openssh minicom; then
-        print_success "OpenSSH and minicom installed"
+    if sudo pacman -S --noconfirm openssh minicom ranger; then
+        print_success "OpenSSH, minicom, and ranger installed"
     else
-        print_error "Failed to install OpenSSH and minicom"
+        print_error "Failed to install OpenSSH, minicom, and ranger"
         exit 1
     fi
 
