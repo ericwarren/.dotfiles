@@ -64,7 +64,8 @@ install_system_packages() {
         tmux tree htop \
         fontawesome-fonts powerline-fonts \
         wl-clipboard xclip \
-        minicom ranger openssh jq
+        minicom ranger openssh jq fzf eza bg \
+        zoxide ripgrep
 
     # Install RPM Fusion repositories for additional codecs
     echo "Installing RPM Fusion repositories..."
@@ -83,7 +84,7 @@ install_alacritty() {
     sudo dnf install -y alacritty
 
     echo "Installing fonts..."
-    
+
     # Install Cascadia Code Nerd Font manually
     echo "Installing Cascadia Code Nerd Font..."
     mkdir -p ~/.local/share/fonts
@@ -405,7 +406,7 @@ install_doom_emacs() {
 
         # Set DOOMDIR to use our stowed config location
         export DOOMDIR="$HOME/.config/doom"
-        
+
         # Run Doom install script
         echo "Running Doom install script (this may take a while)..."
         if DOOMDIR="$HOME/.config/doom" ~/.config/emacs/bin/doom install; then
