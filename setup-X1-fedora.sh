@@ -84,9 +84,6 @@ install_alacritty() {
 
     echo "Installing fonts..."
     
-    # Install Noto fonts from repositories
-    sudo dnf install -y google-noto-fonts google-noto-emoji-fonts google-noto-sans-fonts google-noto-serif-fonts
-    
     # Install Cascadia Code Nerd Font manually
     echo "Installing Cascadia Code Nerd Font..."
     mkdir -p ~/.local/share/fonts
