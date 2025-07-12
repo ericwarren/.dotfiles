@@ -22,7 +22,7 @@ family = "CaskaydiaCove Nerd Font"
 style = "Italic"
 
 [window]
-opacity = 0.9
+opacity = 0.8
 
 [colors]
 [colors.primary]
@@ -50,5 +50,4 @@ cyan = "#7dcfff"
 white = "#c0caf5"
 
 [terminal.shell]
-program = "/usr/bin/zsh"
-args = ["-l"]
+program = "usr/bin/zsh"
