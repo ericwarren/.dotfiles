@@ -21,6 +21,9 @@ style = "Bold"
 family = "CaskaydiaCove Nerd Font"
 style = "Italic"
 
+[window]
+opacity = 0.8
+
 [terminal.shell]
 program = "/usr/bin/zsh"
 args = ["-l"]
