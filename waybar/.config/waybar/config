@@ -19,7 +19,6 @@
         "memory",
         "temperature",
         "backlight",
-        "keyboard-state",
         "battery",
         "clock",
         "custom/power"
@@ -57,15 +56,6 @@
         "tooltip": false
     },
 
-    "keyboard-state": {
-        "numlock": true,
-        "capslock": true,
-        "format": "{name} {icon}",
-        "format-icons": {
-            "locked": "\uf023",
-            "unlocked": "\uf09c"
-        }
-    },
 
     "idle_inhibitor": {
         "format": "{icon}",
