@@ -64,12 +64,19 @@ install_system_packages() {
         tmux tree htop \
         fontawesome-fonts powerline-fonts \
         wl-clipboard xclip \
-        minicom ranger openssh jq fzf eza bg \
+        minicom ranger openssh jq fzf bg \
         zoxide ripgrep
 
     sudo dnf update -y
 
-    print_success "Essential packages installed"
+    # Install Cascadia Code Nerd Font manually
+    echo "Installing Cascadia Code Nerd Font..."
+    mkdir -p ~/.local/share/fonts
+    wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/CascadiaCode.zip
+    unzip CascadiaCode.zip -d ~/.local/share/fonts/ && rm CascadiaCode.zip
+    fc-cache -fv
+
+    print_success "Essential packages and fonts installed"
 }
 
 install_neovim() {
