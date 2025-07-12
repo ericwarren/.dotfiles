@@ -304,7 +304,7 @@ install_system_utilities() {
     fi
 
     # Install useful CLI tools
-    if sudo pacman -S --noconfirm ripgrep fd bat eza fzf tmux htop ncdu; then
+    if sudo pacman -S --noconfirm ripgrep fd bat eza fzf tmux htop ncdu ranger; then
         print_success "CLI utilities installed"
     else
         print_error "Failed to install CLI utilities"
