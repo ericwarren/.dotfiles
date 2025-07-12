@@ -588,6 +588,14 @@ install_x1_carbon_specific() {
     # Both libinput-gestures and libinput-gestures-qt are in AUR
     if yay -S --noconfirm libinput-gestures libinput-gestures-qt; then
         print_success "libinput-gestures and libinput-gestures-qt installed"
+        
+        # Add user to input group for gesture permissions
+        print_status "Adding user to input group for touchpad gesture access..."
+        if sudo gpasswd -a "$USER" input; then
+            print_success "User added to input group (requires logout/login to take effect)"
+        else
+            print_error "Failed to add user to input group"
+        fi
     else
         print_error "Failed to install touchpad gesture support"
         exit 1
@@ -635,6 +643,14 @@ print_completion() {
     echo
     print_status "To start Hyprland, type 'Hyprland' in the TTY"
     print_status "Next: Set up config files using stow"
+    echo
+    print_header "Important: Touchpad Gestures"
+    print_status "You've been added to the 'input' group for touchpad gestures"
+    print_status "You MUST logout and login again for this to take effect"
+    print_status "After relogging, stow and start libinput-gestures:"
+    print_status "  stow libinput-gestures"
+    print_status "  libinput-gestures-setup start"
+    print_status "  libinput-gestures-setup autostart"
     echo
     print_header "Important: Shell Setup"
     print_status "To set zsh as default shell: chsh -s \$(which zsh)"
