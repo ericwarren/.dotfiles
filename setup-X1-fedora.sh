@@ -63,7 +63,8 @@ install_system_packages() {
         python3 python3-pip python3-virtualenv \
         tmux tree htop \
         fontawesome-fonts powerline-fonts \
-        wl-clipboard xclip
+        wl-clipboard xclip \
+        minicom ranger openssh jq
 
     # Install RPM Fusion repositories for additional codecs
     echo "Installing RPM Fusion repositories..."
@@ -81,12 +82,19 @@ install_alacritty() {
 
     sudo dnf install -y alacritty
 
+    echo "Installing fonts..."
+    
+    # Install Noto fonts from repositories
+    sudo dnf install -y google-noto-fonts google-noto-emoji-fonts google-noto-sans-fonts google-noto-serif-fonts
+    
+    # Install Cascadia Code Nerd Font manually
     echo "Installing Cascadia Code Nerd Font..."
+    mkdir -p ~/.local/share/fonts
     wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/CascadiaCode.zip
     unzip CascadiaCode.zip -d ~/.local/share/fonts/ && rm CascadiaCode.zip
     fc-cache -fv
 
-    print_success "Alacritty and Cascadia Code Nerd Font installed"
+    print_success "Alacritty and fonts installed (Cascadia Code Nerd Font, Noto fonts)"
 }
 
 install_neovim() {
@@ -364,6 +372,61 @@ install_go() {
     fi
 }
 
+install_emacs() {
+    print_header "📝 Installing Emacs"
+
+    if command -v emacs &> /dev/null; then
+        print_success "Emacs already installed: $(emacs --version | head -n1)"
+        return
+    fi
+
+    sudo dnf install -y emacs
+
+    print_success "Emacs installed: $(emacs --version | head -n1)"
+}
+
+install_doom_emacs() {
+    print_header "🔥 Installing Doom Emacs"
+
+    # Install dependencies for Doom Emacs
+    echo "Installing Doom Emacs dependencies..."
+    sudo dnf install -y git ripgrep fd-find
+
+    print_success "Doom Emacs dependencies installed"
+
+    # Remove existing Emacs config if present
+    if [ -d "$HOME/.config/emacs" ] || [ -d "$HOME/.emacs.d" ]; then
+        echo "Backing up existing Emacs configuration..."
+        [ -d "$HOME/.config/emacs" ] && mv "$HOME/.config/emacs" "$HOME/.config/emacs.bak.$(date +%Y%m%d%H%M%S)"
+        [ -d "$HOME/.emacs.d" ] && mv "$HOME/.emacs.d" "$HOME/.emacs.d.bak.$(date +%Y%m%d%H%M%S)"
+    fi
+
+    # Clone Doom Emacs to ~/.config/emacs
+    echo "Cloning Doom Emacs repository..."
+    if git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.config/emacs; then
+        print_success "Doom Emacs repository cloned"
+
+        # Set DOOMDIR to use our stowed config location
+        export DOOMDIR="$HOME/.config/doom"
+        
+        # Run Doom install script
+        echo "Running Doom install script (this may take a while)..."
+        if DOOMDIR="$HOME/.config/doom" ~/.config/emacs/bin/doom install; then
+            print_success "Doom Emacs installed successfully"
+
+            # Add doom to PATH in current session
+            export PATH="$HOME/.config/emacs/bin:$PATH"
+            print_success "Doom binary added to PATH for current session"
+        else
+            print_error "Failed to run Doom install script"
+            return 1
+        fi
+    else
+        print_error "Failed to clone Doom Emacs repository"
+        return 1
+    fi
+}
+
 install_nodejs() {
     print_header "📗 Installing Node.js via NVM"
 
@@ -531,6 +594,7 @@ show_completion_message() {
     echo "  • Essential development tools and packages"
     echo "  • Alacritty terminal emulator with Cascadia Code Nerd Font"
     echo "  • Neovim $(nvim --version | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
+    echo "  • Emacs $(emacs --version 2>/dev/null | head -n1 | grep -oP '\d+\.\d+' || echo 'latest') with Doom"
     echo "  • Google Chrome $(google-chrome --version 2>/dev/null || echo 'latest')"
     echo "  • Visual Studio Code $(code --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
@@ -546,6 +610,8 @@ show_completion_message() {
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
     echo "  2. Open Neovim and run :checkhealth to verify setup"
+    echo "  3. Add to your shell config: export PATH=\"\$HOME/.config/emacs/bin:\$PATH\""
+    echo "  4. After stowing emacs config, run: doom sync"
 
     echo -e "\n💡 Useful commands:"
     echo "  • nvm list         - Show installed Node.js versions"
@@ -557,6 +623,8 @@ show_completion_message() {
     echo "  • claude --version - Check Claude Code version"
     echo "  • starship --version - Check Starship version"
     echo "  • nvim --version   - Check Neovim version"
+    echo "  • emacs --version  - Check Emacs version"
+    echo "  • doom doctor      - Check Doom Emacs health"
 
     if [ "$SHELL" != "$(which zsh)" ]; then
         echo -e "\n${YELLOW}⚠️  Remember to restart your terminal for the shell change to take effect!${NC}"
@@ -575,6 +643,8 @@ main() {
     install_system_packages
     install_alacritty
     install_neovim
+    install_emacs
+    install_doom_emacs
     install_chrome
     install_vscode
     install_dotnet
