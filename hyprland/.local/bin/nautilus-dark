@@ -1,0 +1,2 @@
+#!/bin/bash
+ADW_DISABLE_PORTAL=1 GTK_THEME=Adwaita:dark nautilus "$@"

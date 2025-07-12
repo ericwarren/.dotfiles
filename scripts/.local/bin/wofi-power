@@ -1,0 +1,18 @@
+#!/bin/bash
+
+entries="Shutdown\nReboot\nLogout\nSuspend\nLock"
+
+selected=$(echo -e $entries | wofi --dmenu --cache-file /dev/null --hide-scroll --width 300 --height 250 --no-actions --allow-images=false --prompt "Power:")
+
+case $selected in
+    "Shutdown")
+        systemctl poweroff;;
+    "Reboot")
+        systemctl reboot;;
+    "Logout")
+        hyprctl dispatch exit;;
+    "Suspend")
+        systemctl suspend;;
+    "Lock")
+        hyprlock;;
+esac

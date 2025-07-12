@@ -1,0 +1,53 @@
+# Tokyo Night theme for mako notification daemon
+
+# General appearance
+font=CaskaydiaCove Nerd Font 11
+background-color=#1a1b26
+text-color=#c0caf5
+width=350
+height=100
+margin=20
+padding=10,15
+border-size=2
+border-color=#7aa2f7
+border-radius=8
+max-visible=5
+sort=-time
+
+# Default timeout
+default-timeout=5000
+
+# Icon settings
+icons=1
+max-icon-size=48
+
+# Progress bar
+progress-color=over #414868
+
+# Urgency levels
+[urgency=low]
+border-color=#565f89
+background-color=#24283b
+
+[urgency=normal]
+border-color=#7aa2f7
+background-color=#1a1b26
+
+[urgency=critical]
+border-color=#f7768e
+background-color=#1a1b26
+text-color=#f7768e
+default-timeout=0
+
+# App-specific notifications
+[app-name="Discord"]
+border-color=#bb9af7
+
+[app-name="Firefox"]
+border-color=#ff9e64
+
+[app-name="Spotify"]
+border-color=#9ece6a
+
+[summary~=".*[Bb]attery.*"]
+border-color=#e0af68

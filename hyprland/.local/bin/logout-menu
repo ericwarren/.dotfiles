@@ -2,24 +2,24 @@
 # Hyprland Logout Menu
 # Save as ~/.local/bin/logout-menu and make executable: chmod +x ~/.local/bin/logout-menu
 
-options="Logout\nRestart\nShutdown\nSuspend\nLock"
+options="⏻ Shutdown\n⭮ Restart\n⇠ Logout\n⏾ Suspend\n🔒 Lock"
 
-choice=$(echo -e "$options" | rofi -dmenu -p "Power Menu" -theme-str 'window {width: 200px; height: 250px;}')
+choice=$(echo -e "$options" | rofi -dmenu -p "Power Menu" -no-show-icons -theme-str 'window {width: 300px; height: 280px;}')
 
 case "$choice" in
-    "Logout")
+    "⇠ Logout")
         hyprctl dispatch exit
         ;;
-    "Restart")
+    "⭮ Restart")
         systemctl reboot
         ;;
-    "Shutdown")
+    "⏻ Shutdown")
         systemctl poweroff
         ;;
-    "Suspend")
+    "⏾ Suspend")
         ~/.local/bin/safe-suspend
         ;;
-    "Lock")
+    "🔒 Lock")
         ~/.local/bin/blur-lock
         ;;
     *)
