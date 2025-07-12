@@ -137,22 +137,24 @@
 
 
     "pulseaudio": {
-        "format": "{volume}% {icon} {format_source}",
-        "format-bluetooth": "{volume}% {icon} {format_source}",
-        "format-bluetooth-muted": "\uf6a9 {icon} {format_source}",
-        "format-muted": "\uf6a9 {format_source}",
-        "format-source": "{volume}% \uf130",
-        "format-source-muted": "\uf131",
+        "format": "{volume}% {icon}",
+        "format-bluetooth": "{volume}% {icon}",
+        "format-bluetooth-muted": "🔇 {icon}",
+        "format-muted": "🔇",
         "format-icons": {
-            "headphone": "\uf025",
-            "hands-free": "\uf590",
-            "headset": "\uf590",
-            "phone": "\uf095",
-            "portable": "\uf294",
-            "car": "\uf1b9",
-            "default": ["\uf026", "\uf027", "\uf028"]
+            "headphone": "🎧",
+            "hands-free": "🎤",
+            "headset": "🎧",
+            "phone": "📱",
+            "portable": "📱",
+            "car": "🚗",
+            "default": ["🔇", "🔉", "🔊"]
         },
-        "on-click": "pavucontrol"
+        "on-click": "pavucontrol",
+        "on-click-right": "pamixer -t",
+        "on-scroll-up": "pamixer -i 2",
+        "on-scroll-down": "pamixer -d 2",
+        "scroll-step": 2
     },
 
     "custom/power": {
