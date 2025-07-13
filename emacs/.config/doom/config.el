@@ -51,7 +51,7 @@
         `(("t" "Todo" entry (file+headline ,(expand-file-name "inbox.org" org-directory) "Tasks")
            "* TODO %?\n  %U\n  %a")
           ("n" "Quick Note" entry (file+headline ,(expand-file-name "notes.org" org-directory) "Quick Notes")
-           "* %?\nEntered on %U\n  %a"))))
+           "* %?\n\nEntered on %U\n  %a"))))
 (map! :leader
       :desc "Open Org Inbox"
       "o o"
