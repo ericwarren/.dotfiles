@@ -273,6 +273,21 @@ install_nodejs() {
     print_success "Claude Code installed"
 }
 
+install_dropbox() {
+    print_header "💧 Installing Dropbox"
+
+    echo "Downloading Dropbox daemon..."
+    cd ~
+    wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
+    print_success "Dropbox daemon downloaded and extracted"
+
+    # Download dropbox.py to the stow folder
+    echo "Downloading dropbox.py CLI tool..."
+    mkdir -p dropbox/.local/bin
+    wget -O dropbox/.local/bin/dropbox.py "https://www.dropbox.com/download?dl=packages/dropbox.py"
+    chmod +x dropbox/.local/bin/dropbox.py
+    print_success "dropbox.py CLI tool downloaded"
+}
 
 setup_zsh() {
     print_header "🐚 Setting Up Zsh with Oh My Zsh and Starship"
@@ -407,12 +422,18 @@ show_completion_message() {
     echo "  • Claude Code CLI"
     echo "  • Python 3 with pip and virtualenv"
     echo "  • Zsh with Oh My Zsh and Starship prompt"
+    echo "  • Dropbox daemon and CLI tool"
 
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
     echo "  2. Open Neovim and run :checkhealth to verify setup"
     echo "  3. Add to your shell config: export PATH=\"\$HOME/.config/emacs/bin:\$PATH\""
     echo "  4. After stowing emacs config, run: doom sync"
+    echo "  5. Stow Dropbox configs: stow dropbox"
+    echo "  6. For systemd Dropbox service: stow -t / dropbox-systemd"
+    echo "  7. Reload systemd: sudo systemctl daemon-reload"
+    echo "  8. Enable Dropbox service: sudo systemctl enable dropbox@eric.service"
+    echo "  9. Start Dropbox service: sudo systemctl start dropbox@eric.service"
 
     echo -e "\n💡 Useful commands:"
     echo "  • nvm list         - Show installed Node.js versions"
@@ -447,6 +468,7 @@ main() {
     install_docker
     install_go
     install_nodejs
+    install_dropbox
     setup_zsh
     setup_dotfiles
     setup_shell
