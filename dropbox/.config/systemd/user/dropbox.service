@@ -3,7 +3,7 @@ Description=Dropbox User Service
 
 [Service]
 Type=simple
-ExecStart=%h/.local/bin/dropbox.py start
+ExecStart=%h/.dropbox-dist/dropboxd
 Restart=on-failure
 RestartSec=1
 
