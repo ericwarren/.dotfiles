@@ -20,3 +20,4 @@ wezterm/Cargo.lock
 **/*.bak
 **/.*swp
 **/.*swo
+emacs/.local/
