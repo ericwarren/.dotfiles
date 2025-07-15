@@ -227,18 +227,65 @@ install_go() {
 }
 
 install_emacs() {
-    print_header "📝 Installing Emacs"
+    print_header "📝 Installing Emacs 30.1 from Source"
 
     if command -v emacs &> /dev/null; then
         print_success "Emacs already installed: $(emacs --version | head -n1)"
         return
     fi
 
-    # Install Emacs 30.1 from snap
-    echo "Installing Emacs 30.1 from snap..."
-    sudo snap install emacs --classic
+    # Install build dependencies
+    echo "Installing Emacs build dependencies..."
+    sudo apt install -y \
+        autoconf automake libtool texinfo \
+        libgtk-3-dev libxpm-dev libjpeg-dev libgif-dev \
+        libtiff5-dev libgnutls28-dev libncurses5-dev \
+        libjansson-dev libharfbuzz-dev libharfbuzz-bin \
+        imagemagick libmagickwand-dev libxml2-dev \
+        libgccjit-10-dev gcc-10 g++-10
 
-    print_success "Emacs installed: $(emacs --version | head -n1)"
+    # Set GCC version for native compilation
+    export CC=gcc-10 CXX=g++-10
+
+    # Create temporary build directory
+    EMACS_BUILD_DIR=$(mktemp -d)
+    cd "$EMACS_BUILD_DIR"
+
+    # Download Emacs 30.1 source
+    echo "Downloading Emacs 30.1 source..."
+    wget https://ftp.gnu.org/gnu/emacs/emacs-30.1.tar.xz
+    tar -xf emacs-30.1.tar.xz
+    cd emacs-30.1
+
+    # Configure build with native compilation and GUI support
+    echo "Configuring Emacs build..."
+    ./configure \
+        --with-native-compilation=aot \
+        --with-json \
+        --with-imagemagick \
+        --with-x-toolkit=gtk3 \
+        --with-xwidgets \
+        --prefix=/usr/local
+
+    # Build Emacs (this will take a while)
+    echo "Building Emacs (this may take 15-30 minutes)..."
+    make -j$(nproc)
+
+    # Install Emacs
+    echo "Installing Emacs..."
+    sudo make install
+
+    # Clean up build directory
+    cd ~
+    rm -rf "$EMACS_BUILD_DIR"
+
+    # Verify installation
+    if command -v emacs &> /dev/null; then
+        print_success "Emacs installed: $(emacs --version | head -n1)"
+    else
+        print_error "Emacs installation failed"
+        return 1
+    fi
 }
 
 install_doom_emacs() {
