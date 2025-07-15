@@ -239,11 +239,11 @@ install_emacs() {
     sudo apt install -y \
         autoconf automake libtool texinfo \
         libgtk-3-dev libxpm-dev libjpeg-dev libgif-dev \
-        libtiff5-dev libgnutls28-dev libncurses5-dev \
+        libtiff5-dev libgnutls28-dev libncurses-dev \
         libjansson-dev libharfbuzz-dev libharfbuzz-bin \
         imagemagick libmagickwand-dev libxml2-dev \
         libgccjit-10-dev gcc-10 g++-10 \
-        libwebkit2gtk-4.0-dev
+        libwebkit2gtk-4.1-dev
 
     # Set GCC version for native compilation
     export CC=gcc-10 CXX=g++-10
