@@ -3,8 +3,8 @@ Description=Emacs daemon
 
 [Service]
 Type=forking
-ExecStart=/usr/bin/emacs --daemon
-ExecStop=/usr/bin/emacsclient --eval "(kill-emacs)"
+ExecStart=/usr/local/bin/emacs --daemon
+ExecStop=/usr/local/bin/emacsclient --eval "(kill-emacs)"
 Restart=always
 
 [Install]
