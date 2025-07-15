@@ -25,7 +25,7 @@ export VISUAL='nvim'
 export DEFAULT_USER="$USER"
 
 # Enable true color support for various applications
-export TERM=alacritty
+export TERM=xterm-256color
 export COLORTERM=truecolor
 
 # Development paths
