@@ -59,7 +59,7 @@ install_system_packages() {
     sudo apt install -y \
         curl wget git zsh \
         ca-certificates gnupg \
-        unzip stow \
+        unzip stow snapd \
         python3 python3-pip python3-venv \
         tmux tree htop \
         fonts-font-awesome fonts-powerline \
@@ -234,7 +234,9 @@ install_emacs() {
         return
     fi
 
-    sudo apt install -y emacs
+    # Install Emacs 30.1 from snap
+    echo "Installing Emacs 30.1 from snap..."
+    sudo snap install emacs --classic
 
     print_success "Emacs installed: $(emacs --version | head -n1)"
 }
@@ -373,6 +375,14 @@ setup_zsh() {
 
     print_success "Zsh plugins installed"
 
+    # Add Doom Emacs bin to PATH in .zshrc if not already present
+    if [ -d "$HOME/.config/emacs/bin" ] && ! grep -q "\.config/emacs/bin" "$HOME/.zshrc" 2>/dev/null; then
+        echo "" >> "$HOME/.zshrc"
+        echo '# Doom Emacs' >> "$HOME/.zshrc"
+        echo 'export PATH="$HOME/.config/emacs/bin:$PATH"' >> "$HOME/.zshrc"
+        print_success "Added Doom Emacs bin to PATH in .zshrc"
+    fi
+
     # Check if starship is already installed
     if command -v starship &> /dev/null; then
         print_success "Starship already installed: $(starship --version)"
@@ -475,13 +485,12 @@ show_completion_message() {
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
     echo "  2. Open Neovim and run :checkhealth to verify setup"
-    echo "  3. Add to your shell config: export PATH=\"\$HOME/.config/emacs/bin:\$PATH\""
-    echo "  4. After stowing emacs config, run: doom sync"
-    echo "  5. Stow Dropbox configs: stow dropbox"
-    echo "  6. For systemd Dropbox service: stow -t / dropbox-systemd"
-    echo "  7. Reload systemd: sudo systemctl daemon-reload"
-    echo "  8. Enable Dropbox service: sudo systemctl enable dropbox@eric.service"
-    echo "  9. Start Dropbox service: sudo systemctl start dropbox@eric.service"
+    echo "  3. After stowing emacs config, run: doom sync"
+    echo "  4. Stow Dropbox configs: stow dropbox"
+    echo "  5. Enable Dropbox user service: systemctl --user enable dropbox.service"
+    echo "  6. Start Dropbox user service: systemctl --user start dropbox.service"
+    echo "  7. Reload systemd user daemon: systemctl --user daemon-reexec"
+    echo "  8. Enable and start Emacs service: systemctl --user enable --now emacs.service"
 
     echo -e "\n💡 Useful commands:"
     echo "  • nvm list         - Show installed Node.js versions"
