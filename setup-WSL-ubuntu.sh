@@ -242,7 +242,8 @@ install_emacs() {
         libtiff5-dev libgnutls28-dev libncurses5-dev \
         libjansson-dev libharfbuzz-dev libharfbuzz-bin \
         imagemagick libmagickwand-dev libxml2-dev \
-        libgccjit-10-dev gcc-10 g++-10
+        libgccjit-10-dev gcc-10 g++-10 \
+        libwebkit2gtk-4.0-dev
 
     # Set GCC version for native compilation
     export CC=gcc-10 CXX=g++-10
