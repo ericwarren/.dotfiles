@@ -236,14 +236,12 @@ install_emacs() {
 
     # Install build dependencies
     echo "Installing Emacs build dependencies..."
-    sudo apt install -y \
-        autoconf automake libtool texinfo \
-        libgtk-3-dev libxpm-dev libjpeg-dev libgif-dev \
-        libtiff5-dev libgnutls28-dev libncurses-dev \
-        libjansson-dev libharfbuzz-dev libharfbuzz-bin \
-        imagemagick libmagickwand-dev libxml2-dev \
-        libgccjit-10-dev gcc-10 g++-10 \
-        libwebkit2gtk-4.1-dev
+    sudo sudo apt install -y build-essential autoconf \
+        libtool texinfo libxpm-dev libjpeg-dev libpng-dev \
+        libgif-dev libtiff-dev libgnutls28-dev libxml2-dev \
+        libgtk-3-dev libncurses-dev libgccjit-13-dev \
+        libjansson-dev libsqlite3-dev libgpm-dev \
+        libmagickwand-dev imagemagick
 
     # Set GCC version for native compilation
     export CC=gcc-10 CXX=g++-10
@@ -260,14 +258,24 @@ install_emacs() {
 
     # Configure build with native compilation and GUI support
     echo "Configuring Emacs build..."
-    ./configure \
-        --with-native-compilation=aot \
-        --with-json \
-        --with-imagemagick \
+      ./configure \
+        --prefix=/usr \
         --with-x-toolkit=gtk3 \
-        --with-xwidgets --with-webkit=webkit2gtk-4.1 \
-        --prefix=/usr/local
-
+        --with-xpm \
+        --with-jpeg \
+        --with-png \
+        --with-gif \
+        --with-tiff \
+        --with-gnutls \
+        --with-xml2 \
+        --with-cairo \
+        --with-harfbuzz \
+        --with-rsvg \
+        --with-libsystemd \
+        --with-imagemagick \
+        --with-native-compilation=yes \
+        --with-json \
+        --with-sqlite3
     # Build Emacs (this will take a while)
     echo "Building Emacs (this may take 15-30 minutes)..."
     make -j$(nproc)
