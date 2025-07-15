@@ -265,7 +265,7 @@ install_emacs() {
         --with-json \
         --with-imagemagick \
         --with-x-toolkit=gtk3 \
-        --with-xwidgets \
+        --with-xwidgets --with-webkit=webkit2gtk-4.1 \
         --prefix=/usr/local
 
     # Build Emacs (this will take a while)
