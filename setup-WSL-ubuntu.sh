@@ -241,7 +241,7 @@ install_emacs() {
         libgif-dev libtiff-dev libgnutls28-dev libxml2-dev \
         libgtk-3-dev libncurses-dev libgccjit-13-dev \
         libjansson-dev libsqlite3-dev libgpm-dev \
-        libmagickwand-dev imagemagick
+        libmagickwand-dev imagemagick libtree-sitter-dev
 
     # Set GCC version for native compilation
     export CC=gcc-10 CXX=g++-10
@@ -258,7 +258,7 @@ install_emacs() {
 
     # Configure build with native compilation and GUI support
     echo "Configuring Emacs build..."
-      ./configure \
+    ./configure \
         --prefix=/usr \
         --with-x-toolkit=gtk3 \
         --with-xpm \
@@ -275,7 +275,9 @@ install_emacs() {
         --with-imagemagick \
         --with-native-compilation=yes \
         --with-json \
-        --with-sqlite3
+        --with-sqlite3 \
+        --with-tree-sitter
+
     # Build Emacs (this will take a while)
     echo "Building Emacs (this may take 15-30 minutes)..."
     make -j$(nproc)
