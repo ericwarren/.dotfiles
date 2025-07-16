@@ -397,6 +397,48 @@ install_dropbox() {
     print_success "dropbox.py CLI tool downloaded"
 }
 
+setup_systemd_services() {
+    print_header "⚙️ Setting Up Systemd User Services"
+    
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    templates_dir="$script_dir/templates/systemd/user"
+    
+    if [ ! -d "$templates_dir" ]; then
+        print_warning "No systemd service templates found in $templates_dir"
+        return
+    fi
+    
+    # Create user systemd directory
+    mkdir -p ~/.config/systemd/user
+    
+    # Copy service files from templates
+    for service_file in "$templates_dir"/*.service; do
+        if [ -f "$service_file" ]; then
+            service_name=$(basename "$service_file")
+            echo "Installing $service_name..."
+            cp "$service_file" ~/.config/systemd/user/
+            print_success "Copied $service_name"
+        fi
+    done
+    
+    # Reload systemd user daemon
+    systemctl --user daemon-reload
+    print_success "Systemd user daemon reloaded"
+    
+    # Enable services
+    for service_file in "$templates_dir"/*.service; do
+        if [ -f "$service_file" ]; then
+            service_name=$(basename "$service_file")
+            echo "Enabling $service_name..."
+            if systemctl --user enable "$service_name"; then
+                print_success "Enabled $service_name"
+            else
+                print_warning "Failed to enable $service_name"
+            fi
+        fi
+    done
+}
+
 setup_zsh() {
     print_header "🐚 Setting Up Zsh with Oh My Zsh and Starship"
 
@@ -586,6 +628,7 @@ main() {
     install_dropbox
     setup_zsh
     setup_dotfiles
+    setup_systemd_services
     setup_shell
 
     # Completion
