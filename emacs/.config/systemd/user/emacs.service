@@ -3,9 +3,12 @@ Description=Emacs daemon
 
 [Service]
 Type=forking
+Environment=TMPDIR=%t
 ExecStart=/usr/bin/emacs --daemon
-ExecStop=/usr/bin/emacsclient --eval "(kill-emacs)"
+ExecStop=/usr/bin/emacsclient --socket-name=%t/emacs/server --eval "(kill-emacs)"
+ExecReload=/usr/bin/emacsclient --socket-name=%t/emacs/server --eval "(doom/reload)"
 Restart=always
+RestartSec=2
 
 [Install]
 WantedBy=default.target
