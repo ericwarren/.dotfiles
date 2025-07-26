@@ -1,12 +1,16 @@
 {
   "mcpServers": {
-    "context7": {
-      "transport": [
-        {
-          "type": "sse"
-        }
-      ],
-      "url": "https://mcp.context7.com/sse"
+    "ref": {
+      "command": "npx",
+      "args": ["-y", "@ref/mcp"]
+    },
+    "semgrep": {
+      "command": "npx",
+      "args": ["-y", "@mcp-get/semgrep"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@executeautomation/playwright-mcp-server"]
     }
   }
 }

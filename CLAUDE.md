@@ -49,7 +49,7 @@ Each directory represents a stowable package:
 - **Display management**: Custom display-toggle script for F7 key
 
 ### Current Branch Context
-Feature branch `feature/hyprland-customization` focuses on Hyprland desktop environment setup.
+Main branch - stable dotfiles configuration.
 
 ## Development Notes
 
@@ -64,5 +64,8 @@ Feature branch `feature/hyprland-customization` focuses on Hyprland desktop envi
 - **Audio not working**: Run `install-audio.sh` to install pipewire stack
 - **Display toggle needs jq**: Already added to `setup-x1-arch.sh`
 
-### MCP Server
-Repository includes `.claude.json` configuring the context7 MCP server for enhanced Claude Code functionality.
+### MCP Servers
+Repository includes `.mcp.json` configuring multiple MCP servers for enhanced Claude Code functionality:
+- **ref**: Reference management and documentation lookup
+- **semgrep**: Code analysis and security scanning capabilities
+- **playwright**: Browser automation and testing support
