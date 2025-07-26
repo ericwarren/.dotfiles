@@ -466,6 +466,38 @@ install_nodejs() {
 }
 
 
+setup_emacs_systemd_service() {
+    print_header "⚙️ Setting Up Emacs Systemd Service"
+    
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    emacs_service="$script_dir/templates/systemd/user/emacs.service"
+    
+    if [ ! -f "$emacs_service" ]; then
+        print_warning "Emacs service template not found at $emacs_service"
+        return
+    fi
+    
+    # Create user systemd directory
+    mkdir -p ~/.config/systemd/user
+    
+    # Copy emacs service file
+    echo "Installing emacs.service..."
+    cp "$emacs_service" ~/.config/systemd/user/
+    print_success "Copied emacs.service"
+    
+    # Reload systemd user daemon
+    systemctl --user daemon-reload
+    print_success "Systemd user daemon reloaded"
+    
+    # Enable emacs service
+    echo "Enabling emacs.service..."
+    if systemctl --user enable emacs.service; then
+        print_success "Enabled emacs.service"
+    else
+        print_warning "Failed to enable emacs.service"
+    fi
+}
+
 setup_zsh() {
     print_header "🐚 Setting Up Zsh with Oh My Zsh and Starship"
 
@@ -610,6 +642,8 @@ show_completion_message() {
     echo "  2. Open Neovim and run :checkhealth to verify setup"
     echo "  3. Add to your shell config: export PATH=\"\$HOME/.config/emacs/bin:\$PATH\""
     echo "  4. After stowing emacs config, run: doom sync"
+    echo "  5. Start Emacs daemon: systemctl --user start emacs.service"
+    echo "  6. Check Emacs service status: systemctl --user status emacs.service"
 
     echo -e "\n💡 Useful commands:"
     echo "  • nvm list         - Show installed Node.js versions"
@@ -653,6 +687,7 @@ main() {
     install_nodejs
     setup_zsh
     setup_dotfiles
+    setup_emacs_systemd_service
     setup_shell
 
     # Completion
