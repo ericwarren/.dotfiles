@@ -64,7 +64,7 @@ install_system_packages() {
         tmux tree htop \
         fontawesome-fonts powerline-fonts \
         wl-clipboard xclip \
-        minicom ranger openssh jq fzf eza bg \
+        minicom ranger openssh jq fzf bg \
         zoxide ripgrep
 
     # Install RPM Fusion repositories for additional codecs
