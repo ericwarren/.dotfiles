@@ -58,3 +58,8 @@ fi
 if command -v starship &> /dev/null; then
     eval "$(starship init zsh)"
 fi
+
+# Start SSH agent and add keys
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519_personal
+ssh-add ~/.ssh/id_ed25519_business:
