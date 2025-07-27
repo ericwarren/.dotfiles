@@ -59,7 +59,11 @@ if command -v starship &> /dev/null; then
     eval "$(starship init zsh)"
 fi
 
-# Start SSH agent and add keys
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519_personal
-ssh-add ~/.ssh/id_ed25519_business:
+# Start ssh-agent if it's not already running
+if ! pgrep -q ssh-agent; then
+    eval "$(ssh-agent -s)" > /dev/null
+fi
+
+# Add your SSH keys
+ssh-add ~/.ssh/id_ed25519_personal 2>/dev/null
+ssh-add ~/.ssh/id_ed25519_business 2>/dev/null
