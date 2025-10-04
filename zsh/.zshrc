@@ -60,7 +60,7 @@ if command -v starship &> /dev/null; then
 fi
 
 # Start ssh-agent if it's not already running
-if ! pgrep -q ssh-agent; then
+if ! pgrep ssh-agent > /dev/null 2>&1; then
     eval "$(ssh-agent -s)" > /dev/null
 fi
 
