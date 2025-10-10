@@ -6,11 +6,11 @@ alias ..='cd ..'
 alias ...='cd ../..'
 
 # Modern CLI tools (use if available, fallback to standard)
-if command -v exa &> /dev/null; then
-    alias ls='exa'
-    alias ll='exa -la --git'
-    alias la='exa -a'
-    alias lt='exa -T'  # tree view
+if command -v eza &> /dev/null; then
+    alias ls='eza'
+    alias ll='eza -la --git'
+    alias la='eza -a'
+    alias lt='eza -T'  # tree view
 fi
 
 if command -v bat &> /dev/null; then

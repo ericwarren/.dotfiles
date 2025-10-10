@@ -61,7 +61,7 @@ install_system_packages() {
         curl wget git zsh \
         ca-certificates gnupg \
         unzip stow \
-        jq fzf bat exa htop ncdu tldr
+        jq fzf bat eza htop ncdu tldr
 
     sudo apt upgrade -y
 
@@ -377,7 +377,7 @@ show_completion_message() {
     echo "  • Essential development tools and packages"
     echo "  • Python 3 with uv package manager $(uv --version 2>/dev/null || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
-    echo "  • Modern CLI tools: fzf, bat, exa, htop, ncdu, tldr, jq"
+    echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
     echo "    - zsh-syntax-highlighting (syntax coloring)"
@@ -401,7 +401,7 @@ show_completion_message() {
     echo "  • uv pip install     - Install Python packages (fast!)"
     echo "  • fzf                - Fuzzy finder (Ctrl+R for history search)"
     echo "  • bat <file>         - Cat with syntax highlighting"
-    echo "  • exa -la            - Modern ls replacement"
+    echo "  • eza -la            - Modern ls replacement"
     echo "  • ncdu               - Disk usage analyzer"
     echo "  • tldr <command>     - Simplified man pages"
     echo "  • dotnet --info      - Show .NET information"
