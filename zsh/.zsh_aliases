@@ -5,6 +5,19 @@ alias l='ls -CF'
 alias ..='cd ..'
 alias ...='cd ../..'
 
+# Modern CLI tools (use if available, fallback to standard)
+if command -v exa &> /dev/null; then
+    alias ls='exa'
+    alias ll='exa -la --git'
+    alias la='exa -a'
+    alias lt='exa -T'  # tree view
+fi
+
+if command -v bat &> /dev/null; then
+    alias cat='bat --paging=never'
+    alias catp='bat'  # cat with pager
+fi
+
 # Git - just shortcut to git itself, use .gitconfig for git aliases
 alias g='git'
 

@@ -61,12 +61,37 @@ install_system_packages() {
         curl wget git zsh \
         ca-certificates gnupg \
         unzip stow \
-        python3 python3-pip python3-venv \
-        gcc g++ make
+        jq fzf bat exa htop ncdu tldr
 
     sudo apt upgrade -y
 
     print_success "Essential packages installed"
+}
+
+install_python() {
+    print_header "🐍 Installing Python & uv Package Manager"
+
+    echo "Installing Python 3 and dependencies..."
+    sudo apt install -y python3-full python3-pip python3-venv python-is-python3
+
+    print_success "Python installed: $(python --version)"
+
+    if command -v uv &> /dev/null; then
+        print_success "uv already installed: $(uv --version)"
+        return
+    fi
+
+    echo "Installing uv package manager..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    # Add to PATH for current session
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if command -v uv &> /dev/null; then
+        print_success "uv installed: $(uv --version)"
+    else
+        print_warning "uv installed but may need PATH update. Restart your shell."
+    fi
 }
 
 install_dotnet() {
@@ -304,6 +329,12 @@ require("lazy").setup({
     "lewis6991/gitsigns.nvim",
     config = true,
   },
+
+  -- WakaTime time tracking
+  {
+    "wakatime/vim-wakatime",
+    lazy = false,
+  },
 })
 
 -- Key mappings
@@ -344,8 +375,9 @@ show_completion_message() {
 
     echo "📋 What was installed:"
     echo "  • Essential development tools and packages"
+    echo "  • Python 3 with uv package manager $(uv --version 2>/dev/null || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
-    echo "  • Python 3 with pip and venv"
+    echo "  • Modern CLI tools: fzf, bat, exa, htop, ncdu, tldr, jq"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
     echo "    - zsh-syntax-highlighting (syntax coloring)"
@@ -356,16 +388,23 @@ show_completion_message() {
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
     echo "  2. Launch nvim to auto-install plugins (first run will take a moment)"
-    echo "  3. Optionally use stow to apply your dotfiles:"
-    echo "     cd ~/.dotfiles && stow zsh git neovim tmux"
+    echo "  3. Configure WakaTime in nvim: :WakaTimeApiKey (get key from wakatime.com)"
+    echo "  4. Optionally use stow to apply your dotfiles:"
+    echo "     cd ~/.dotfiles && stow zsh git tmux"
 
     echo -e "\n💡 Useful commands:"
     echo "  • nvim               - Launch Neovim"
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
     echo "  • <Space>ff          - Find files (in nvim)"
     echo "  • <Space>fg          - Live grep (in nvim)"
+    echo "  • uv venv            - Create Python virtual environment"
+    echo "  • uv pip install     - Install Python packages (fast!)"
+    echo "  • fzf                - Fuzzy finder (Ctrl+R for history search)"
+    echo "  • bat <file>         - Cat with syntax highlighting"
+    echo "  • exa -la            - Modern ls replacement"
+    echo "  • ncdu               - Disk usage analyzer"
+    echo "  • tldr <command>     - Simplified man pages"
     echo "  • dotnet --info      - Show .NET information"
-    echo "  • python3 --version  - Check Python version"
 
     if [ "$SHELL" != "$(which zsh)" ]; then
         echo -e "\n${YELLOW}⚠️  Remember to restart your terminal for the shell change to take effect!${NC}"
@@ -382,6 +421,7 @@ main() {
 
     # Installation steps
     install_system_packages
+    install_python
     install_dotnet
     install_ohmyzsh
     install_starship
