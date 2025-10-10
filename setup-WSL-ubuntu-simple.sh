@@ -188,6 +188,34 @@ install_starship() {
     fi
 }
 
+install_nvm() {
+    print_header "📦 Installing Node Version Manager (nvm)"
+
+    if [ -d "$HOME/.nvm" ]; then
+        print_success "nvm already installed"
+        return
+    fi
+
+    echo "Installing nvm..."
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+
+    # Load nvm for current session
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+    if [ -d "$HOME/.nvm" ]; then
+        print_success "nvm installed successfully"
+
+        # Install LTS version of Node.js
+        echo "Installing Node.js LTS..."
+        nvm install --lts
+        nvm use --lts
+        print_success "Node.js LTS installed: $(node --version 2>/dev/null || echo 'will be available after shell restart')"
+    else
+        print_warning "nvm installed but may need shell restart"
+    fi
+}
+
 install_neovim() {
     print_header "📝 Installing Neovim"
 
@@ -377,6 +405,7 @@ show_completion_message() {
     echo "  • Essential development tools and packages"
     echo "  • Python 3 with uv package manager $(uv --version 2>/dev/null || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
+    echo "  • Node Version Manager (nvm) with Node.js LTS"
     echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
@@ -397,6 +426,9 @@ show_completion_message() {
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
     echo "  • <Space>ff          - Find files (in nvim)"
     echo "  • <Space>fg          - Live grep (in nvim)"
+    echo "  • nvm install <ver>  - Install specific Node.js version"
+    echo "  • nvm use <ver>      - Switch Node.js version"
+    echo "  • nvm ls             - List installed Node.js versions"
     echo "  • uv venv            - Create Python virtual environment"
     echo "  • uv pip install     - Install Python packages (fast!)"
     echo "  • fzf                - Fuzzy finder (Ctrl+R for history search)"
@@ -423,6 +455,7 @@ main() {
     install_system_packages
     install_python
     install_dotnet
+    install_nvm
     install_ohmyzsh
     install_starship
     install_neovim
