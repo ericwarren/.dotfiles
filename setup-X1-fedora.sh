@@ -222,134 +222,6 @@ install_docker() {
     print_success "Docker installation complete"
 }
 
-install_qemu() {
-    print_header "🖥️ Installing QEMU"
-
-    if command -v qemu-system-x86_64 &> /dev/null; then
-        print_success "QEMU already installed: $(qemu-system-x86_64 --version | head -n1)"
-        return
-    fi
-
-    # Install QEMU and virtualization tools
-    echo "Installing QEMU and virtualization packages..."
-    sudo dnf install -y \
-        qemu qemu-kvm qemu-system-x86 qemu-img \
-        libvirt libvirt-daemon libvirt-daemon-kvm \
-        virt-manager virt-install virt-viewer \
-        bridge-utils edk2-ovmf
-
-    # Add user to libvirt group
-    echo "Adding $USER to libvirt group..."
-    sudo usermod -aG libvirt $USER
-
-    # Enable and start libvirt service
-    echo "Enabling libvirt service..."
-    sudo systemctl enable libvirtd
-    sudo systemctl start libvirtd
-
-    # Verify installation
-    QEMU_VERSION=$(qemu-system-x86_64 --version | head -n1)
-
-    print_success "QEMU installed: $QEMU_VERSION"
-    print_success "Virtualization tools installed"
-
-    print_warning "You'll need to logout/login for libvirt group membership to take effect"
-    print_success "QEMU installation complete"
-}
-
-install_pfsense_qemu() {
-    print_header "🔥 Installing pfSense on QEMU"
-
-    # Create directory for VM images
-    mkdir -p ~/VMs/pfsense
-    ORIGINAL_DIR=$(pwd)
-    cd ~/VMs/pfsense
-
-    # Download pfSense ISO (latest community edition)
-    echo "Downloading pfSense ISO..."
-    PFSENSE_VERSION="2.7.2"  # Update this to latest version
-    PFSENSE_ISO="pfSense-CE-${PFSENSE_VERSION}-RELEASE-amd64.iso"
-    PFSENSE_URL="https://atxfiles.netgate.com/mirror/downloads/${PFSENSE_ISO}.gz"
-
-    if [ ! -f "${PFSENSE_ISO}" ]; then
-        wget "${PFSENSE_URL}" -O "${PFSENSE_ISO}.gz"
-        gunzip "${PFSENSE_ISO}.gz"
-        print_success "pfSense ISO downloaded"
-    else
-        print_success "pfSense ISO already exists"
-    fi
-
-    # Create virtual disk
-    echo "Creating virtual disk for pfSense..."
-    qemu-img create -f qcow2 pfsense.qcow2 20G
-
-    # Create startup script
-    cat > start_pfsense.sh << 'EOF'
-#!/bin/bash
-# pfSense QEMU startup script
-# Usage: ./start_pfsense.sh [install|run]
-
-VM_NAME="pfSense"
-DISK="pfsense.qcow2"
-ISO="pfSense-CE-2.7.2-RELEASE-amd64.iso"  # Update version as needed
-MEMORY="2048"
-CPUS="2"
-
-# Network configuration
-# Creates two networks: WAN (NAT) and LAN (internal)
-WAN_NET="-netdev user,id=wan,hostfwd=tcp::8443-:443,hostfwd=tcp::8080-:80"
-LAN_NET="-netdev user,id=lan,net=192.168.100.0/24,dhcpstart=192.168.100.10"
-
-case "$1" in
-    "install")
-        echo "Starting pfSense installation..."
-        qemu-system-x86_64 \
-            -name "$VM_NAME" \
-            -m "$MEMORY" \
-            -smp "$CPUS" \
-            -hda "$DISK" \
-            -cdrom "$ISO" \
-            -boot d \
-            $WAN_NET -device e1000,netdev=wan \
-            $LAN_NET -device e1000,netdev=lan \
-            -vga std \
-            -enable-kvm
-        ;;
-    "run"|*)
-        echo "Starting pfSense..."
-        qemu-system-x86_64 \
-            -name "$VM_NAME" \
-            -m "$MEMORY" \
-            -smp "$CPUS" \
-            -hda "$DISK" \
-            $WAN_NET -device e1000,netdev=wan \
-            $LAN_NET -device e1000,netdev=lan \
-            -vga std \
-            -enable-kvm \
-            -daemonize
-        echo "pfSense started in background"
-        echo "Web interface: https://localhost:8443"
-        echo "Default login: admin/pfsense"
-        ;;
-esac
-EOF
-
-    chmod +x start_pfsense.sh
-    print_success "pfSense VM setup complete"
-
-    # Change back to original directory
-    cd "$ORIGINAL_DIR"
-
-    echo -e "\n${GREEN}pfSense Installation Instructions:${NC}"
-    echo "1. cd ~/VMs/pfsense/"
-    echo "2. Run installation: ./start_pfsense.sh install"
-    echo "3. Follow pfSense setup wizard in the VM"
-    echo "4. After installation: ./start_pfsense.sh run"
-    echo "5. Access web interface: https://localhost:8443"
-    echo "6. Default credentials: admin/pfsense"
-    echo -e "\n${YELLOW}Note: You may need to logout/login for group membership to take effect${NC}"
-}
-
 install_go() {
     print_header "🐹 Installing Go"
 
@@ -367,61 +239,6 @@ install_go() {
         echo 'export GOPATH=$HOME/go' >> ~/.bashrc
         echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.bashrc
         print_success "Added Go environment variables to .bashrc"
-    fi
-}
-
-install_emacs() {
-    print_header "📝 Installing Emacs"
-
-    if command -v emacs &> /dev/null; then
-        print_success "Emacs already installed: $(emacs --version | head -n1)"
-        return
-    fi
-
-    sudo dnf install -y emacs
-
-    print_success "Emacs installed: $(emacs --version | head -n1)"
-}
-
-install_doom_emacs() {
-    print_header "🔥 Installing Doom Emacs"
-
-    # Install dependencies for Doom Emacs
-    echo "Installing Doom Emacs dependencies..."
-    sudo dnf install -y git ripgrep fd-find
-
-    print_success "Doom Emacs dependencies installed"
-
-    # Remove existing Emacs config if present
-    if [ -d "$HOME/.config/emacs" ] || [ -d "$HOME/.emacs.d" ]; then
-        echo "Backing up existing Emacs configuration..."
-        [ -d "$HOME/.config/emacs" ] && mv "$HOME/.config/emacs" "$HOME/.config/emacs.bak.$(date +%Y%m%d%H%M%S)"
-        [ -d "$HOME/.emacs.d" ] && mv "$HOME/.emacs.d" "$HOME/.emacs.d.bak.$(date +%Y%m%d%H%M%S)"
-    fi
-
-    # Clone Doom Emacs to ~/.config/emacs
-    echo "Cloning Doom Emacs repository..."
-    if git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.config/emacs; then
-        print_success "Doom Emacs repository cloned"
-
-        # Set DOOMDIR to use our stowed config location
-        export DOOMDIR="$HOME/.config/doom"
-
-        # Run Doom install script
-        echo "Running Doom install script (this may take a while)..."
-        if DOOMDIR="$HOME/.config/doom" ~/.config/emacs/bin/doom install; then
-            print_success "Doom Emacs installed successfully"
-
-            # Add doom to PATH in current session
-            export PATH="$HOME/.config/emacs/bin:$PATH"
-            print_success "Doom binary added to PATH for current session"
-        else
-            print_error "Failed to run Doom install script"
-            return 1
-        fi
-    else
-        print_error "Failed to clone Doom Emacs repository"
-        return 1
     fi
 }
 
@@ -463,39 +280,6 @@ install_nodejs() {
 
     print_success "Node.js development tools installed"
     print_success "Claude Code installed"
-}
-
-
-setup_emacs_systemd_service() {
-    print_header "⚙️ Setting Up Emacs Systemd Service"
-    
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    emacs_service="$script_dir/templates/systemd/user/emacs.service"
-    
-    if [ ! -f "$emacs_service" ]; then
-        print_warning "Emacs service template not found at $emacs_service"
-        return
-    fi
-    
-    # Create user systemd directory
-    mkdir -p ~/.config/systemd/user
-    
-    # Copy emacs service file
-    echo "Installing emacs.service..."
-    cp "$emacs_service" ~/.config/systemd/user/
-    print_success "Copied emacs.service"
-    
-    # Reload systemd user daemon
-    systemctl --user daemon-reload
-    print_success "Systemd user daemon reloaded"
-    
-    # Enable emacs service
-    echo "Enabling emacs.service..."
-    if systemctl --user enable emacs.service; then
-        print_success "Enabled emacs.service"
-    else
-        print_warning "Failed to enable emacs.service"
-    fi
 }
 
 setup_zsh() {
@@ -624,13 +408,10 @@ show_completion_message() {
     echo "  • Essential development tools and packages"
     echo "  • Alacritty terminal emulator with Cascadia Code Nerd Font"
     echo "  • Neovim $(nvim --version | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
-    echo "  • Emacs $(emacs --version 2>/dev/null | head -n1 | grep -oP '\d+\.\d+' || echo 'latest') with Doom"
     echo "  • Google Chrome $(google-chrome --version 2>/dev/null || echo 'latest')"
     echo "  • Visual Studio Code $(code --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
     echo "  • Docker Engine $(docker --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
-    echo "  • QEMU virtualization with libvirt"
-    echo "  • pfSense virtualization environment"
     echo "  • Go $(go version 2>/dev/null | grep -oP 'go\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • Node.js $(node --version 2>/dev/null || echo 'latest') via NVM"
     echo "  • Claude Code CLI"
@@ -640,23 +421,16 @@ show_completion_message() {
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
     echo "  2. Open Neovim and run :checkhealth to verify setup"
-    echo "  3. Add to your shell config: export PATH=\"\$HOME/.config/emacs/bin:\$PATH\""
-    echo "  4. After stowing emacs config, run: doom sync"
-    echo "  5. Start Emacs daemon: systemctl --user start emacs.service"
-    echo "  6. Check Emacs service status: systemctl --user status emacs.service"
 
     echo -e "\n💡 Useful commands:"
     echo "  • nvm list         - Show installed Node.js versions"
     echo "  • dotnet --info    - Show .NET information"
     echo "  • docker --version - Check Docker version"
-    echo "  • qemu-system-x86_64 --version - Check QEMU version"
     echo "  • go version       - Check Go version"
     echo "  • code --version   - Check Visual Studio Code version"
     echo "  • claude --version - Check Claude Code version"
     echo "  • starship --version - Check Starship version"
     echo "  • nvim --version   - Check Neovim version"
-    echo "  • emacs --version  - Check Emacs version"
-    echo "  • doom doctor      - Check Doom Emacs health"
 
     if [ "$SHELL" != "$(which zsh)" ]; then
         echo -e "\n${YELLOW}⚠️  Remember to restart your terminal for the shell change to take effect!${NC}"
@@ -675,19 +449,14 @@ main() {
     install_system_packages
     install_alacritty
     install_neovim
-    install_emacs
-    install_doom_emacs
     install_chrome
     install_vscode
     install_dotnet
     install_docker
-    install_qemu
-    install_pfsense_qemu
     install_go
     install_nodejs
     setup_zsh
     setup_dotfiles
-    setup_emacs_systemd_service
     setup_shell
 
     # Completion
