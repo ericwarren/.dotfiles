@@ -302,6 +302,46 @@ install_claude_code() {
     fi
 }
 
+install_azure_cli() {
+    print_header "☁️ Installing Azure CLI"
+
+    if command -v az &> /dev/null; then
+        print_success "Azure CLI already installed: $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'installed')"
+        return
+    fi
+
+    echo "Installing Azure CLI repository..."
+    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+
+    sudo tee /etc/yum.repos.d/azure-cli.repo << 'EOF'
+[azure-cli]
+name=Azure CLI
+baseurl=https://packages.microsoft.com/yumrepos/azure-cli
+enabled=1
+gpgcheck=1
+gpgkey=https://packages.microsoft.com/keys/microsoft.asc
+EOF
+
+    echo "Installing Azure CLI..."
+    sudo dnf install -y azure-cli
+
+    print_success "Azure CLI installed: $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'successfully')"
+}
+
+install_github_cli() {
+    print_header "🐙 Installing GitHub CLI"
+
+    if command -v gh &> /dev/null; then
+        print_success "GitHub CLI already installed: $(gh --version | head -n1)"
+        return
+    fi
+
+    echo "Installing GitHub CLI..."
+    sudo dnf install -y gh
+
+    print_success "GitHub CLI installed: $(gh --version | head -n1)"
+}
+
 setup_zsh() {
     print_header "🐚 Setting Up Zsh with Oh My Zsh and Starship"
 
@@ -435,6 +475,8 @@ show_completion_message() {
     echo "  • Go $(go version 2>/dev/null | grep -oP 'go\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • Node.js $(node --version 2>/dev/null || echo 'latest') via NVM"
     echo "  • Claude Code CLI"
+    echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
+    echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
     echo "  • Python 3 with pip and virtualenv"
     echo "  • Zsh with Oh My Zsh and Starship prompt"
 
@@ -449,6 +491,10 @@ show_completion_message() {
     echo "  • go version       - Check Go version"
     echo "  • code --version   - Check Visual Studio Code version"
     echo "  • claude --version - Check Claude Code version"
+    echo "  • az login         - Login to Azure"
+    echo "  • az --version     - Check Azure CLI version"
+    echo "  • gh auth login    - Authenticate with GitHub"
+    echo "  • gh --version     - Check GitHub CLI version"
     echo "  • starship --version - Check Starship version"
     echo "  • nvim --version   - Check Neovim version"
 
@@ -476,6 +522,8 @@ main() {
     install_go
     install_nodejs
     install_claude_code
+    install_azure_cli
+    install_github_cli
     setup_zsh
     setup_dotfiles
     setup_shell
