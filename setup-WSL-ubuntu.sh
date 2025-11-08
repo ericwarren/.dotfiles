@@ -298,6 +298,59 @@ install_go() {
     print_success "Go installed: $(go version)"
 }
 
+install_azure_cli() {
+    print_header "☁️ Installing Azure CLI"
+
+    if command -v az &> /dev/null; then
+        print_success "Azure CLI already installed: $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'installed')"
+        return
+    fi
+
+    echo "Installing prerequisites..."
+    sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
+
+    echo "Adding Microsoft GPG key..."
+    sudo mkdir -p /etc/apt/keyrings
+    curl -sLS https://packages.microsoft.com/keys/microsoft.asc | \
+        gpg --dearmor | \
+        sudo tee /etc/apt/keyrings/microsoft.gpg > /dev/null
+    sudo chmod go+r /etc/apt/keyrings/microsoft.gpg
+
+    echo "Adding Azure CLI repository..."
+    AZ_DIST=$(lsb_release -cs)
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_DIST main" | \
+        sudo tee /etc/apt/sources.list.d/azure-cli.list
+
+    echo "Installing Azure CLI..."
+    sudo apt update
+    sudo apt install -y azure-cli
+
+    print_success "Azure CLI installed: $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'successfully')"
+}
+
+install_github_cli() {
+    print_header "🐙 Installing GitHub CLI"
+
+    if command -v gh &> /dev/null; then
+        print_success "GitHub CLI already installed: $(gh --version | head -n1)"
+        return
+    fi
+
+    echo "Adding GitHub CLI repository..."
+    sudo mkdir -p -m 755 /etc/apt/keyrings
+    wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
+        sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
+    sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | \
+        sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+
+    echo "Installing GitHub CLI..."
+    sudo apt update
+    sudo apt install -y gh
+
+    print_success "GitHub CLI installed: $(gh --version | head -n1)"
+}
+
 setup_shell() {
     print_header "🐚 Configuring Default Shell"
 
@@ -329,6 +382,8 @@ show_completion_message() {
     echo "    - git, z, sudo, extract, colored-man-pages, dotnet"
     echo "  • Starship prompt $(starship --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • Claude Code $(claude --version 2>/dev/null || echo 'latest')"
+    echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
+    echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
     echo "  • Neovim $(nvim --version 2>/dev/null | head -n1 || echo 'latest')"
 
     echo -e "\n📌 Next Steps:"
@@ -345,6 +400,10 @@ show_completion_message() {
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
     echo "  • <Space>ff          - Find files (in nvim)"
     echo "  • <Space>fg          - Live grep (in nvim)"
+    echo "  • az login           - Login to Azure"
+    echo "  • az --version       - Check Azure CLI version"
+    echo "  • gh auth login      - Authenticate with GitHub"
+    echo "  • gh --version       - Check GitHub CLI version"
     echo "  • nvm install <ver>  - Install specific Node.js version"
     echo "  • nvm use <ver>      - Switch Node.js version"
     echo "  • nvm ls             - List installed Node.js versions"
@@ -382,6 +441,8 @@ main() {
     install_ohmyzsh
     install_starship
     install_claude_code
+    install_azure_cli
+    install_github_cli
     install_neovim
     setup_shell
 
