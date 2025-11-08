@@ -37,8 +37,8 @@ check_ubuntu_version() {
         . /etc/os-release
         if [ "$ID" != "ubuntu" ]; then
             print_error "This script is designed for Ubuntu only"
-            print_error "Detected: $PRETTY_NAME"
-            exit 1
+                print_error "Detected: $PRETTY_NAME"
+                exit 1
         fi
         print_success "Detected: $PRETTY_NAME"
     else
@@ -216,16 +216,44 @@ install_nvm() {
     fi
 }
 
+install_claude_code() {
+    print_header "🤖 Installing Claude Code"
+
+    if command -v claude &> /dev/null; then
+        print_success "Claude Code already installed: $(claude --version 2>/dev/null || echo 'installed')"
+        return
+    fi
+
+    echo "Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+
+    # Add to PATH for current session
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if command -v claude &> /dev/null; then
+        print_success "Claude Code installed: $(claude --version 2>/dev/null || echo 'successfully')"
+    else
+        print_warning "Claude Code installed but may need PATH update. Restart your shell."
+    fi
+}
+
 install_neovim() {
     print_header "📝 Installing Neovim"
 
+    # Add Neovim unstable PPA for latest version (0.10+)
+    echo "Adding Neovim unstable PPA..."
+    sudo add-apt-repository ppa:neovim-ppa/unstable -y
+    sudo apt update
+
     if command -v nvim &> /dev/null; then
-        print_success "Neovim already installed: $(nvim --version | head -n1)"
-    else
-        echo "Installing Neovim..."
+        print_success "Neovim already installed, upgrading if needed..."
         sudo apt install -y neovim ripgrep fd-find
-        print_success "Neovim installed"
+    else
+        echo "Installing Neovim from PPA..."
+        sudo apt install -y neovim ripgrep fd-find
     fi
+
+    print_success "Neovim installed: $(nvim --version | head -n1)"
 
     # Create Neovim config directory
     mkdir -p "$HOME/.config/nvim"
@@ -363,6 +391,14 @@ require("lazy").setup({
     "wakatime/vim-wakatime",
     lazy = false,
   },
+
+  -- Code Bridge for Claude Code integration
+  {
+    "samir-roy/code-bridge.nvim",
+    config = function()
+      require("code-bridge").setup()
+    end,
+  },
 })
 
 -- Key mappings
@@ -412,16 +448,19 @@ show_completion_message() {
     echo "    - zsh-syntax-highlighting (syntax coloring)"
     echo "    - git, z, sudo, extract, colored-man-pages, dotnet"
     echo "  • Starship prompt $(starship --version 2>/dev/null | head -n1 || echo 'latest')"
-    echo "  • Neovim with Treesitter, Telescope, and nvim-tree"
+    echo "  • Claude Code $(claude --version 2>/dev/null || echo 'latest')"
+    echo "  • Neovim with Treesitter, Telescope, nvim-tree, and code-bridge"
 
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
-    echo "  2. Launch nvim to auto-install plugins (first run will take a moment)"
-    echo "  3. Configure WakaTime in nvim: :WakaTimeApiKey (get key from wakatime.com)"
-    echo "  4. Optionally use stow to apply your dotfiles:"
+    echo "  2. Authenticate Claude Code: claude auth"
+    echo "  3. Launch nvim to auto-install plugins (first run will take a moment)"
+    echo "  4. Configure WakaTime in nvim: :WakaTimeApiKey (get key from wakatime.com)"
+    echo "  5. Optionally use stow to apply your dotfiles:"
     echo "     cd ~/.dotfiles && stow zsh git tmux"
 
     echo -e "\n💡 Useful commands:"
+    echo "  • claude             - Launch Claude Code CLI"
     echo "  • nvim               - Launch Neovim"
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
     echo "  • <Space>ff          - Find files (in nvim)"
@@ -458,6 +497,7 @@ main() {
     install_nvm
     install_ohmyzsh
     install_starship
+    install_claude_code
     install_neovim
     setup_shell
 
