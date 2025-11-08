@@ -23,10 +23,13 @@ return {
           ['<S-Tab>'] = cmp.mapping.select_prev_item(),
         }),
         sources = cmp.config.sources({
-          { name = 'nvim_lsp' },
-          { name = 'buffer' },
-          { name = 'path' },
+          { name = 'nvim_lsp', priority = 1000 },
+          { name = 'buffer', priority = 500 },
+          { name = 'path', priority = 250 },
         }),
+        performance = {
+          max_view_entries = 20, -- Limit completion entries for better performance
+        },
       })
     end
   },
@@ -35,9 +38,11 @@ return {
   {
     'windwp/nvim-autopairs',
     event = "InsertEnter",
+    dependencies = { 'hrsh7th/nvim-cmp' },
     config = function()
       require('nvim-autopairs').setup({
         check_ts = true,
+        fast_wrap = {},
       })
       -- Integration with nvim-cmp
       local cmp_autopairs = require('nvim-autopairs.completion.cmp')

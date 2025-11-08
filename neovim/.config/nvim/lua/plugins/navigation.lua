@@ -7,20 +7,30 @@ return {
     dependencies = {
       'nvim-tree/nvim-web-devicons',
     },
-    config = function()
-      require('nvim-tree').setup({
-        sort_by = 'case_sensitive',
-        view = {
-          width = 30,
+    opts = {
+      sort_by = 'case_sensitive',
+      view = {
+        width = 30,
+      },
+      renderer = {
+        group_empty = true,
+        icons = {
+          show = {
+            git = true,
+            folder = true,
+            file = true,
+            folder_arrow = true,
+          },
         },
-        renderer = {
-          group_empty = true,
-        },
-        filters = {
-          dotfiles = false,
-        },
-      })
-    end
+      },
+      filters = {
+        dotfiles = false,
+      },
+      git = {
+        enable = true,
+        ignore = false,
+      },
+    },
   },
 
   -- Fuzzy Finder
@@ -30,18 +40,26 @@ return {
     dependencies = {
       'nvim-lua/plenary.nvim',
     },
-    config = function()
-      require('telescope').setup({
-        defaults = {
-          file_ignore_patterns = { 'node_modules', '.git/' },
-          mappings = {
-            i = {
-              ['<C-u>'] = false,
-              ['<C-d>'] = false,
-            },
+    opts = {
+      defaults = {
+        file_ignore_patterns = { 'node_modules', '.git/' },
+        mappings = {
+          i = {
+            ['<C-u>'] = false,
+            ['<C-d>'] = false,
           },
         },
-      })
-    end,
+        vimgrep_arguments = {
+          'rg',
+          '--color=never',
+          '--no-heading',
+          '--with-filename',
+          '--line-number',
+          '--column',
+          '--smart-case',
+          '--hidden', -- Search hidden files
+        },
+      },
+    },
   },
 }

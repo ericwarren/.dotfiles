@@ -95,7 +95,13 @@ require('lazy').setup('plugins', {
   -- Change detection for config files
   change_detection = {
     enabled = true,
-    notify = true, -- Get notified when config changes
+    notify = false, -- Don't notify on every config change (reduces noise)
+  },
+
+  -- Default lazy-loading behavior
+  defaults = {
+    lazy = false, -- Don't lazy-load by default (explicit is better)
+    version = false, -- Don't use versions by default (use latest git)
   },
 })
 

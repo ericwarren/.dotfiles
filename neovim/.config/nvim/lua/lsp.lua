@@ -27,34 +27,36 @@ end
 
 -- LSP keybindings on attach
 local on_attach = function(client, bufnr)
-  local opts = { noremap = true, silent = true, buffer = bufnr }
+  local function map(mode, lhs, rhs, desc)
+    vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc, noremap = true, silent = true })
+  end
 
   -- Navigation
-  vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-  vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
-  vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
-  vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+  map('n', 'gd', vim.lsp.buf.definition, 'Go to definition')
+  map('n', 'gD', vim.lsp.buf.declaration, 'Go to declaration')
+  map('n', 'gi', vim.lsp.buf.implementation, 'Go to implementation')
+  map('n', 'gr', vim.lsp.buf.references, 'Show references')
 
   -- Hover and help
-  vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
-  vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, opts)
+  map('n', 'K', vim.lsp.buf.hover, 'Hover documentation')
+  map('i', '<C-k>', vim.lsp.buf.signature_help, 'Signature help')
 
   -- Code actions and refactoring
-  vim.keymap.set('n', '<leader>vca', vim.lsp.buf.code_action, opts)
-  vim.keymap.set('n', '<leader>vrn', vim.lsp.buf.rename, opts)
+  map('n', '<leader>vca', vim.lsp.buf.code_action, 'Code action')
+  map('n', '<leader>vrn', vim.lsp.buf.rename, 'Rename symbol')
 
   -- Diagnostics
-  vim.keymap.set('n', '<leader>vd', vim.diagnostic.open_float, opts)
-  vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
-  vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
+  map('n', '<leader>vd', vim.diagnostic.open_float, 'Show diagnostic')
+  map('n', '[d', vim.diagnostic.goto_prev, 'Previous diagnostic')
+  map('n', ']d', vim.diagnostic.goto_next, 'Next diagnostic')
 
   -- Workspace
-  vim.keymap.set('n', '<leader>vws', vim.lsp.buf.workspace_symbol, opts)
+  map('n', '<leader>vws', vim.lsp.buf.workspace_symbol, 'Workspace symbols')
 
   -- Formatting (handled by conform.nvim, but keep manual trigger)
-  vim.keymap.set('n', '<leader>f', function()
+  map('n', '<leader>f', function()
     require("conform").format({ async = true, lsp_fallback = true })
-  end, opts)
+  end, 'Format buffer')
 end
 
 -- Capabilities for nvim-cmp
@@ -199,20 +201,29 @@ vim.api.nvim_create_autocmd("LspAttach", {
 require("conform").setup({
   formatters_by_ft = {
     python = { "isort", "black" },
-    javascript = { { "prettierd", "prettier" } },
-    typescript = { { "prettierd", "prettier" } },
-    javascriptreact = { { "prettierd", "prettier" } },
-    typescriptreact = { { "prettierd", "prettier" } },
-    css = { { "prettierd", "prettier" } },
-    html = { { "prettierd", "prettier" } },
-    json = { { "prettierd", "prettier" } },
-    yaml = { { "prettierd", "prettier" } },
-    markdown = { { "prettierd", "prettier" } },
+    javascript = { "prettierd", "prettier", stop_after_first = true },
+    typescript = { "prettierd", "prettier", stop_after_first = true },
+    javascriptreact = { "prettierd", "prettier", stop_after_first = true },
+    typescriptreact = { "prettierd", "prettier", stop_after_first = true },
+    css = { "prettierd", "prettier", stop_after_first = true },
+    html = { "prettierd", "prettier", stop_after_first = true },
+    json = { "prettierd", "prettier", stop_after_first = true },
+    yaml = { "prettierd", "prettier", stop_after_first = true },
+    markdown = { "prettierd", "prettier", stop_after_first = true },
     go = { "gofmt", "goimports" },
     cs = { "csharpier" },
+    lua = { "stylua" },
   },
+  -- Set default options for all format calls
+  default_format_opts = {
+    lsp_fallback = true,
+  },
+  -- Format on save configuration
   format_on_save = {
     timeout_ms = 500,
     lsp_fallback = true,
   },
+  -- Don't notify on every error to reduce noise
+  notify_on_error = true,
+  notify_no_formatters = false,
 })
