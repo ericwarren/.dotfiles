@@ -11,8 +11,7 @@ stow claude
 
 ## Files Managed
 
-- `.claude/settings.json` - Main Claude Code settings (theme, statusline, etc.)
-- `.claude/settings.local.json` - Project-level permissions and MCP server settings
+- `.claude/settings.json` - Claude Code settings (theme, statusline, permissions, MCP server settings)
 
 ## Files NOT Managed (intentionally excluded)
 
@@ -32,6 +31,6 @@ These files are user-specific or contain sensitive data and should not be versio
 ## Notes
 
 - `.claude.json` is kept in your home directory and NOT managed by stow (it contains API keys and personal data)
-- The `settings.local.json` contains shareable project-level configurations (permissions, MCP enablement)
+- `settings.json` contains all shareable configurations (theme, permissions, MCP enablement)
 - User-level MCP servers should be configured in `~/.claude.json` (not version controlled)
 - Project-level MCP servers should be configured in `.mcp.json` in the repository root
