@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Ubuntu Development Environment Setup Script for WSL
+# Simplified Ubuntu Development Environment Setup Script for WSL
 # Designed for Ubuntu 22.04/24.04 on Windows Subsystem for Linux
-# Usage: ./setup-WSL-ubuntu.sh
+# Installs: Zsh, Python, .NET SDK (no configuration files)
+# Usage: ./setup-WSL-ubuntu-simple.sh
 
 set -e
 
@@ -36,8 +37,8 @@ check_ubuntu_version() {
         . /etc/os-release
         if [ "$ID" != "ubuntu" ]; then
             print_error "This script is designed for Ubuntu only"
-            print_error "Detected: $PRETTY_NAME"
-            exit 1
+                print_error "Detected: $PRETTY_NAME"
+                exit 1
         fi
         print_success "Detected: $PRETTY_NAME"
     else
@@ -59,41 +60,38 @@ install_system_packages() {
     sudo apt install -y \
         curl wget git zsh \
         ca-certificates gnupg \
-        unzip stow snapd \
-        python3 python3-pip python3-venv \
-        tmux tree htop \
-        fonts-font-awesome fonts-powerline \
-        wl-clipboard xclip \
-        minicom ranger openssh-client jq fzf bat \
-        zoxide ripgrep gcc g++ make
+        unzip stow \
+        jq fzf bat eza htop ncdu tldr
 
     sudo apt upgrade -y
 
-    # Install Cascadia Code Nerd Font manually
-    echo "Installing Cascadia Code Nerd Font..."
-    mkdir -p ~/.local/share/fonts
-    wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/CascadiaCode.zip
-    unzip CascadiaCode.zip -d ~/.local/share/fonts/ && rm CascadiaCode.zip
-    fc-cache -fv
-
-    print_success "Essential packages and fonts installed"
+    print_success "Essential packages installed"
 }
 
-install_neovim() {
-    print_header "📝 Installing Neovim"
+install_python() {
+    print_header "🐍 Installing Python & uv Package Manager"
 
-    # Install latest stable Neovim from official PPA
-    sudo add-apt-repository -y ppa:neovim-ppa/stable
-    sudo apt update
-    sudo apt install -y neovim
+    echo "Installing Python 3 and dependencies..."
+    sudo apt install -y python3-full python3-pip python3-venv python-is-python3
 
-    # Verify version
-    NVIM_VERSION=$(nvim --version | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo "unknown")
-    print_success "Neovim $NVIM_VERSION installed"
+    print_success "Python installed: $(python --version)"
 
-    # Create config directory
-    mkdir -p ~/.config/nvim/lua
-    print_success "Neovim config directory created"
+    if command -v uv &> /dev/null; then
+        print_success "uv already installed: $(uv --version)"
+        return
+    fi
+
+    echo "Installing uv package manager..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    # Add to PATH for current session
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if command -v uv &> /dev/null; then
+        print_success "uv installed: $(uv --version)"
+    else
+        print_warning "uv installed but may need PATH update. Restart your shell."
+    fi
 }
 
 install_dotnet() {
@@ -125,365 +123,46 @@ install_dotnet() {
     dotnet tool install --global dotnet-outdated-tool 2>/dev/null || true
     dotnet tool install --global dotnet-format 2>/dev/null || true
 
-    # Ensure .NET tools are in PATH
-    if ! echo $PATH | grep -q "$HOME/.dotnet/tools"; then
-        echo 'export PATH="$PATH:$HOME/.dotnet/tools"' >> ~/.bashrc
-        print_success "Added .NET tools to PATH"
-    fi
-
     print_success ".NET development tools installed"
 }
 
-install_docker() {
-    print_header "🐳 Installing Docker"
+install_ohmyzsh() {
+    print_header "🎨 Installing Oh My Zsh"
 
-    if command -v docker &> /dev/null; then
-        print_success "Docker already installed: $(docker --version)"
-        return
-    fi
-
-    # Remove any old Docker installations
-    echo "Removing old Docker installations..."
-    sudo apt remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
-
-    # Install prerequisites
-    sudo apt update
-    sudo apt install -y \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        gnupg \
-        lsb-release
-
-    # Add Docker's official GPG key
-    echo "Adding Docker GPG key..."
-    sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-
-    # Set up the repository
-    echo "Adding Docker repository..."
-    echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-    # Install Docker Engine
-    echo "Installing Docker Engine..."
-    sudo apt update
-    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-    # Add user to docker group
-    echo "Adding $USER to docker group..."
-    sudo usermod -aG docker $USER
-
-    # Enable and start Docker service
-    echo "Enabling Docker service..."
-    sudo systemctl enable docker
-    sudo systemctl start docker
-
-    # Verify installation
-    DOCKER_VERSION=$(docker --version)
-    COMPOSE_VERSION=$(docker compose version)
-
-    print_success "Docker installed: $DOCKER_VERSION"
-    print_success "Docker Compose installed: $COMPOSE_VERSION"
-
-    print_warning "You'll need to logout/login for docker group membership to take effect"
-    print_success "Docker installation complete"
-}
-
-install_go() {
-    print_header "🐹 Installing Go"
-
-    if command -v go &> /dev/null; then
-        print_success "Go already installed: $(go version)"
-        return
-    fi
-
-    # Download and install latest Go
-    GO_VERSION="1.22.0"
-    wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
-    sudo rm -rf /usr/local/go
-    sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-    rm go${GO_VERSION}.linux-amd64.tar.gz
-
-    # Add to PATH
-    if ! grep -q "/usr/local/go/bin" ~/.bashrc; then
-        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-    fi
-
-    # Set up Go environment
-    if ! grep -q "GOPATH" ~/.bashrc; then
-        echo 'export GOPATH=$HOME/go' >> ~/.bashrc
-        echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.bashrc
-        print_success "Added Go environment variables to .bashrc"
-    fi
-
-    # Source for current session
-    export PATH=$PATH:/usr/local/go/bin
-    export GOPATH=$HOME/go
-    export PATH=$PATH:$GOPATH/bin
-
-    print_success "Go installed: $(go version)"
-}
-
-install_emacs() {
-    print_header "📝 Installing Emacs 30.1 from Source"
-
-    if command -v emacs &> /dev/null; then
-        print_success "Emacs already installed: $(emacs --version | head -n1)"
-        return
-    fi
-
-    # Install build dependencies
-    echo "Installing Emacs build dependencies..."
-    sudo apt install -y build-essential autoconf \
-        libtool texinfo libxpm-dev libjpeg-dev libpng-dev \
-        libgif-dev libtiff-dev libgnutls28-dev libxml2-dev \
-        libgtk-3-dev libncurses-dev libgccjit-10-dev \
-        libjansson-dev libsqlite3-dev libgpm-dev \
-        libmagickwand-dev imagemagick libtree-sitter-dev \
-        gcc-10 g++-10
-
-    # Set GCC version for native compilation
-    export CC=gcc-10 CXX=g++-10
-
-    # Create temporary build directory
-    EMACS_BUILD_DIR=$(mktemp -d)
-    cd "$EMACS_BUILD_DIR"
-
-    # Download Emacs 30.1 source
-    echo "Downloading Emacs 30.1 source..."
-    wget https://ftp.gnu.org/gnu/emacs/emacs-30.1.tar.xz
-    tar -xf emacs-30.1.tar.xz
-    cd emacs-30.1
-
-    # Configure build with native compilation and GUI support
-    echo "Configuring Emacs build..."
-    ./configure \
-        --prefix=/usr \
-        --with-x-toolkit=gtk3 \
-        --with-xpm \
-        --with-jpeg \
-        --with-png \
-        --with-gif \
-        --with-tiff \
-        --with-gnutls \
-        --with-xml2 \
-        --with-cairo \
-        --with-harfbuzz \
-        --with-rsvg \
-        --with-libsystemd \
-        --with-imagemagick \
-        --with-native-compilation=yes \
-        --with-sqlite3 \
-        --with-tree-sitter
-
-    # Build Emacs (this will take a while)
-    echo "Building Emacs (this may take 15-30 minutes)..."
-    make -j$(nproc)
-
-    # Install Emacs
-    echo "Installing Emacs..."
-    sudo make install
-
-    # Clean up build directory
-    cd ~
-    rm -rf "$EMACS_BUILD_DIR"
-
-    # Verify installation
-    if command -v emacs &> /dev/null; then
-        print_success "Emacs installed: $(emacs --version | head -n1)"
-    else
-        print_error "Emacs installation failed"
-        return 1
-    fi
-}
-
-install_doom_emacs() {
-    print_header "🔥 Installing Doom Emacs"
-
-    # Install dependencies for Doom Emacs
-    echo "Installing Doom Emacs dependencies..."
-    sudo apt install -y git ripgrep fd-find
-
-    print_success "Doom Emacs dependencies installed"
-
-    # Remove existing Emacs config if present
-    if [ -d "$HOME/.config/emacs" ] || [ -d "$HOME/.emacs.d" ]; then
-        echo "Backing up existing Emacs configuration..."
-        [ -d "$HOME/.config/emacs" ] && mv "$HOME/.config/emacs" "$HOME/.config/emacs.bak.$(date +%Y%m%d%H%M%S)"
-        [ -d "$HOME/.emacs.d" ] && mv "$HOME/.emacs.d" "$HOME/.emacs.d.bak.$(date +%Y%m%d%H%M%S)"
-    fi
-
-    # Clone Doom Emacs to ~/.config/emacs
-    echo "Cloning Doom Emacs repository..."
-    if git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.config/emacs; then
-        print_success "Doom Emacs repository cloned"
-
-        # Set DOOMDIR to use our stowed config location
-        export DOOMDIR="$HOME/.config/doom"
-
-        # Run Doom install script
-        echo "Running Doom install script (this may take a while)..."
-        if DOOMDIR="$HOME/.config/doom" ~/.config/emacs/bin/doom install; then
-            print_success "Doom Emacs installed successfully"
-
-            # Add doom to PATH in current session
-            export PATH="$HOME/.config/emacs/bin:$PATH"
-            print_success "Doom binary added to PATH for current session"
-        else
-            print_error "Failed to run Doom install script"
-            return 1
-        fi
-    else
-        print_error "Failed to clone Doom Emacs repository"
-        return 1
-    fi
-}
-
-install_nodejs() {
-    print_header "📗 Installing Node.js via NVM"
-
-    # Install NVM if not present
-    if [ ! -d "$HOME/.nvm" ]; then
-        echo "Installing Node Version Manager (nvm)..."
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-
-        # Source nvm for current session
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-        print_success "NVM installed"
-    else
-        print_success "NVM already installed"
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    fi
-
-    # Install latest LTS Node.js
-    echo "Installing latest LTS Node.js..."
-    nvm install --lts
-    nvm use --lts
-    nvm alias default lts/*
-
-    NODE_VERSION=$(node --version)
-    print_success "Node.js $NODE_VERSION installed"
-
-    # Install global packages
-    echo "Installing global Node.js packages..."
-    npm install -g typescript ts-node yarn pnpm eslint prettier nodemon
-
-    # Install Claude Code
-    echo "Installing Claude Code..."
-    npm install -g @anthropic-ai/claude-code
-
-    print_success "Node.js development tools installed"
-    print_success "Claude Code installed"
-}
-
-install_dropbox() {
-    print_header "💧 Installing Dropbox"
-
-    echo "Downloading Dropbox daemon..."
-    cd ~
-    wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
-    print_success "Dropbox daemon downloaded and extracted"
-
-    # Download dropbox.py to the stow folder
-    echo "Downloading dropbox.py CLI tool..."
-    mkdir -p dropbox/.local/bin
-    wget -O dropbox/.local/bin/dropbox.py "https://www.dropbox.com/download?dl=packages/dropbox.py"
-    chmod +x dropbox/.local/bin/dropbox.py
-    print_success "dropbox.py CLI tool downloaded"
-}
-
-setup_systemd_services() {
-    print_header "⚙️ Setting Up Systemd User Services"
-    
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    templates_dir="$script_dir/templates/systemd/user"
-    
-    if [ ! -d "$templates_dir" ]; then
-        print_warning "No systemd service templates found in $templates_dir"
-        return
-    fi
-    
-    # Create user systemd directory
-    mkdir -p ~/.config/systemd/user
-    
-    # Copy service files from templates
-    for service_file in "$templates_dir"/*.service; do
-        if [ -f "$service_file" ]; then
-            service_name=$(basename "$service_file")
-            echo "Installing $service_name..."
-            cp "$service_file" ~/.config/systemd/user/
-            print_success "Copied $service_name"
-        fi
-    done
-    
-    # Reload systemd user daemon
-    systemctl --user daemon-reload
-    print_success "Systemd user daemon reloaded"
-    
-    # Enable services
-    for service_file in "$templates_dir"/*.service; do
-        if [ -f "$service_file" ]; then
-            service_name=$(basename "$service_file")
-            echo "Enabling $service_name..."
-            if systemctl --user enable "$service_name"; then
-                print_success "Enabled $service_name"
-            else
-                print_warning "Failed to enable $service_name"
-            fi
-        fi
-    done
-}
-
-setup_zsh() {
-    print_header "🐚 Setting Up Zsh with Oh My Zsh and Starship"
-
-    # Install Oh My Zsh if not present
-    if [ ! -d "$HOME/.oh-my-zsh" ]; then
-        echo "Installing Oh My Zsh..."
-
-        # Backup existing .zshrc
-        if [ -f "$HOME/.zshrc" ]; then
-            mv "$HOME/.zshrc" "$HOME/.zshrc.backup"
-            print_success "Backed up existing .zshrc"
-        fi
-
-        # Install Oh My Zsh
-        sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-
-        print_success "Oh My Zsh installed"
-    else
+    if [ -d "$HOME/.oh-my-zsh" ]; then
         print_success "Oh My Zsh already installed"
+    else
+        echo "Installing Oh My Zsh..."
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+        print_success "Oh My Zsh installed"
     fi
 
-    # Install useful zsh plugins
-    echo "Installing zsh plugins..."
+    # Install zsh-autosuggestions
+    local ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 
-    if [ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions" ]; then
-        git clone https://github.com/zsh-users/zsh-autosuggestions \
-            ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+    if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
+        echo "Installing zsh-autosuggestions..."
+        git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+        print_success "zsh-autosuggestions installed"
+    else
+        print_success "zsh-autosuggestions already installed"
     fi
 
-    if [ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting" ]; then
-        git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \
-            ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+    # Install zsh-syntax-highlighting
+    if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
+        echo "Installing zsh-syntax-highlighting..."
+        git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+        print_success "zsh-syntax-highlighting installed"
+    else
+        print_success "zsh-syntax-highlighting already installed"
     fi
 
-    print_success "Zsh plugins installed"
+    print_success "Plugin repositories installed (configure via stow)"
+}
 
-    # Add Doom Emacs bin to PATH in .zshrc if not already present
-    if [ -d "$HOME/.config/emacs/bin" ] && ! grep -q "\.config/emacs/bin" "$HOME/.zshrc" 2>/dev/null; then
-        echo "" >> "$HOME/.zshrc"
-        echo '# Doom Emacs' >> "$HOME/.zshrc"
-        echo 'export PATH="$HOME/.config/emacs/bin:$PATH"' >> "$HOME/.zshrc"
-        print_success "Added Doom Emacs bin to PATH in .zshrc"
-    fi
+install_starship() {
+    print_header "⭐ Installing Starship Prompt"
 
-    # Check if starship is already installed
     if command -v starship &> /dev/null; then
         print_success "Starship already installed: $(starship --version)"
         return
@@ -509,46 +188,235 @@ setup_zsh() {
     fi
 }
 
-setup_dotfiles() {
-    print_header "🔗 Setting Up Dotfiles"
+install_nvm() {
+    print_header "📦 Installing Node Version Manager (nvm)"
 
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-    # Check for dotfile packages
-    available_packages=()
-    for pkg in git zsh neovim tmux; do
-        if [ -d "$script_dir/$pkg" ]; then
-            available_packages+=("$pkg")
-        fi
-    done
-
-    if [ ${#available_packages[@]} -eq 0 ]; then
-        print_warning "No dotfile packages found in $script_dir"
-        print_warning "Expected directories: git/, zsh/, neovim/, tmux/"
+    if [ -d "$HOME/.nvm" ]; then
+        print_success "nvm already installed"
         return
     fi
 
-    echo "Found dotfile packages: ${available_packages[*]}"
+    echo "Installing nvm..."
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 
-    # Ask user about applying dotfiles
-    read -p "Apply dotfiles with Stow? (y/N): " -n 1 -r
-    echo
+    # Load nvm for current session
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        cd "$script_dir"
-        for pkg in "${available_packages[@]}"; do
-            echo "Applying $pkg dotfiles..."
-            if stow -v "$pkg" 2>/dev/null; then
-                print_success "Applied $pkg dotfiles"
-            else
-                print_warning "Failed to apply $pkg dotfiles (may have conflicts)"
-                echo "  You can resolve conflicts manually with: stow -v $pkg"
-            fi
-        done
+    if [ -d "$HOME/.nvm" ]; then
+        print_success "nvm installed successfully"
+
+        # Install LTS version of Node.js
+        echo "Installing Node.js LTS..."
+        nvm install --lts
+        nvm use --lts
+        print_success "Node.js LTS installed: $(node --version 2>/dev/null || echo 'will be available after shell restart')"
     else
-        echo "Skipping dotfiles setup"
-        echo "You can apply them later with: stow git zsh neovim tmux"
+        print_warning "nvm installed but may need shell restart"
     fi
+}
+
+install_claude_code() {
+    print_header "🤖 Installing Claude Code"
+
+    if command -v claude &> /dev/null; then
+        print_success "Claude Code already installed: $(claude --version 2>/dev/null || echo 'installed')"
+        return
+    fi
+
+    echo "Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+
+    # Add to PATH for current session
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if command -v claude &> /dev/null; then
+        print_success "Claude Code installed: $(claude --version 2>/dev/null || echo 'successfully')"
+    else
+        print_warning "Claude Code installed but may need PATH update. Restart your shell."
+    fi
+}
+
+install_neovim() {
+    print_header "📝 Installing Neovim"
+
+    # Add Neovim unstable PPA for latest version (0.10+)
+    echo "Adding Neovim unstable PPA..."
+    sudo add-apt-repository ppa:neovim-ppa/unstable -y
+    sudo apt update
+
+    if command -v nvim &> /dev/null; then
+        print_success "Neovim already installed, upgrading if needed..."
+        sudo apt install -y neovim ripgrep fd-find
+    else
+        echo "Installing Neovim from PPA..."
+        sudo apt install -y neovim ripgrep fd-find
+    fi
+
+    print_success "Neovim installed: $(nvim --version | head -n1)"
+
+    # Create Neovim config directory
+    mkdir -p "$HOME/.config/nvim"
+
+    # Create simple init.lua with Treesitter and essential plugins
+    echo "Creating Neovim configuration..."
+    cat > "$HOME/.config/nvim/init.lua" << 'EOF'
+-- Simple Neovim config with Treesitter and essential navigation
+
+-- Set leader key to space
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
+
+-- Basic settings
+vim.opt.number = true
+vim.opt.relativenumber = true
+vim.opt.mouse = 'a'
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+vim.opt.hlsearch = true
+vim.opt.wrap = false
+vim.opt.breakindent = true
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.expandtab = true
+vim.opt.termguicolors = true
+vim.opt.signcolumn = 'yes'
+vim.opt.updatetime = 250
+vim.opt.timeoutlen = 300
+vim.opt.splitright = true
+vim.opt.splitbelow = true
+vim.opt.list = true
+vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+vim.opt.inccommand = 'split'
+vim.opt.cursorline = true
+vim.opt.scrolloff = 10
+vim.opt.clipboard = 'unnamedplus'
+
+-- Bootstrap lazy.nvim
+local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+if not vim.loop.fs_stat(lazypath) then
+  vim.fn.system({
+    "git", "clone", "--filter=blob:none",
+    "https://github.com/folke/lazy.nvim.git",
+    "--branch=stable",
+    lazypath,
+  })
+end
+vim.opt.rtp:prepend(lazypath)
+
+-- Plugin setup
+require("lazy").setup({
+  -- Treesitter for syntax highlighting
+  {
+    "nvim-treesitter/nvim-treesitter",
+    build = ":TSUpdate",
+    config = function()
+      require("nvim-treesitter.configs").setup({
+        ensure_installed = { "lua", "vim", "vimdoc", "python", "javascript", "typescript", "bash", "c_sharp", "json", "yaml", "markdown" },
+        auto_install = true,
+        highlight = { enable = true },
+        indent = { enable = true },
+      })
+    end,
+  },
+
+  -- File explorer
+  {
+    "nvim-tree/nvim-tree.lua",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    config = function()
+      require("nvim-tree").setup({
+        view = { width = 30 },
+        renderer = { group_empty = true },
+        filters = { dotfiles = false },
+      })
+    end,
+  },
+
+  -- Fuzzy finder
+  {
+    "nvim-telescope/telescope.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    config = function()
+      require("telescope").setup({
+        defaults = {
+          file_ignore_patterns = { "node_modules", ".git/" },
+        },
+      })
+    end,
+  },
+
+  -- Color scheme
+  {
+    "catppuccin/nvim",
+    name = "catppuccin",
+    priority = 1000,
+    config = function()
+      vim.cmd.colorscheme("catppuccin-mocha")
+    end,
+  },
+
+  -- Status line
+  {
+    "nvim-lualine/lualine.nvim",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    config = function()
+      require("lualine").setup({
+        options = { theme = "catppuccin" },
+      })
+    end,
+  },
+
+  -- Auto pairs
+  {
+    "windwp/nvim-autopairs",
+    event = "InsertEnter",
+    config = true,
+  },
+
+  -- Comment plugin
+  {
+    "numToStr/Comment.nvim",
+    config = true,
+  },
+
+  -- Git signs
+  {
+    "lewis6991/gitsigns.nvim",
+    config = true,
+  },
+
+  -- WakaTime time tracking
+  {
+    "wakatime/vim-wakatime",
+    lazy = false,
+  },
+
+  -- Code Bridge for Claude Code integration
+  {
+    "samir-roy/code-bridge.nvim",
+    config = function()
+      require("code-bridge").setup()
+    end,
+  },
+})
+
+-- Key mappings
+vim.keymap.set('n', '<leader>e', ':NvimTreeToggle<CR>', { desc = 'Toggle file explorer' })
+vim.keymap.set('n', '<leader>ff', ':Telescope find_files<CR>', { desc = 'Find files' })
+vim.keymap.set('n', '<leader>fg', ':Telescope live_grep<CR>', { desc = 'Live grep' })
+vim.keymap.set('n', '<leader>fb', ':Telescope buffers<CR>', { desc = 'Find buffers' })
+vim.keymap.set('n', '<leader>fh', ':Telescope help_tags<CR>', { desc = 'Help tags' })
+vim.keymap.set('n', '<Esc>', ':nohlsearch<CR>', { silent = true })
+vim.keymap.set('n', '<leader>w', ':w<CR>', { desc = 'Save file' })
+vim.keymap.set('n', '<leader>q', ':q<CR>', { desc = 'Quit' })
+vim.keymap.set('n', '<C-h>', '<C-w>h', { desc = 'Move to left window' })
+vim.keymap.set('n', '<C-j>', '<C-w>j', { desc = 'Move to lower window' })
+vim.keymap.set('n', '<C-k>', '<C-w>k', { desc = 'Move to upper window' })
+vim.keymap.set('n', '<C-l>', '<C-w>l', { desc = 'Move to right window' })
+EOF
+
+    print_success "Neovim configuration created at ~/.config/nvim/init.lua"
 }
 
 setup_shell() {
@@ -567,41 +435,47 @@ setup_shell() {
 show_completion_message() {
     print_header "🎉 Setup Complete!"
 
-    echo -e "\n${GREEN}Your Ubuntu WSL development environment is ready!${NC}\n"
+    echo -e "\n${GREEN}Your simplified Ubuntu WSL development environment is ready!${NC}\n"
 
     echo "📋 What was installed:"
     echo "  • Essential development tools and packages"
-    echo "  • Neovim $(nvim --version | head -n1 | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
-    echo "  • Emacs $(emacs --version 2>/dev/null | head -n1 | grep -oP '\d+\.\d+' || echo 'latest') with Doom"
+    echo "  • Python 3 with uv package manager $(uv --version 2>/dev/null || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
-    echo "  • Docker Engine $(docker --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
-    echo "  • Go $(go version 2>/dev/null | grep -oP 'go\d+\.\d+\.\d+' || echo 'latest')"
-    echo "  • Node.js $(node --version 2>/dev/null || echo 'latest') via NVM"
-    echo "  • Claude Code CLI"
-    echo "  • Python 3 with pip and venv"
-    echo "  • Zsh with Oh My Zsh and Starship prompt"
-    echo "  • Dropbox daemon and CLI tool"
+    echo "  • Node Version Manager (nvm) with Node.js LTS"
+    echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq"
+    echo "  • Zsh with Oh My Zsh + plugins:"
+    echo "    - zsh-autosuggestions (command suggestions)"
+    echo "    - zsh-syntax-highlighting (syntax coloring)"
+    echo "    - git, z, sudo, extract, colored-man-pages, dotnet"
+    echo "  • Starship prompt $(starship --version 2>/dev/null | head -n1 || echo 'latest')"
+    echo "  • Claude Code $(claude --version 2>/dev/null || echo 'latest')"
+    echo "  • Neovim with Treesitter, Telescope, nvim-tree, and code-bridge"
 
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
-    echo "  2. Open Neovim and run :checkhealth to verify setup"
-    echo "  3. After stowing emacs config, run: doom sync"
-    echo "  4. Stow Dropbox configs: stow dropbox"
-    echo "  5. Enable Dropbox user service: systemctl --user enable dropbox.service"
-    echo "  6. Start Dropbox user service: systemctl --user start dropbox.service"
-    echo "  7. Reload systemd user daemon: systemctl --user daemon-reexec"
-    echo "  8. Enable and start Emacs service: systemctl --user enable --now emacs.service"
+    echo "  2. Authenticate Claude Code: claude auth"
+    echo "  3. Launch nvim to auto-install plugins (first run will take a moment)"
+    echo "  4. Configure WakaTime in nvim: :WakaTimeApiKey (get key from wakatime.com)"
+    echo "  5. Optionally use stow to apply your dotfiles:"
+    echo "     cd ~/.dotfiles && stow zsh git tmux"
 
     echo -e "\n💡 Useful commands:"
-    echo "  • nvm list         - Show installed Node.js versions"
-    echo "  • dotnet --info    - Show .NET information"
-    echo "  • docker --version - Check Docker version"
-    echo "  • go version       - Check Go version"
-    echo "  • claude --version - Check Claude Code version"
-    echo "  • starship --version - Check Starship version"
-    echo "  • nvim --version   - Check Neovim version"
-    echo "  • emacs --version  - Check Emacs version"
-    echo "  • doom doctor      - Check Doom Emacs health"
+    echo "  • claude             - Launch Claude Code CLI"
+    echo "  • nvim               - Launch Neovim"
+    echo "  • <Space>e           - Toggle file explorer (in nvim)"
+    echo "  • <Space>ff          - Find files (in nvim)"
+    echo "  • <Space>fg          - Live grep (in nvim)"
+    echo "  • nvm install <ver>  - Install specific Node.js version"
+    echo "  • nvm use <ver>      - Switch Node.js version"
+    echo "  • nvm ls             - List installed Node.js versions"
+    echo "  • uv venv            - Create Python virtual environment"
+    echo "  • uv pip install     - Install Python packages (fast!)"
+    echo "  • fzf                - Fuzzy finder (Ctrl+R for history search)"
+    echo "  • bat <file>         - Cat with syntax highlighting"
+    echo "  • eza -la            - Modern ls replacement"
+    echo "  • ncdu               - Disk usage analyzer"
+    echo "  • tldr <command>     - Simplified man pages"
+    echo "  • dotnet --info      - Show .NET information"
 
     if [ "$SHELL" != "$(which zsh)" ]; then
         echo -e "\n${YELLOW}⚠️  Remember to restart your terminal for the shell change to take effect!${NC}"
@@ -610,7 +484,7 @@ show_completion_message() {
 
 # Main execution
 main() {
-    echo -e "${BLUE}🚀 Ubuntu WSL Development Environment Setup${NC}"
+    echo -e "${BLUE}🚀 Simplified Ubuntu WSL Development Environment Setup${NC}"
     echo "=============================================="
 
     # Preliminary checks
@@ -618,17 +492,13 @@ main() {
 
     # Installation steps
     install_system_packages
-    install_neovim
-    install_emacs
-    install_doom_emacs
+    install_python
     install_dotnet
-    install_docker
-    install_go
-    install_nodejs
-    install_dropbox
-    setup_zsh
-    setup_dotfiles
-    setup_systemd_services
+    install_nvm
+    install_ohmyzsh
+    install_starship
+    install_claude_code
+    install_neovim
     setup_shell
 
     # Completion
