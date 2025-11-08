@@ -44,7 +44,7 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 -- Configure lazy.nvim with performance optimizations
-require('lazy').setup(require('plugins'), {
+require('lazy').setup('plugins', {
   -- Performance optimizations
   performance = {
     cache = {

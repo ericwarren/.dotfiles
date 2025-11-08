@@ -1,8 +1,11 @@
 -- LSP Configuration
 
--- Diagnostic settings (sign column only, no virtual text)
+-- Diagnostic settings (inline error messages enabled)
 vim.diagnostic.config({
-  virtual_text = false,  -- Disable inline error messages
+  virtual_text = {
+    spacing = 4,
+    prefix = '●',
+  },
   signs = true,
   underline = true,
   update_in_insert = false,
