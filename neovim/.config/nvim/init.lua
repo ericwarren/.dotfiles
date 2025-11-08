@@ -87,7 +87,7 @@ require('lazy').setup('plugins', {
     -- Automatically check for plugin updates
     enabled = true,
     concurrency = nil, -- Use default
-    notify = true, -- Get notified when updates are available
+    notify = false, -- Don't notify (reduces noise, check with :Lazy)
     frequency = 86400, -- Check once per day
     check_pinned = false, -- Don't check pinned plugins
   },
