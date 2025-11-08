@@ -16,6 +16,14 @@ fi
 if command -v bat &> /dev/null; then
     alias cat='bat --paging=never'
     alias catp='bat'  # cat with pager
+elif command -v batcat &> /dev/null; then
+    alias bat='batcat'
+    alias cat='batcat --paging=never'
+    alias catp='batcat'  # cat with pager
+fi
+
+if command -v rg &> /dev/null; then
+    alias ripgrep='rg'
 fi
 
 # Git - just shortcut to git itself, use .gitconfig for git aliases
@@ -32,12 +40,6 @@ alias dn='dotnet'
 alias dnr='dotnet run'
 alias dnb='dotnet build'
 alias dnt='dotnet test'
-
-# Rust aliases
-alias cr='cargo run'
-alias cb='cargo build'
-alias ct='cargo test'
-alias cc='cargo check'
 
 # Node/npm aliases
 alias ni='npm install'

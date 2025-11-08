@@ -2,8 +2,8 @@
 
 # Simplified Ubuntu Development Environment Setup Script for WSL
 # Designed for Ubuntu 22.04/24.04 on Windows Subsystem for Linux
-# Installs: Zsh, Python, .NET SDK (no configuration files)
-# Usage: ./setup-WSL-ubuntu-simple.sh
+# Installs: Zsh, Python, .NET SDK, Go, Node.js, Neovim, Claude Code (tools only, configs via stow)
+# Usage: ./setup-WSL-ubuntu.sh
 
 set -e
 
@@ -61,7 +61,8 @@ install_system_packages() {
         curl wget git zsh \
         ca-certificates gnupg \
         unzip stow \
-        jq fzf bat eza htop ncdu tldr
+        jq fzf bat eza htop ncdu tldr \
+        tree ripgrep
 
     sudo apt upgrade -y
 
@@ -254,169 +255,47 @@ install_neovim() {
     fi
 
     print_success "Neovim installed: $(nvim --version | head -n1)"
+    print_success "Neovim configuration will be managed via stow (neovim package)"
+}
 
-    # Create Neovim config directory
-    mkdir -p "$HOME/.config/nvim"
+install_go() {
+    print_header "🐹 Installing Go"
 
-    # Create simple init.lua with Treesitter and essential plugins
-    echo "Creating Neovim configuration..."
-    cat > "$HOME/.config/nvim/init.lua" << 'EOF'
--- Simple Neovim config with Treesitter and essential navigation
+    if command -v go &> /dev/null; then
+        print_success "Go already installed: $(go version)"
+        return
+    fi
 
--- Set leader key to space
-vim.g.mapleader = " "
-vim.g.maplocalleader = " "
+    # Get the latest Go version
+    echo "Fetching latest Go version..."
+    GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | head -n1)
 
--- Basic settings
-vim.opt.number = true
-vim.opt.relativenumber = true
-vim.opt.mouse = 'a'
-vim.opt.ignorecase = true
-vim.opt.smartcase = true
-vim.opt.hlsearch = true
-vim.opt.wrap = false
-vim.opt.breakindent = true
-vim.opt.tabstop = 4
-vim.opt.shiftwidth = 4
-vim.opt.expandtab = true
-vim.opt.termguicolors = true
-vim.opt.signcolumn = 'yes'
-vim.opt.updatetime = 250
-vim.opt.timeoutlen = 300
-vim.opt.splitright = true
-vim.opt.splitbelow = true
-vim.opt.list = true
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
-vim.opt.inccommand = 'split'
-vim.opt.cursorline = true
-vim.opt.scrolloff = 10
-vim.opt.clipboard = 'unnamedplus'
+    if [ -z "$GO_VERSION" ]; then
+        print_error "Failed to fetch Go version, using fallback"
+        GO_VERSION="go1.23.5"
+    fi
 
--- Bootstrap lazy.nvim
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
-  vim.fn.system({
-    "git", "clone", "--filter=blob:none",
-    "https://github.com/folke/lazy.nvim.git",
-    "--branch=stable",
-    lazypath,
-  })
-end
-vim.opt.rtp:prepend(lazypath)
+    echo "Downloading Go ${GO_VERSION}..."
+    wget "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz" -O /tmp/go.tar.gz
 
--- Plugin setup
-require("lazy").setup({
-  -- Treesitter for syntax highlighting
-  {
-    "nvim-treesitter/nvim-treesitter",
-    build = ":TSUpdate",
-    config = function()
-      require("nvim-treesitter.configs").setup({
-        ensure_installed = { "lua", "vim", "vimdoc", "python", "javascript", "typescript", "bash", "c_sharp", "json", "yaml", "markdown" },
-        auto_install = true,
-        highlight = { enable = true },
-        indent = { enable = true },
-      })
-    end,
-  },
+    echo "Removing old Go installation if present..."
+    sudo rm -rf /usr/local/go
 
-  -- File explorer
-  {
-    "nvim-tree/nvim-tree.lua",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
-    config = function()
-      require("nvim-tree").setup({
-        view = { width = 30 },
-        renderer = { group_empty = true },
-        filters = { dotfiles = false },
-      })
-    end,
-  },
+    echo "Installing Go..."
+    sudo tar -C /usr/local -xzf /tmp/go.tar.gz
+    rm /tmp/go.tar.gz
 
-  -- Fuzzy finder
-  {
-    "nvim-telescope/telescope.nvim",
-    dependencies = { "nvim-lua/plenary.nvim" },
-    config = function()
-      require("telescope").setup({
-        defaults = {
-          file_ignore_patterns = { "node_modules", ".git/" },
-        },
-      })
-    end,
-  },
+    # Add to PATH if not already present
+    if ! grep -q "/usr/local/go/bin" ~/.bashrc; then
+        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+        echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
+    fi
 
-  -- Color scheme
-  {
-    "catppuccin/nvim",
-    name = "catppuccin",
-    priority = 1000,
-    config = function()
-      vim.cmd.colorscheme("catppuccin-mocha")
-    end,
-  },
+    # Export for current session
+    export PATH=$PATH:/usr/local/go/bin
+    export PATH=$PATH:$HOME/go/bin
 
-  -- Status line
-  {
-    "nvim-lualine/lualine.nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
-    config = function()
-      require("lualine").setup({
-        options = { theme = "catppuccin" },
-      })
-    end,
-  },
-
-  -- Auto pairs
-  {
-    "windwp/nvim-autopairs",
-    event = "InsertEnter",
-    config = true,
-  },
-
-  -- Comment plugin
-  {
-    "numToStr/Comment.nvim",
-    config = true,
-  },
-
-  -- Git signs
-  {
-    "lewis6991/gitsigns.nvim",
-    config = true,
-  },
-
-  -- WakaTime time tracking
-  {
-    "wakatime/vim-wakatime",
-    lazy = false,
-  },
-
-  -- Code Bridge for Claude Code integration
-  {
-    "samir-roy/code-bridge.nvim",
-    config = function()
-      require("code-bridge").setup()
-    end,
-  },
-})
-
--- Key mappings
-vim.keymap.set('n', '<leader>e', ':NvimTreeToggle<CR>', { desc = 'Toggle file explorer' })
-vim.keymap.set('n', '<leader>ff', ':Telescope find_files<CR>', { desc = 'Find files' })
-vim.keymap.set('n', '<leader>fg', ':Telescope live_grep<CR>', { desc = 'Live grep' })
-vim.keymap.set('n', '<leader>fb', ':Telescope buffers<CR>', { desc = 'Find buffers' })
-vim.keymap.set('n', '<leader>fh', ':Telescope help_tags<CR>', { desc = 'Help tags' })
-vim.keymap.set('n', '<Esc>', ':nohlsearch<CR>', { silent = true })
-vim.keymap.set('n', '<leader>w', ':w<CR>', { desc = 'Save file' })
-vim.keymap.set('n', '<leader>q', ':q<CR>', { desc = 'Quit' })
-vim.keymap.set('n', '<C-h>', '<C-w>h', { desc = 'Move to left window' })
-vim.keymap.set('n', '<C-j>', '<C-w>j', { desc = 'Move to lower window' })
-vim.keymap.set('n', '<C-k>', '<C-w>k', { desc = 'Move to upper window' })
-vim.keymap.set('n', '<C-l>', '<C-w>l', { desc = 'Move to right window' })
-EOF
-
-    print_success "Neovim configuration created at ~/.config/nvim/init.lua"
+    print_success "Go installed: $(go version)"
 }
 
 setup_shell() {
@@ -441,23 +320,24 @@ show_completion_message() {
     echo "  • Essential development tools and packages"
     echo "  • Python 3 with uv package manager $(uv --version 2>/dev/null || echo 'latest')"
     echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
+    echo "  • Go $(go version 2>/dev/null | awk '{print $3}' || echo 'latest')"
     echo "  • Node Version Manager (nvm) with Node.js LTS"
-    echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq"
+    echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
     echo "    - zsh-syntax-highlighting (syntax coloring)"
     echo "    - git, z, sudo, extract, colored-man-pages, dotnet"
     echo "  • Starship prompt $(starship --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • Claude Code $(claude --version 2>/dev/null || echo 'latest')"
-    echo "  • Neovim with Treesitter, Telescope, nvim-tree, and code-bridge"
+    echo "  • Neovim $(nvim --version 2>/dev/null | head -n1 || echo 'latest')"
 
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
     echo "  2. Authenticate Claude Code: claude auth"
-    echo "  3. Launch nvim to auto-install plugins (first run will take a moment)"
-    echo "  4. Configure WakaTime in nvim: :WakaTimeApiKey (get key from wakatime.com)"
-    echo "  5. Optionally use stow to apply your dotfiles:"
-    echo "     cd ~/.dotfiles && stow zsh git tmux"
+    echo "  3. Apply your dotfiles with stow:"
+    echo "     cd ~/.dotfiles && stow zsh git neovim tmux claude"
+    echo "  4. Launch nvim to auto-install plugins (first run will take a moment)"
+    echo "  5. Configure WakaTime in nvim: :WakaTimeApiKey (get key from wakatime.com)"
 
     echo -e "\n💡 Useful commands:"
     echo "  • claude             - Launch Claude Code CLI"
@@ -471,11 +351,14 @@ show_completion_message() {
     echo "  • uv venv            - Create Python virtual environment"
     echo "  • uv pip install     - Install Python packages (fast!)"
     echo "  • fzf                - Fuzzy finder (Ctrl+R for history search)"
-    echo "  • bat <file>         - Cat with syntax highlighting"
+    echo "  • bat <file>         - Cat with syntax highlighting (after stowing zsh)"
+    echo "  • rg <pattern>       - Fast recursive search (ripgrep)"
     echo "  • eza -la            - Modern ls replacement"
     echo "  • ncdu               - Disk usage analyzer"
     echo "  • tldr <command>     - Simplified man pages"
     echo "  • dotnet --info      - Show .NET information"
+    echo "  • go version         - Check Go version"
+    echo "  • go mod init        - Initialize Go module"
 
     if [ "$SHELL" != "$(which zsh)" ]; then
         echo -e "\n${YELLOW}⚠️  Remember to restart your terminal for the shell change to take effect!${NC}"
@@ -494,6 +377,7 @@ main() {
     install_system_packages
     install_python
     install_dotnet
+    install_go
     install_nvm
     install_ohmyzsh
     install_starship
