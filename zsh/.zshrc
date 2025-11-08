@@ -29,7 +29,7 @@ export TERM=xterm-256color
 export COLORTERM=truecolor
 
 # Development paths
-export PATH="$HOME/.config/emacs/bin:$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.local/share/nvim/mason/bin:$PATH"
+export PATH="$HOME/.config/emacs/bin:$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.local/share/nvim/mason/bin:/usr/local/go/bin:$HOME/go/bin:$PATH"
 
 # Doom Emacs configuration directory
 export DOOMDIR="$HOME/.config/doom"
