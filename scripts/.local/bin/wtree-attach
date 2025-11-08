@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# wtree-attach - Attach to an existing worktree's tmux session or create one
+# Usage: wtree-attach <branch-name>
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+error() {
+    echo -e "${RED}Error: $1${NC}" >&2
+    exit 1
+}
+
+info() {
+    echo -e "${BLUE}$1${NC}"
+}
+
+success() {
+    echo -e "${GREEN}$1${NC}"
+}
+
+warn() {
+    echo -e "${YELLOW}$1${NC}"
+}
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    error "Not in a git repository"
+fi
+
+# Get branch name from argument
+BRANCH_NAME="$1"
+
+if [ -z "$BRANCH_NAME" ]; then
+    echo "Usage: wtree-attach <branch-name>"
+    echo ""
+    echo "Attach to an existing worktree's tmux session (or create session if missing)"
+    echo ""
+    echo "Available worktrees:"
+    wtree-ls
+    exit 1
+fi
+
+# Get repository info
+REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_NAME=$(basename "$REPO_ROOT")
+
+# Sanitize branch name
+SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9_-]/_/g')
+
+# Worktree directory
+WORKTREE_BASE="$REPO_ROOT/../worktrees"
+WORKTREE_DIR="$WORKTREE_BASE/$SAFE_BRANCH"
+
+# Tmux session name
+SESSION_NAME="${REPO_NAME}-${SAFE_BRANCH}"
+
+# Check if worktree exists
+if ! git worktree list | grep -q "$WORKTREE_DIR"; then
+    error "Worktree for branch '$BRANCH_NAME' not found. Use 'wtree $BRANCH_NAME' to create it."
+fi
+
+# Check if worktree directory exists
+if [ ! -d "$WORKTREE_DIR" ]; then
+    error "Worktree directory not found: $WORKTREE_DIR"
+fi
+
+# Check if tmux session exists
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    info "Attaching to existing session: $SESSION_NAME"
+    if [ -n "$TMUX" ]; then
+        tmux switch-client -t "$SESSION_NAME"
+    else
+        tmux attach-session -t "$SESSION_NAME"
+    fi
+else
+    # Session doesn't exist, create it
+    warn "Tmux session not found. Creating new session: $SESSION_NAME"
+
+    # Create new session with left pane (terminal)
+    tmux new-session -d -s "$SESSION_NAME" -c "$WORKTREE_DIR"
+
+    # Split vertically for Claude Code (right pane)
+    tmux split-window -h -c "$WORKTREE_DIR" -t "$SESSION_NAME"
+
+    # Start Claude Code in right pane
+    tmux send-keys -t "$SESSION_NAME:0.1" "claude" C-m
+
+    # Select left pane (terminal)
+    tmux select-pane -t "$SESSION_NAME:0.0"
+
+    # Set pane titles
+    tmux set-option -t "$SESSION_NAME" pane-border-format " #[fg=colour250,bold]#{pane_current_command} #[fg=colour244](#P) #[fg=colour39][$BRANCH_NAME] "
+
+    success "Tmux session '$SESSION_NAME' created"
+
+    # Attach to session
+    info "Attaching to session..."
+    if [ -n "$TMUX" ]; then
+        tmux switch-client -t "$SESSION_NAME"
+    else
+        tmux attach-session -t "$SESSION_NAME"
+    fi
+fi

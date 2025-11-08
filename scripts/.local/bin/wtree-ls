@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# wtree-ls - List all git worktrees and their associated tmux sessions
+
+set -e
+
+# Colors for output
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+GRAY='\033[0;90m'
+NC='\033[0m' # No Color
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo -e "${YELLOW}Not in a git repository${NC}"
+    exit 1
+fi
+
+# Get repository name
+REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_NAME=$(basename "$REPO_ROOT")
+
+echo -e "${BLUE}=== Git Worktrees ===${NC}"
+echo ""
+
+# Parse git worktree list
+while IFS= read -r line; do
+    # Skip the main worktree (first line)
+    if [[ $line == worktree* ]]; then
+        worktree_path=$(echo "$line" | sed 's/worktree //')
+        branch=""
+        continue
+    fi
+
+    if [[ $line == branch* ]]; then
+        branch=$(echo "$line" | sed 's/branch refs\/heads\///')
+
+        # Check if tmux session exists
+        safe_branch=$(echo "$branch" | sed 's/[^a-zA-Z0-9_-]/_/g')
+        session_name="${REPO_NAME}-${safe_branch}"
+
+        if tmux has-session -t "$session_name" 2>/dev/null; then
+            session_status="${GREEN}[tmux: active]${NC}"
+        else
+            session_status="${GRAY}[tmux: none]${NC}"
+        fi
+
+        echo -e "${YELLOW}$branch${NC}"
+        echo -e "  Path:    $worktree_path"
+        echo -e "  Session: $session_status $session_name"
+        echo ""
+    fi
+done < <(git worktree list --porcelain | grep -E "^worktree |^branch ")
+
+echo -e "${BLUE}=== Active Tmux Sessions (${REPO_NAME}-*) ===${NC}"
+echo ""
+
+# List tmux sessions matching this repo
+if tmux list-sessions 2>/dev/null | grep -E "^${REPO_NAME}-" > /dev/null; then
+    tmux list-sessions 2>/dev/null | grep -E "^${REPO_NAME}-" | while IFS=: read -r session rest; do
+        # Extract branch name from session
+        branch_name=${session#"$REPO_NAME-"}
+        echo -e "${GREEN}$session${NC}"
+        echo -e "  Branch: $branch_name"
+        echo ""
+    done
+else
+    echo -e "${GRAY}No active tmux sessions for this repository${NC}"
+    echo ""
+fi
