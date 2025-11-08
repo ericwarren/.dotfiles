@@ -127,68 +127,6 @@ install_dotnet() {
     print_success ".NET development tools installed"
 }
 
-install_ohmyzsh() {
-    print_header "🎨 Installing Oh My Zsh"
-
-    if [ -d "$HOME/.oh-my-zsh" ]; then
-        print_success "Oh My Zsh already installed"
-    else
-        echo "Installing Oh My Zsh..."
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-        print_success "Oh My Zsh installed"
-    fi
-
-    # Install zsh-autosuggestions
-    local ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
-
-    if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
-        echo "Installing zsh-autosuggestions..."
-        git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
-        print_success "zsh-autosuggestions installed"
-    else
-        print_success "zsh-autosuggestions already installed"
-    fi
-
-    # Install zsh-syntax-highlighting
-    if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
-        echo "Installing zsh-syntax-highlighting..."
-        git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
-        print_success "zsh-syntax-highlighting installed"
-    else
-        print_success "zsh-syntax-highlighting already installed"
-    fi
-
-    print_success "Plugin repositories installed (configure via stow)"
-}
-
-install_starship() {
-    print_header "⭐ Installing Starship Prompt"
-
-    if command -v starship &> /dev/null; then
-        print_success "Starship already installed: $(starship --version)"
-        return
-    fi
-
-    echo "Installing Starship prompt..."
-
-    # Install starship using the official installer
-    if curl -sS https://starship.rs/install.sh | sh; then
-        print_success "Starship installed successfully"
-    else
-        print_error "Failed to install Starship"
-        return 1
-    fi
-
-    # Verify installation
-    if command -v starship &> /dev/null; then
-        STARSHIP_VERSION=$(starship --version | head -n1)
-        print_success "Starship installed: $STARSHIP_VERSION"
-    else
-        print_error "Starship installation verification failed"
-        return 1
-    fi
-}
-
 install_nvm() {
     print_header "📦 Installing Node Version Manager (nvm)"
 
@@ -299,8 +237,61 @@ install_go() {
 }
 
 setup_shell() {
-    print_header "🐚 Configuring Default Shell"
+    print_header "🐚 Setting Up Zsh Shell with Oh My Zsh and Starship"
 
+    # Install Oh My Zsh
+    if [ -d "$HOME/.oh-my-zsh" ]; then
+        print_success "Oh My Zsh already installed"
+    else
+        echo "Installing Oh My Zsh..."
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+        print_success "Oh My Zsh installed"
+    fi
+
+    # Install zsh plugins
+    local ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+
+    if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
+        echo "Installing zsh-autosuggestions..."
+        git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+        print_success "zsh-autosuggestions installed"
+    else
+        print_success "zsh-autosuggestions already installed"
+    fi
+
+    if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
+        echo "Installing zsh-syntax-highlighting..."
+        git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+        print_success "zsh-syntax-highlighting installed"
+    else
+        print_success "zsh-syntax-highlighting already installed"
+    fi
+
+    print_success "Zsh plugins installed (configure via stow)"
+
+    # Install Starship prompt
+    if command -v starship &> /dev/null; then
+        print_success "Starship already installed: $(starship --version)"
+    else
+        echo "Installing Starship prompt..."
+        if curl -sS https://starship.rs/install.sh | sh; then
+            print_success "Starship installed successfully"
+        else
+            print_error "Failed to install Starship"
+            return 1
+        fi
+
+        # Verify installation
+        if command -v starship &> /dev/null; then
+            STARSHIP_VERSION=$(starship --version | head -n1)
+            print_success "Starship installed: $STARSHIP_VERSION"
+        else
+            print_error "Starship installation verification failed"
+            return 1
+        fi
+    fi
+
+    # Change default shell to zsh
     if [ "$SHELL" != "$(which zsh)" ]; then
         echo "Changing default shell to zsh..."
         chsh -s $(which zsh)
@@ -379,8 +370,6 @@ main() {
     install_dotnet
     install_go
     install_nvm
-    install_ohmyzsh
-    install_starship
     install_claude_code
     install_neovim
     setup_shell

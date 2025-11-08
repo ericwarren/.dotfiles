@@ -498,68 +498,6 @@ setup_emacs_systemd_service() {
     fi
 }
 
-setup_zsh() {
-    print_header "🐚 Setting Up Zsh with Oh My Zsh and Starship"
-
-    # Install Oh My Zsh if not present
-    if [ ! -d "$HOME/.oh-my-zsh" ]; then
-        echo "Installing Oh My Zsh..."
-
-        # Backup existing .zshrc
-        if [ -f "$HOME/.zshrc" ]; then
-            mv "$HOME/.zshrc" "$HOME/.zshrc.backup"
-            print_success "Backed up existing .zshrc"
-        fi
-
-        # Install Oh My Zsh
-        sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-
-        print_success "Oh My Zsh installed"
-    else
-        print_success "Oh My Zsh already installed"
-    fi
-
-    # Install useful zsh plugins
-    echo "Installing zsh plugins..."
-
-    if [ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions" ]; then
-        git clone https://github.com/zsh-users/zsh-autosuggestions \
-            ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
-    fi
-
-    if [ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting" ]; then
-        git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \
-            ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
-    fi
-
-    print_success "Zsh plugins installed"
-
-    # Check if starship is already installed
-    if command -v starship &> /dev/null; then
-        print_success "Starship already installed: $(starship --version)"
-        return
-    fi
-
-    echo "Installing Starship prompt..."
-
-    # Install starship using the official installer
-    if curl -sS https://starship.rs/install.sh | sh; then
-        print_success "Starship installed successfully"
-    else
-        print_error "Failed to install Starship"
-        return 1
-    fi
-
-    # Verify installation
-    if command -v starship &> /dev/null; then
-        STARSHIP_VERSION=$(starship --version | head -n1)
-        print_success "Starship installed: $STARSHIP_VERSION"
-    else
-        print_error "Starship installation verification failed"
-        return 1
-    fi
-}
-
 setup_dotfiles() {
     print_header "🔗 Setting Up Dotfiles"
 
@@ -603,8 +541,69 @@ setup_dotfiles() {
 }
 
 setup_shell() {
-    print_header "🐚 Configuring Default Shell"
+    print_header "🐚 Setting Up Zsh Shell with Oh My Zsh and Starship"
 
+    # Install Oh My Zsh
+    if [ ! -d "$HOME/.oh-my-zsh" ]; then
+        echo "Installing Oh My Zsh..."
+
+        # Backup existing .zshrc
+        if [ -f "$HOME/.zshrc" ]; then
+            mv "$HOME/.zshrc" "$HOME/.zshrc.backup"
+            print_success "Backed up existing .zshrc"
+        fi
+
+        # Install Oh My Zsh
+        sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+        print_success "Oh My Zsh installed"
+    else
+        print_success "Oh My Zsh already installed"
+    fi
+
+    # Install zsh plugins
+    echo "Installing zsh plugins..."
+
+    if [ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions" ]; then
+        git clone https://github.com/zsh-users/zsh-autosuggestions \
+            ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+        print_success "zsh-autosuggestions installed"
+    else
+        print_success "zsh-autosuggestions already installed"
+    fi
+
+    if [ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting" ]; then
+        git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \
+            ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+        print_success "zsh-syntax-highlighting installed"
+    else
+        print_success "zsh-syntax-highlighting already installed"
+    fi
+
+    print_success "Zsh plugins installed (configure via stow)"
+
+    # Install Starship prompt
+    if command -v starship &> /dev/null; then
+        print_success "Starship already installed: $(starship --version)"
+    else
+        echo "Installing Starship prompt..."
+        if curl -sS https://starship.rs/install.sh | sh; then
+            print_success "Starship installed successfully"
+        else
+            print_error "Failed to install Starship"
+            return 1
+        fi
+
+        # Verify installation
+        if command -v starship &> /dev/null; then
+            STARSHIP_VERSION=$(starship --version | head -n1)
+            print_success "Starship installed: $STARSHIP_VERSION"
+        else
+            print_error "Starship installation verification failed"
+            return 1
+        fi
+    fi
+
+    # Change default shell to zsh
     if [ "$SHELL" != "$(which zsh)" ]; then
         echo "Changing default shell to zsh..."
         chsh -s $(which zsh)
@@ -685,10 +684,9 @@ main() {
     install_pfsense_qemu
     install_go
     install_nodejs
-    setup_zsh
+    setup_shell
     setup_dotfiles
     setup_emacs_systemd_service
-    setup_shell
 
     # Completion
     show_completion_message
