@@ -65,7 +65,7 @@ install_system_packages() {
         fontawesome-fonts powerline-fonts \
         wl-clipboard xclip \
         minicom ranger openssh jq fzf bg \
-        zoxide ripgrep
+        zoxide ripgrep eza bat
 
     # Install RPM Fusion repositories for additional codecs
     echo "Installing RPM Fusion repositories..."
