@@ -2,6 +2,7 @@ return {
   -- Treesitter for syntax highlighting
   {
     'nvim-treesitter/nvim-treesitter',
+    event = { 'BufReadPost', 'BufNewFile' },
     build = ':TSUpdate',
     config = function()
       require('nvim-treesitter.configs').setup({
@@ -38,6 +39,7 @@ return {
   -- Simple autocompletion
   {
     'hrsh7th/nvim-cmp',
+    event = 'InsertEnter',
     dependencies = {
       'hrsh7th/cmp-buffer',
       'hrsh7th/cmp-path',
@@ -66,6 +68,7 @@ return {
   -- File Explorer
   {
     'nvim-tree/nvim-tree.lua',
+    cmd = { 'NvimTreeToggle', 'NvimTreeFindFile' },
     dependencies = {
       'nvim-tree/nvim-web-devicons',
     },
@@ -82,14 +85,20 @@ return {
           dotfiles = false,
         },
       })
-      -- Add keymap for NvimTree
-      vim.keymap.set('n', '<leader>e', ':NvimTreeToggle<CR>', { silent = true })
     end
   },
 
   -- Comment Plugin
   {
     'numToStr/Comment.nvim',
+    keys = {
+      { 'gcc', mode = 'n', desc = 'Comment toggle current line' },
+      { 'gc', mode = { 'n', 'o' }, desc = 'Comment toggle linewise' },
+      { 'gc', mode = 'x', desc = 'Comment toggle linewise (visual)' },
+      { 'gbc', mode = 'n', desc = 'Comment toggle current block' },
+      { 'gb', mode = { 'n', 'o' }, desc = 'Comment toggle blockwise' },
+      { 'gb', mode = 'x', desc = 'Comment toggle blockwise (visual)' },
+    },
     config = function()
       require('Comment').setup()
     end

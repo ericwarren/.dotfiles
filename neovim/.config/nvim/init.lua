@@ -23,13 +23,6 @@ vim.g.loaded_netrwFileHandlers = 1
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
--- Disable some built-in plugins we don't need
-vim.g.loaded_matchit = 1
-vim.g.loaded_matchparen = 1
-vim.g.loaded_sql_completion = 1
-vim.g.loaded_syntax_completion = 1
-vim.g.loaded_xmlformat = 1
-
 -- Basic settings (load immediately for faster startup)
 require('settings')
 require('keymaps')
@@ -95,7 +88,7 @@ require('lazy').setup(require('plugins'), {
     enabled = true,
     concurrency = nil, -- Use default
     notify = true, -- Get notified when updates are available
-    frequency = 3600, -- Check every hour
+    frequency = 86400, -- Check once per day
     check_pinned = false, -- Don't check pinned plugins
   },
 
@@ -259,7 +252,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
     -- Only show if we're not opening a specific file
     if vim.fn.argc() == 0 then
       vim.defer_fn(function()
-        vim.notify("Neovim ready! 🚀", vim.log.levels.INFO, { title = "Startup" })
+        vim.notify("Neovim ready!", vim.log.levels.INFO, { title = "Startup" })
       end, 100)
     end
   end,
