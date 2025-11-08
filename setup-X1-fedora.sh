@@ -274,12 +274,32 @@ install_nodejs() {
     echo "Installing global Node.js packages..."
     npm install -g typescript ts-node yarn pnpm eslint prettier nodemon
 
-    # Install Claude Code
-    echo "Installing Claude Code..."
-    npm install -g @anthropic-ai/claude-code
-
     print_success "Node.js development tools installed"
-    print_success "Claude Code installed"
+}
+
+install_claude_code() {
+    print_header "🤖 Installing Claude Code"
+
+    if command -v claude &> /dev/null; then
+        print_success "Claude Code already installed: $(claude --version 2>/dev/null || echo 'installed')"
+        return
+    fi
+
+    echo "Installing Claude Code..."
+    if curl -fsSL https://claude.ai/install.sh | bash; then
+        print_success "Claude Code installed successfully"
+    else
+        print_error "Failed to install Claude Code"
+        return 1
+    fi
+
+    # Verify installation
+    if command -v claude &> /dev/null; then
+        CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "latest")
+        print_success "Claude Code installed: $CLAUDE_VERSION"
+    else
+        print_warning "Claude Code installation may require a new shell session"
+    fi
 }
 
 setup_zsh() {
@@ -455,6 +475,7 @@ main() {
     install_docker
     install_go
     install_nodejs
+    install_claude_code
     setup_zsh
     setup_dotfiles
     setup_shell
