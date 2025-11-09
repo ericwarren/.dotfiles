@@ -35,21 +35,21 @@ $line_break$character"""
 palette = 'gruvbox_dark'
 
 [palettes.gruvbox_dark]
-color_fg0 = '#fbf1c7'
-color_bg1 = '#3c3836'
-color_bg3 = '#665c54'
-tokyo_fg = '#769ff0'
-tokyo_bg = '#394260'
-tokyo_bg2 = '#212736'
-tokyo_bg3 = '#487feb'
-tokyo_blue = '#5f8fed'
-color_blue = '#458588'
-color_aqua = '#689d6a'
-color_green = '#98971a'
-color_orange = '#d65d0e'
-color_purple = '#b16286'
-color_red = '#cc241d'
-color_yellow = '#d79921'
+color_fg0 = '#c0caf5'
+color_bg1 = '#24283b'
+color_bg3 = '#414868'
+tokyo_fg = '#7dcfff'
+tokyo_bg = '#394b70'
+tokyo_bg2 = '#1a1b26'
+tokyo_bg3 = '#bb9af7'
+tokyo_blue = '#7aa2f7'
+color_blue = '#2ac3de'
+color_aqua = '#73daca'
+color_green = '#9ece6a'
+color_orange = '#ff9e64'
+color_purple = '#bb9af7'
+color_red = '#f7768e'
+color_yellow = '#e0af68'
 
 [os]
 disabled = false
@@ -91,7 +91,7 @@ style = "bg:tokyo_blue fg:color_fg0"
 disabled = false
 
 [directory]
-style = "fg:tokyo_fg bg:tokyo_bg"
+style = "fg:color_blue bg:tokyo_bg"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
@@ -106,11 +106,11 @@ truncation_symbol = "…/"
 [git_branch]
 symbol = ""
 style = "bg:tokyo_bg2"
-format = '[[ $symbol $branch ](fg:tokyo_fg bg:tokyo_bg2)]($style)'
+format = '[[ $symbol $branch ](fg:color_green bg:tokyo_bg2)]($style)'
 
 [git_status]
-style = "bg:color_aqua"
-format = '[[($all_status$ahead_behind )](fg:tokyo_fg bg:tokyo_bg2)]($style)'
+style = "bg:tokyo_bg2"
+format = '[[($all_status$ahead_behind )](fg:color_yellow bg:tokyo_bg2)]($style)'
 ahead = ""
 behind = ""
 
@@ -150,17 +150,17 @@ format = '[[ via $symbol($version )(🎯 $tfm )](fg:color_fg0 bg:tokyo_bg3)]($st
 
 [python]
 symbol = ""
-style = "bg:tokyo_bg3 color_fg0"
+style = "fg:tokyo_bg2 bg:tokyo_bg3"
 format = '[ ${symbol} ${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
 
 [docker_context]
 symbol = ""
 style = "bg:color_bg3"
-format = '[[ $symbol( $context) ](fg:#83a598 bg:color_bg3)]($style)'
+format = '[[ $symbol( $context) ](fg:color_blue bg:color_bg3)]($style)'
 
 [conda]
 style = "bg:color_bg3"
-format = '[[ $symbol( $environment) ](fg:#83a598 bg:color_bg3)]($style)'
+format = '[[ $symbol( $environment) ](fg:color_green bg:color_bg3)]($style)'
 
 [time]
 disabled = true
