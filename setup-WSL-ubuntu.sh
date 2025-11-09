@@ -289,6 +289,21 @@ install_github_cli() {
     print_success "GitHub CLI installed: $(gh --version | head -n1)"
 }
 
+install_tpm() {
+    print_header "🔌 Installing Tmux Plugin Manager (TPM)"
+
+    if [ -d "$HOME/.tmux/plugins/tpm" ]; then
+        print_success "TPM already installed"
+        return
+    fi
+
+    echo "Installing TPM..."
+    git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+
+    print_success "TPM installed successfully"
+    print_warning "After stowing tmux config, press Ctrl+Space then I to install plugins"
+}
+
 setup_shell() {
     print_header "🐚 Setting Up Zsh Shell with Oh My Zsh and Starship"
 
@@ -432,6 +447,7 @@ main() {
     install_claude_code
     install_azure_cli
     install_github_cli
+    install_tpm
     install_neovim
     setup_shell
 
