@@ -67,3 +67,4 @@ fi
 # Add your SSH keys
 ssh-add ~/.ssh/id_ed25519_personal 2>/dev/null
 ssh-add ~/.ssh/id_ed25519_business 2>/dev/null
+export GPG_TTY=$(tty)

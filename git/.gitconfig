@@ -30,3 +30,8 @@
   open = "!f() { REPO_URL=$(git config remote.origin.url); explorer ${REPO_URL%%.git}; }; f"
   browse = !git open
   browse-qb = "!f() { qutebrowser $(git config remote.origin.url | sed 's/\\.git$//') & }; f"
+[credential "https://dev.azure.com"]
+	useHttpPath = true
+[credential]
+	helper = /usr/local/bin/git-credential-manager
+	credentialStore = gpg
