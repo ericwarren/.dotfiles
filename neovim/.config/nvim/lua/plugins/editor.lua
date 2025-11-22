@@ -36,10 +36,4 @@ return {
       },
     },
   },
-
-  -- WakaTime - automatic time tracking
-  {
-    'wakatime/vim-wakatime',
-    lazy = false,
-  },
 }
