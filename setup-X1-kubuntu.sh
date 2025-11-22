@@ -64,7 +64,8 @@ install_system_packages() {
         fonts-awesome fonts-powerline \
         wl-clipboard xclip \
         minicom ranger openssh-client jq fzf \
-        zoxide ripgrep eza bat fd-find
+        zoxide ripgrep eza bat fd-find \
+        lsb-release
 
     sudo apt upgrade -y
 
@@ -182,14 +183,41 @@ install_dotnet() {
     print_header "🔷 Installing .NET SDK"
 
     if command -v dotnet &> /dev/null; then
-        print_success ".NET SDK already installed: $(dotnet --version)"
-        return
+        print_success ".NET SDK detected: $(dotnet --version)"
+    else
+        print_warning ".NET SDK not detected, proceeding with installation"
     fi
 
-    echo "Installing Microsoft package repository..."
-    sudo apt install -y dotnet-sdk-8.0
+    UBUNTU_VERSION="$(lsb_release -rs 2>/dev/null || echo "")"
+    if [[ "$UBUNTU_VERSION" == "22.04" || "$UBUNTU_VERSION" == "24.04" ]]; then
+        if ! grep -R "dotnet/backports" /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null | grep -q "dotnet/backports"; then
+            echo "Adding Ubuntu .NET backports repository for .NET 9 and 10..."
+            sudo add-apt-repository -y ppa:dotnet/backports
+        else
+            print_success "Ubuntu .NET backports repository already configured"
+        fi
+    else
+        print_warning "Ubuntu release $UBUNTU_VERSION not explicitly handled. Attempting installation with current repositories."
+    fi
 
-    print_success ".NET SDK installed: $(dotnet --version)"
+    echo "Updating package lists..."
+    sudo apt-get update
+
+    for sdk_version in 8.0 9.0 10.0; do
+        echo "Installing .NET SDK ${sdk_version}..."
+        if sudo apt-get install -y "dotnet-sdk-${sdk_version}"; then
+            print_success ".NET SDK ${sdk_version} installed"
+        else
+            print_warning ".NET SDK ${sdk_version} isn't available in the configured feeds yet"
+        fi
+    done
+
+    DOTNET_SDKS=$(dotnet --list-sdks 2>/dev/null | paste -sd ', ' -)
+    if [ -n "$DOTNET_SDKS" ]; then
+        print_success ".NET SDKs installed: $DOTNET_SDKS"
+    else
+        print_success ".NET SDK installation complete"
+    fi
 
     # Install useful .NET global tools
     echo "Installing .NET global tools..."
@@ -248,7 +276,27 @@ install_docker() {
     print_success "Docker installed: $DOCKER_VERSION"
     print_success "Docker Compose installed: $COMPOSE_VERSION"
 
-    print_warning "You'll need to logout/login for docker group membership to take effect"
+    if sudo docker ps >/dev/null 2>&1; then
+        print_success "docker ps ran successfully (daemon responding)"
+    else
+        print_warning "docker ps failed; try rerunning with sudo or check dockerd status"
+    fi
+
+    if sudo docker info >/dev/null 2>&1; then
+        print_success "docker info ran successfully"
+    else
+        print_warning "docker info failed; verify Docker daemon is running"
+    fi
+
+    if command -v loginctl &> /dev/null; then
+        if sudo loginctl enable-linger "$USER" >/dev/null 2>&1; then
+            print_success "Enabled lingering for $USER so dockerd stays available after reboot"
+        else
+            print_warning "Could not enable lingering via loginctl (may already be set)"
+        fi
+    fi
+
+    print_warning "Log out and back in for docker group membership to take effect"
     print_success "Docker installation complete"
 }
 
@@ -279,11 +327,32 @@ install_go() {
     sudo tar -C /usr/local -xzf /tmp/go.tar.gz
     rm /tmp/go.tar.gz
 
-    # Add to PATH if not already present
-    if ! grep -q "/usr/local/go/bin" ~/.bashrc; then
-        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-        echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
-    fi
+    # Add Go paths to both bash and zsh configs
+    local rc_file
+    for rc_file in "$HOME/.bashrc" "$HOME/.zshrc"; do
+        [ -f "$rc_file" ] || touch "$rc_file"
+
+        local go_lines=()
+        if ! grep -qs '/usr/local/go/bin' "$rc_file"; then
+            go_lines+=('export PATH=$PATH:/usr/local/go/bin')
+        fi
+        if ! grep -qs '$HOME/go/bin' "$rc_file"; then
+            go_lines+=('export PATH=$PATH:$HOME/go/bin')
+        fi
+
+        if [ ${#go_lines[@]} -gt 0 ]; then
+            {
+                echo ''
+                echo '# Go paths added by setup-X1-kubuntu.sh'
+                for line in "${go_lines[@]}"; do
+                    echo "$line"
+                done
+            } >> "$rc_file"
+            print_success "Added Go PATH entries to ${rc_file##*/}"
+        else
+            print_success "Go PATH entries already present in ${rc_file##*/}"
+        fi
+    done
 
     # Export for current session
     export PATH=$PATH:/usr/local/go/bin
@@ -296,20 +365,18 @@ install_nodejs() {
     print_header "📗 Installing Node.js via NVM"
 
     # Install NVM if not present
-    if [ ! -d "$HOME/.nvm" ]; then
+    export NVM_DIR="$HOME/.nvm"
+
+    if [ ! -d "$NVM_DIR" ]; then
         echo "Installing Node Version Manager (nvm)..."
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-
-        # Source nvm for current session
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
         print_success "NVM installed"
     else
         print_success "NVM already installed"
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     fi
+
+    # Source nvm for current session
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
     # Install latest LTS Node.js
     echo "Installing latest LTS Node.js..."
@@ -320,10 +387,15 @@ install_nodejs() {
     NODE_VERSION=$(node --version)
     print_success "Node.js $NODE_VERSION installed"
 
-    # Install global packages
-    echo "Installing global Node.js packages..."
-    npm install -g typescript ts-node yarn pnpm eslint prettier nodemon
+    echo "Enabling Corepack for Yarn/Pnpm shims..."
+    if corepack enable 2>/dev/null; then
+        print_success "Corepack enabled (Yarn/Pnpm tied to Node LTS)"
+    else
+        print_warning "Corepack enable failed; Yarn/Pnpm may need manual setup"
+    fi
 
+    # Install a few ubiquitous global tools
+    npm install -g typescript ts-node eslint prettier nodemon >/dev/null 2>&1 || true
     print_success "Node.js development tools installed"
 }
 
@@ -540,7 +612,8 @@ show_completion_message() {
     echo "📋 What was installed:"
     echo "  • Essential development tools and packages"
     echo "  • Python 3 with uv package manager $(uv --version 2>/dev/null || echo 'latest')"
-    echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
+    DOTNET_SUMMARY=$(dotnet --list-sdks 2>/dev/null | head -n5 | paste -sd ', ' -)
+    echo "  • .NET SDKs ${DOTNET_SUMMARY:-installed}"
     echo "  • Go $(go version 2>/dev/null | awk '{print $3}' || echo 'latest')"
     echo "  • Node Version Manager (nvm) with Node.js LTS"
     echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep"

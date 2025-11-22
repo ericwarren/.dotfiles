@@ -62,7 +62,8 @@ install_system_packages() {
         ca-certificates gnupg \
         unzip stow \
         jq fzf bat eza htop ncdu tldr \
-        tree ripgrep
+        tree ripgrep \
+        wslu dbus-user-session
 
     sudo apt upgrade -y
 
@@ -100,23 +101,40 @@ install_dotnet() {
 
     if command -v dotnet &> /dev/null; then
         print_success ".NET SDK already installed: $(dotnet --version)"
-        return
+    else
+        print_warning ".NET SDK not detected, proceeding with installation"
     fi
 
-    echo "Installing Microsoft package repository..."
+    UBUNTU_VERSION="$(lsb_release -rs 2>/dev/null || echo "")"
+    if [[ "$UBUNTU_VERSION" == "22.04" || "$UBUNTU_VERSION" == "24.04" ]]; then
+        if ! grep -R "dotnet/backports" /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null | grep -q "dotnet/backports"; then
+            echo "Adding Ubuntu .NET backports repository for .NET 9 and 10..."
+            sudo add-apt-repository -y ppa:dotnet/backports
+        else
+            print_success "Ubuntu .NET backports repository already configured"
+        fi
+    else
+        print_warning "Ubuntu release $UBUNTU_VERSION not explicitly handled. Attempting installation with current repositories."
+    fi
 
-    # Download Microsoft repository GPG keys
-    wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-    sudo dpkg -i packages-microsoft-prod.deb
-    rm packages-microsoft-prod.deb
+    echo "Updating package lists..."
+    sudo apt-get update
 
-    # Update package lists
-    sudo apt update
+    for sdk_version in 8.0 9.0 10.0; do
+        echo "Installing .NET SDK ${sdk_version}..."
+        if sudo apt-get install -y "dotnet-sdk-${sdk_version}"; then
+            print_success ".NET SDK ${sdk_version} installed"
+        else
+            print_warning ".NET SDK ${sdk_version} isn't available in the configured feeds yet"
+        fi
+    done
 
-    # Install .NET SDK
-    sudo apt install -y dotnet-sdk-8.0
-
-    print_success ".NET SDK installed: $(dotnet --version)"
+    DOTNET_SDKS=$(dotnet --list-sdks 2>/dev/null | paste -sd ', ' -)
+    if [ -n "$DOTNET_SDKS" ]; then
+        print_success ".NET SDKs installed: $DOTNET_SDKS"
+    else
+        print_success ".NET SDK installation complete"
+    fi
 
     # Install useful .NET global tools
     echo "Installing .NET global tools..."
@@ -223,10 +241,37 @@ install_go() {
     sudo tar -C /usr/local -xzf /tmp/go.tar.gz
     rm /tmp/go.tar.gz
 
-    # Add to PATH if not already present
-    if ! grep -q "/usr/local/go/bin" ~/.bashrc; then
-        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-        echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
+    # Determine the appropriate shell config to update
+    local DEFAULT_SHELL SHELL_RC
+    DEFAULT_SHELL=$(getent passwd "$USER" | cut -d: -f7 2>/dev/null || echo "")
+    case "$DEFAULT_SHELL" in
+        *zsh) SHELL_RC="$HOME/.zshrc" ;;
+        *bash) SHELL_RC="$HOME/.bashrc" ;;
+        *) SHELL_RC="$HOME/.profile" ;;
+    esac
+
+    [ -f "$SHELL_RC" ] || touch "$SHELL_RC"
+
+    # Add Go bin paths if missing
+    local missing_lines=()
+    if ! grep -qs '/usr/local/go/bin' "$SHELL_RC"; then
+        missing_lines+=('export PATH=$PATH:/usr/local/go/bin')
+    fi
+    if ! grep -qs '$HOME/go/bin' "$SHELL_RC"; then
+        missing_lines+=('export PATH=$PATH:$HOME/go/bin')
+    fi
+
+    if [ ${#missing_lines[@]} -gt 0 ]; then
+        {
+            echo ''
+            echo '# Go paths added by setup-WSL-ubuntu.sh'
+            for line in "${missing_lines[@]}"; do
+                echo "$line"
+            done
+        } >> "$SHELL_RC"
+        print_success "Added Go PATH entries to ${SHELL_RC##*/}"
+    else
+        print_success "Go PATH entries already present in ${SHELL_RC##*/}"
     fi
 
     # Export for current session
@@ -378,7 +423,8 @@ show_completion_message() {
     echo "📋 What was installed:"
     echo "  • Essential development tools and packages"
     echo "  • Python 3 with uv package manager $(uv --version 2>/dev/null || echo 'latest')"
-    echo "  • .NET SDK $(dotnet --version 2>/dev/null || echo 'latest')"
+    DOTNET_SUMMARY=$(dotnet --list-sdks 2>/dev/null | head -n5 | paste -sd ', ' -)
+    echo "  • .NET SDKs ${DOTNET_SUMMARY:-installed}"
     echo "  • Go $(go version 2>/dev/null | awk '{print $3}' || echo 'latest')"
     echo "  • Node Version Manager (nvm) with Node.js LTS"
     echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep"
