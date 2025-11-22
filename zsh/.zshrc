@@ -60,8 +60,8 @@ if command -v starship &> /dev/null; then
 fi
 
 # Start ssh-agent if it's not already running
-if ! pgrep ssh-agent > /dev/null 2>&1; then
-    eval "$(ssh-agent -s)" > /dev/null
+if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval "$(ssh-agent -s)" > /dev/null 2>&1
 fi
 
 # Add your SSH keys
