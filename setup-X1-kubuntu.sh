@@ -60,8 +60,8 @@ install_system_packages() {
         curl wget git zsh \
         ca-certificates gnupg \
         unzip stow \
-        tmux tree htop ncdu tldr \
-        fonts-awesome fonts-powerline \
+        tmux tree htop ncdu \
+        fonts-powerline \
         wl-clipboard xclip \
         minicom ranger openssh-client jq fzf \
         zoxide ripgrep eza bat fd-find \
@@ -440,6 +440,22 @@ install_azure_cli() {
 
     echo "Adding Azure CLI repository..."
     AZ_DIST=$(lsb_release -cs)
+
+    # Microsoft doesn't always have packages for the latest Ubuntu releases
+    # Map to the latest supported version if needed
+    case "$AZ_DIST" in
+        questing|*25.*)
+            # Ubuntu 25.x - use 24.04 LTS repository
+            AZ_DIST="noble"
+            print_warning "Using noble (24.04) repository for Azure CLI (questing/25.x not yet supported)"
+            ;;
+        oracular|*24.10*)
+            # Ubuntu 24.10 - use 24.04 LTS repository
+            AZ_DIST="noble"
+            print_warning "Using noble (24.04) repository for Azure CLI (oracular/24.10 not yet supported)"
+            ;;
+    esac
+
     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_DIST main" | \
         sudo tee /etc/apt/sources.list.d/azure-cli.list
 
