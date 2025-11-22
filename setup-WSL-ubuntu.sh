@@ -63,7 +63,7 @@ install_system_packages() {
         unzip stow \
         jq fzf bat eza htop ncdu tldr \
         tree ripgrep \
-        wslu dbus-user-session
+        dbus-user-session
 
     sudo apt upgrade -y
 
