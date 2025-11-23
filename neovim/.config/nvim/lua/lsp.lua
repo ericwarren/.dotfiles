@@ -76,6 +76,7 @@ require("mason").setup({
 
 -- Language servers to auto-install
 local servers = {
+  "clangd",        -- C/C++
   "omnisharp",      -- C#/.NET
   "pyright",        -- Python
   "ts_ls",          -- TypeScript/JavaScript
@@ -169,6 +170,14 @@ vim.lsp.config.cssls = {
   capabilities = capabilities,
 }
 
+-- C/C++
+vim.lsp.config.clangd = {
+  cmd = { "clangd", "--background-index", "--clang-tidy" },
+  filetypes = { "c", "cpp", "objc", "objcpp", "cuda" },
+  root_markers = { "compile_commands.json", "compile_flags.txt", ".git" },
+  capabilities = capabilities,
+}
+
 -- Go
 vim.lsp.config.gopls = {
   cmd = { "gopls" },
@@ -187,7 +196,7 @@ vim.lsp.config.gopls = {
 }
 
 -- Enable LSP servers for specified filetypes
-vim.lsp.enable({ "omnisharp", "pyright", "ts_ls", "html", "cssls", "gopls" })
+vim.lsp.enable({ "clangd", "omnisharp", "pyright", "ts_ls", "html", "cssls", "gopls" })
 
 -- Set up on_attach autocmd for all LSP servers
 vim.api.nvim_create_autocmd("LspAttach", {
@@ -210,6 +219,8 @@ require("conform").setup({
     json = { "prettierd", "prettier", stop_after_first = true },
     yaml = { "prettierd", "prettier", stop_after_first = true },
     markdown = { "prettierd", "prettier", stop_after_first = true },
+    c = { "clang_format" },
+    cpp = { "clang_format" },
     go = { "gofmt", "goimports" },
     cs = { "csharpier" },
     lua = { "stylua" },

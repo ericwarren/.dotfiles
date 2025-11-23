@@ -65,6 +65,9 @@ install_system_packages() {
         tree ripgrep \
         dbus-user-session
 
+    echo "Installing C/C++ toolchain (clang/clangd/clang-format/lldb)..."
+    sudo apt install -y clang clangd clang-format lldb
+
     sudo apt upgrade -y
 
     print_success "Essential packages installed"

@@ -67,6 +67,9 @@ install_system_packages() {
         zoxide ripgrep eza bat fd-find \
         lsb-release
 
+    echo "Installing C/C++ toolchain (clang/clangd/clang-format/lldb)..."
+    sudo apt install -y clang clangd clang-format lldb
+
     sudo apt upgrade -y
 
     print_success "Essential packages installed"
