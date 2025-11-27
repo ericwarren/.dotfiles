@@ -63,6 +63,7 @@ install_system_packages() {
         unzip stow \
         jq fzf bat eza htop ncdu tldr \
         tree ripgrep zoxide \
+        imagemagick \
         dbus-user-session
 
     echo "Installing C/C++ toolchain (clang/clangd/clang-format/lldb)..."

@@ -65,6 +65,7 @@ install_system_packages() {
         wl-clipboard xclip \
         minicom ranger openssh-client jq fzf \
         zoxide ripgrep eza bat fd-find \
+        imagemagick \
         lsb-release
 
     echo "Installing C/C++ toolchain (clang/clangd/clang-format/lldb)..."
