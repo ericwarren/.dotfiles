@@ -62,7 +62,7 @@ install_system_packages() {
         ca-certificates gnupg \
         unzip stow \
         jq fzf bat eza htop ncdu tldr \
-        tree ripgrep \
+        tree ripgrep zoxide \
         dbus-user-session
 
     echo "Installing C/C++ toolchain (clang/clangd/clang-format/lldb)..."
@@ -148,32 +148,42 @@ install_dotnet() {
     print_success ".NET development tools installed"
 }
 
-install_nvm() {
-    print_header "📦 Installing Node Version Manager (nvm)"
+install_nodejs() {
+    print_header "📗 Installing Node.js via NVM"
 
-    if [ -d "$HOME/.nvm" ]; then
-        print_success "nvm already installed"
-        return
+    # Install NVM if not present
+    export NVM_DIR="$HOME/.nvm"
+
+    if [ ! -d "$NVM_DIR" ]; then
+        echo "Installing Node Version Manager (nvm)..."
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+        print_success "NVM installed"
+    else
+        print_success "NVM already installed"
     fi
 
-    echo "Installing nvm..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-
-    # Load nvm for current session
-    export NVM_DIR="$HOME/.nvm"
+    # Source nvm for current session
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-    if [ -d "$HOME/.nvm" ]; then
-        print_success "nvm installed successfully"
+    # Install latest LTS Node.js
+    echo "Installing latest LTS Node.js..."
+    nvm install --lts
+    nvm use --lts
+    nvm alias default lts/*
 
-        # Install LTS version of Node.js
-        echo "Installing Node.js LTS..."
-        nvm install --lts
-        nvm use --lts
-        print_success "Node.js LTS installed: $(node --version 2>/dev/null || echo 'will be available after shell restart')"
+    NODE_VERSION=$(node --version)
+    print_success "Node.js $NODE_VERSION installed"
+
+    echo "Enabling Corepack for Yarn/Pnpm shims..."
+    if corepack enable 2>/dev/null; then
+        print_success "Corepack enabled (Yarn/Pnpm tied to Node LTS)"
     else
-        print_warning "nvm installed but may need shell restart"
+        print_warning "Corepack enable failed; Yarn/Pnpm may need manual setup"
     fi
+
+    # Install a few ubiquitous global tools
+    npm install -g typescript ts-node eslint prettier nodemon >/dev/null 2>&1 || true
+    print_success "Node.js development tools installed"
 }
 
 install_claude_code() {
@@ -244,38 +254,32 @@ install_go() {
     sudo tar -C /usr/local -xzf /tmp/go.tar.gz
     rm /tmp/go.tar.gz
 
-    # Determine the appropriate shell config to update
-    local DEFAULT_SHELL SHELL_RC
-    DEFAULT_SHELL=$(getent passwd "$USER" | cut -d: -f7 2>/dev/null || echo "")
-    case "$DEFAULT_SHELL" in
-        *zsh) SHELL_RC="$HOME/.zshrc" ;;
-        *bash) SHELL_RC="$HOME/.bashrc" ;;
-        *) SHELL_RC="$HOME/.profile" ;;
-    esac
+    # Add Go paths to both bash and zsh configs
+    local rc_file
+    for rc_file in "$HOME/.bashrc" "$HOME/.zshrc"; do
+        [ -f "$rc_file" ] || touch "$rc_file"
 
-    [ -f "$SHELL_RC" ] || touch "$SHELL_RC"
+        local go_lines=()
+        if ! grep -qs '/usr/local/go/bin' "$rc_file"; then
+            go_lines+=('export PATH=$PATH:/usr/local/go/bin')
+        fi
+        if ! grep -qs '$HOME/go/bin' "$rc_file"; then
+            go_lines+=('export PATH=$PATH:$HOME/go/bin')
+        fi
 
-    # Add Go bin paths if missing
-    local missing_lines=()
-    if ! grep -qs '/usr/local/go/bin' "$SHELL_RC"; then
-        missing_lines+=('export PATH=$PATH:/usr/local/go/bin')
-    fi
-    if ! grep -qs '$HOME/go/bin' "$SHELL_RC"; then
-        missing_lines+=('export PATH=$PATH:$HOME/go/bin')
-    fi
-
-    if [ ${#missing_lines[@]} -gt 0 ]; then
-        {
-            echo ''
-            echo '# Go paths added by setup-WSL-ubuntu.sh'
-            for line in "${missing_lines[@]}"; do
-                echo "$line"
-            done
-        } >> "$SHELL_RC"
-        print_success "Added Go PATH entries to ${SHELL_RC##*/}"
-    else
-        print_success "Go PATH entries already present in ${SHELL_RC##*/}"
-    fi
+        if [ ${#go_lines[@]} -gt 0 ]; then
+            {
+                echo ''
+                echo '# Go paths added by setup-WSL-ubuntu.sh'
+                for line in "${go_lines[@]}"; do
+                    echo "$line"
+                done
+            } >> "$rc_file"
+            print_success "Added Go PATH entries to ${rc_file##*/}"
+        else
+            print_success "Go PATH entries already present in ${rc_file##*/}"
+        fi
+    done
 
     # Export for current session
     export PATH=$PATH:/usr/local/go/bin
@@ -304,6 +308,22 @@ install_azure_cli() {
 
     echo "Adding Azure CLI repository..."
     AZ_DIST=$(lsb_release -cs)
+
+    # Microsoft doesn't always have packages for the latest Ubuntu releases
+    # Map to the latest supported version if needed
+    case "$AZ_DIST" in
+        questing|*25.*)
+            # Ubuntu 25.x - use 24.04 LTS repository
+            AZ_DIST="noble"
+            print_warning "Using noble (24.04) repository for Azure CLI (questing/25.x not yet supported)"
+            ;;
+        oracular|*24.10*)
+            # Ubuntu 24.10 - use 24.04 LTS repository
+            AZ_DIST="noble"
+            print_warning "Using noble (24.04) repository for Azure CLI (oracular/24.10 not yet supported)"
+            ;;
+    esac
+
     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_DIST main" | \
         sudo tee /etc/apt/sources.list.d/azure-cli.list
 
@@ -429,8 +449,8 @@ show_completion_message() {
     DOTNET_SUMMARY=$(dotnet --list-sdks 2>/dev/null | head -n5 | paste -sd ', ' -)
     echo "  • .NET SDKs ${DOTNET_SUMMARY:-installed}"
     echo "  • Go $(go version 2>/dev/null | awk '{print $3}' || echo 'latest')"
-    echo "  • Node Version Manager (nvm) with Node.js LTS"
-    echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep"
+    echo "  • Node Version Manager (nvm) with Node.js LTS + Corepack + global tools"
+    echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep, zoxide"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
     echo "    - zsh-syntax-highlighting (syntax coloring)"
@@ -447,7 +467,6 @@ show_completion_message() {
     echo "  3. Apply your dotfiles with stow:"
     echo "     cd ~/.dotfiles && stow zsh git neovim tmux claude"
     echo "  4. Launch nvim to auto-install plugins (first run will take a moment)"
-    echo "  5. Configure WakaTime in nvim: :WakaTimeApiKey (get key from wakatime.com)"
 
     echo -e "\n💡 Useful commands:"
     echo "  • claude             - Launch Claude Code CLI"
@@ -492,7 +511,7 @@ main() {
     install_python
     install_dotnet
     install_go
-    install_nvm
+    install_nodejs
     install_claude_code
     install_azure_cli
     install_github_cli
