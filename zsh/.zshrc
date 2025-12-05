@@ -59,14 +59,25 @@ if command -v starship &> /dev/null; then
     eval "$(starship init zsh)"
 fi
 
-# Start ssh-agent if it's not already running
-if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)" > /dev/null 2>&1
+# SSH agent configuration - works for both GUI (Kubuntu) and CLI (WSL)
+if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+    # GUI environment (Kubuntu) - use ksshaskpass for graphical password prompt
+    export SSH_ASKPASS=/usr/bin/ksshaskpass
+    export SSH_ASKPASS_REQUIRE=prefer
+else
+    # CLI environment (WSL) - use keychain for persistent SSH agent
+    if command -v keychain &> /dev/null; then
+        eval $(keychain --eval --quiet --agents ssh id_ed25519)
+    else
+        # Fallback: start ssh-agent if not running
+        if [ -z "$SSH_AUTH_SOCK" ]; then
+            eval "$(ssh-agent -s)" > /dev/null 2>&1
+        fi
+        # Auto-add SSH key if not already added
+        if ! ssh-add -l &>/dev/null; then
+            ssh-add ~/.ssh/id_ed25519 2>/dev/null
+        fi
+    fi
 fi
-
-# Add your SSH keys
-ssh-add ~/.ssh/id_ed25519_personal 2>/dev/null
-ssh-add ~/.ssh/id_ed25519_business 2>/dev/null
-ssh-add -q ~/.ssh/id_ed25519
 
 export GPG_TTY=$(tty)

@@ -64,7 +64,7 @@ install_system_packages() {
         jq fzf bat eza htop ncdu tldr \
         tree ripgrep zoxide \
         imagemagick \
-        dbus-user-session
+        dbus-user-session keychain
 
     echo "Installing C/C++ toolchain (clang/clangd/clang-format/lldb)..."
     sudo apt install -y clang clangd clang-format lldb

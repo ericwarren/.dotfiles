@@ -66,7 +66,7 @@ install_system_packages() {
         minicom ranger openssh-client jq fzf \
         zoxide ripgrep eza bat fd-find \
         imagemagick \
-        lsb-release
+        lsb-release ksshaskpass
 
     echo "Installing C/C++ toolchain (clang/clangd/clang-format/lldb)..."
     sudo apt install -y clang clangd clang-format lldb
