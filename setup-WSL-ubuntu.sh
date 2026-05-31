@@ -187,6 +187,63 @@ install_nodejs() {
     print_success "Node.js development tools installed"
 }
 
+install_rust() {
+    print_header "🦀 Installing Rust"
+
+    if command -v rustc &> /dev/null; then
+        print_success "Rust already installed: $(rustc --version)"
+        return
+    fi
+
+    echo "Installing Rust via rustup..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+    source "$HOME/.cargo/env"
+
+    rustup component add rust-analyzer rustfmt clippy
+
+    if command -v rustc &> /dev/null; then
+        print_success "Rust installed: $(rustc --version)"
+        print_success "Cargo installed: $(cargo --version)"
+    else
+        print_warning "Rust installed but may need PATH update. Restart your shell."
+    fi
+}
+
+install_elixir() {
+    print_header "💧 Installing Elixir & Erlang/OTP"
+
+    if command -v elixir &> /dev/null; then
+        print_success "Elixir already installed: $(elixir --version | head -n1)"
+        return
+    fi
+
+    echo "Adding Erlang Solutions repository..."
+    if wget -q --timeout=15 -O /tmp/erlang-solutions.deb https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb 2>/dev/null; then
+        sudo dpkg -i /tmp/erlang-solutions.deb
+        rm /tmp/erlang-solutions.deb
+        sudo apt update
+        echo "Installing Erlang/OTP..."
+        sudo apt install -y esl-erlang
+        echo "Installing Elixir..."
+        sudo apt install -y elixir
+    else
+        echo "Erlang Solutions repo unavailable, falling back to Ubuntu packages..."
+        rm -f /tmp/erlang-solutions.deb
+        sudo apt update
+        echo "Installing Erlang/OTP..."
+        sudo apt install -y erlang
+        echo "Installing Elixir..."
+        sudo apt install -y elixir
+    fi
+
+    echo "Installing Hex and rebar3..."
+    mix local.hex --force
+    mix local.rebar --force
+
+    print_success "Elixir installed: $(elixir --version | head -n1)"
+}
+
 install_claude_code() {
     print_header "🤖 Installing Claude Code"
 
@@ -211,18 +268,16 @@ install_claude_code() {
 install_neovim() {
     print_header "📝 Installing Neovim"
 
-    # Add Neovim unstable PPA for latest version (0.10+)
-    echo "Adding Neovim unstable PPA..."
-    sudo add-apt-repository ppa:neovim-ppa/unstable -y
-    sudo apt update
+    sudo apt install -y ripgrep fd-find
 
-    if command -v nvim &> /dev/null; then
-        print_success "Neovim already installed, upgrading if needed..."
-        sudo apt install -y neovim ripgrep fd-find
-    else
-        echo "Installing Neovim from PPA..."
-        sudo apt install -y neovim ripgrep fd-find
-    fi
+    # Install Neovim from official GitHub stable release
+    echo "Downloading Neovim stable release..."
+    local nvim_archive="/tmp/nvim-linux-x86_64.tar.gz"
+    curl -fsSL "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz" -o "$nvim_archive"
+    sudo rm -rf /opt/nvim-linux-x86_64
+    sudo tar -C /opt -xzf "$nvim_archive"
+    rm -f "$nvim_archive"
+    sudo ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
 
     print_success "Neovim installed: $(nvim --version | head -n1)"
     print_success "Neovim configuration will be managed via stow (neovim package)"
@@ -451,6 +506,8 @@ show_completion_message() {
     echo "  • .NET SDKs ${DOTNET_SUMMARY:-installed}"
     echo "  • Go $(go version 2>/dev/null | awk '{print $3}' || echo 'latest')"
     echo "  • Node Version Manager (nvm) with Node.js LTS + Corepack + global tools"
+    echo "  • Rust $(rustc --version 2>/dev/null || echo 'latest') with cargo, clippy, rustfmt, rust-analyzer"
+    echo "  • Elixir $(elixir --version 2>/dev/null | head -n1 || echo 'latest') with Erlang/OTP, Hex, rebar3"
     echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep, zoxide"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
@@ -513,6 +570,8 @@ main() {
     install_dotnet
     install_go
     install_nodejs
+    install_rust
+    install_elixir
     install_claude_code
     install_azure_cli
     install_github_cli

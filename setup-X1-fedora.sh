@@ -277,6 +277,47 @@ install_nodejs() {
     print_success "Node.js development tools installed"
 }
 
+install_rust() {
+    print_header "🦀 Installing Rust"
+
+    if command -v rustc &> /dev/null; then
+        print_success "Rust already installed: $(rustc --version)"
+        return
+    fi
+
+    echo "Installing Rust via rustup..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+    source "$HOME/.cargo/env"
+
+    rustup component add rust-analyzer rustfmt clippy
+
+    if command -v rustc &> /dev/null; then
+        print_success "Rust installed: $(rustc --version)"
+        print_success "Cargo installed: $(cargo --version)"
+    else
+        print_warning "Rust installed but may need PATH update. Restart your shell."
+    fi
+}
+
+install_elixir() {
+    print_header "💧 Installing Elixir & Erlang/OTP"
+
+    if command -v elixir &> /dev/null; then
+        print_success "Elixir already installed: $(elixir --version | head -n1)"
+        return
+    fi
+
+    echo "Installing Erlang/OTP and Elixir..."
+    sudo dnf install -y erlang elixir
+
+    echo "Installing Hex and rebar3..."
+    mix local.hex --force
+    mix local.rebar --force
+
+    print_success "Elixir installed: $(elixir --version | head -n1)"
+}
+
 install_claude_code() {
     print_header "🤖 Installing Claude Code"
 
@@ -488,6 +529,8 @@ show_completion_message() {
     echo "  • Docker Engine $(docker --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • Go $(go version 2>/dev/null | grep -oP 'go\d+\.\d+\.\d+' || echo 'latest')"
     echo "  • Node.js $(node --version 2>/dev/null || echo 'latest') via NVM"
+    echo "  • Rust $(rustc --version 2>/dev/null || echo 'latest') with cargo, clippy, rustfmt, rust-analyzer"
+    echo "  • Elixir $(elixir --version 2>/dev/null | head -n1 || echo 'latest') with Erlang/OTP, Hex, rebar3"
     echo "  • Claude Code CLI"
     echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
     echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
@@ -535,6 +578,8 @@ main() {
     install_docker
     install_go
     install_nodejs
+    install_rust
+    install_elixir
     install_claude_code
     install_azure_cli
     install_github_cli
