@@ -42,20 +42,7 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/Dropbox/Org/")
-(setq org-default-notes-file (expand-file-name "inbox.org" org-directory))
-(setq org-agenda-files (list (expand-file-name "inbox.org" org-directory)))
-
-(after! org
-  (setq org-capture-templates
-        `(("t" "Todo" entry (file+headline ,(expand-file-name "inbox.org" org-directory) "Tasks")
-           "* TODO %?\n  %U\n  %a")
-          ("n" "Quick Note" entry (file+headline ,(expand-file-name "notes.org" org-directory) "Quick Notes")
-           "* %?\n\nEntered on %U\n  %a"))))
-(map! :leader
-      :desc "Open Org Inbox"
-      "o o"
-      (lambda () (interactive) (find-file (expand-file-name "inbox.org" org-directory))))
+(setq org-directory "~/org/")
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
@@ -88,4 +75,3 @@
 ;;
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
-(add-hook 'org-mode-hook #'org-modern-mode)
