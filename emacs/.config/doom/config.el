@@ -75,3 +75,9 @@
 ;;
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
+
+;; Open treemacs from anywhere (incl. the dashboard) without project detection.
+;; Unlike `+treemacs/toggle' (SPC o p), the raw `treemacs' command just shows the
+;; tree so you can navigate and open a file.
+(map! :leader
+      :desc "Treemacs" "t t" #'treemacs)
