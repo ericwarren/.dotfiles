@@ -81,3 +81,15 @@
 ;; tree so you can navigate and open a file.
 (map! :leader
       :desc "Treemacs" "t t" #'treemacs)
+
+;; Size the initial frame to 55% width / 75% height of the display, centered.
+;; Uses `display-pixel-width'/-height' so it stays correct on any monitor.
+(defun +my/set-frame-size-and-center ()
+  (let* ((frame-w (round (* 0.55 (display-pixel-width))))
+         (frame-h (round (* 0.75 (display-pixel-height))))
+         (frame-x (round (/ (- (display-pixel-width) frame-w) 2)))
+         (frame-y (round (/ (- (display-pixel-height) frame-h) 2))))
+    (set-frame-position (selected-frame) frame-x frame-y)
+    (set-frame-size (selected-frame) frame-w frame-h t)))
+
+(add-hook 'window-setup-hook #'+my/set-frame-size-and-center)
