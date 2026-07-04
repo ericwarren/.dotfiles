@@ -34,10 +34,8 @@ export PATH="$HOME/.config/emacs/bin:$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.lo
 # Doom Emacs configuration directory
 export DOOMDIR="$HOME/.config/doom"
 
-# Load NVM
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+# Load fnm 
+eval "$(fnm env --use-on-cd)"
 
 # Aliases
 if [ -f ~/.zsh_aliases ]; then
