@@ -42,7 +42,12 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/org/")
+(setq org-directory "~/Dropbox/org/")
+(setq org-roam-directory "~/Dropbox/org/roam/")
+
+;; Only list task files so the agenda stays fast (don't scan roam nodes).
+(setq org-agenda-files '("~/Dropbox/org/inbox.org"
+                         "~/Dropbox/org/todo.org"))
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
@@ -93,3 +98,46 @@
     (set-frame-size (selected-frame) frame-w frame-h t)))
 
 (add-hook 'window-setup-hook #'+my/set-frame-size-and-center)
+
+;; --- Org-roam capture system ---
+
+;; Capture templates (dumb inbox drops).
+(after! org
+  (setq org-capture-templates
+        '(("t" "Todo → inbox" entry
+           (file+headline "~/Dropbox/org/inbox.org" "Inbox")
+           "* TODO %?\n  %U" :prepend t)
+          ("n" "Note → inbox" entry
+           (file+headline "~/Dropbox/org/inbox.org" "Notes")
+           "* %?\n  %U" :prepend t)
+          ("l" "Link/article → read later" entry
+           (file+headline "~/Dropbox/org/inbox.org" "Read Later")
+           "* TODO %?\n  %U\n  %x" :prepend t))))
+;; %? = cursor, %U = inactive timestamp, %x = clipboard (paste a URL)
+
+;; Roam ref template (for the optional browser clipper).
+(after! org-roam
+  (setq org-roam-capture-ref-templates
+        '(("r" "ref" plain "%?"
+           :target (file+head "web/${slug}.org"
+                    "#+title: ${title}\n#+created: %U\n\n")
+           :unnarrowed t))))
+
+;; Keybinds.
+(map! "C-c c" #'org-capture)                       ; capture menu
+(map! "C-c t" (cmd! (org-capture nil "t")))        ; straight into a TODO
+
+;; Global quick-capture frame (used by the Dock shortcut).
+(after! org
+  (defun my/org-capture-frame ()
+    "Pop a small dedicated frame for a quick org capture."
+    (interactive)
+    (select-frame-set-input-focus
+     (make-frame '((name . "org-capture") (width . 100) (height . 18))))
+    (org-capture))
+
+  (defun my/delete-capture-frame (&rest _)
+    "Close the dedicated capture frame after finalize or abort."
+    (when (equal "org-capture" (frame-parameter nil 'name))
+      (delete-frame)))
+  (advice-add 'org-capture-finalize :after #'my/delete-capture-frame))
