@@ -18,3 +18,6 @@ vim.opt.signcolumn = "yes"
 vim.opt.isfname:append("@-@")
 vim.opt.updatetime = 50
 vim.opt.colorcolumn = "80"
+
+-- Folds (treesitter foldexpr is set per-buffer in autocmds.lua); start unfolded
+vim.opt.foldlevelstart = 99
