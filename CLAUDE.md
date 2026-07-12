@@ -20,7 +20,7 @@ stow -nv <package>          # Dry run to preview changes
 
 # Common package combinations
 stow git zsh neovim tmux scripts claude    # Core development setup
-stow alacritty qutebrowser                 # GUI applications
+stow alacritty                 # GUI applications
 ```
 
 ### Setup Scripts
@@ -88,7 +88,6 @@ Ctrl+Left/Right     # Previous/next window
 ├── scripts/        # Custom utility scripts (wtree, etc.)
 ├── claude/         # Claude Code configuration
 ├── alacritty/      # Alacritty terminal emulator
-├── qutebrowser/    # Qutebrowser web browser
 ├── emacs/          # Doom Emacs configuration
 ├── fontconfig/     # Font settings
 └── tlp/            # Power management (laptop)
