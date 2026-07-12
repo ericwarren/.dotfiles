@@ -100,7 +100,7 @@ Ctrl+Left/Right     # Previous/next window
 **Shell Environment (zsh/.zshrc):**
 - Oh My Zsh with plugins: git, zsh-autosuggestions, zsh-syntax-highlighting
 - Starship prompt (initialized at end of .zshrc)
-- NVM for Node.js version management
+- fnm (Fast Node Manager) for Node.js version management
 - SSH agent auto-start with key loading
 - WSL-specific settings for DISPLAY
 

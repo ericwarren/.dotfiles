@@ -364,30 +364,33 @@ install_go() {
 }
 
 install_nodejs() {
-    print_header "📗 Installing Node.js via NVM"
+    print_header "📗 Installing Node.js via fnm"
 
-    # Install NVM if not present
-    export NVM_DIR="$HOME/.nvm"
+    export PATH="$HOME/.local/bin:$PATH"
 
-    if [ ! -d "$NVM_DIR" ]; then
-        echo "Installing Node Version Manager (nvm)..."
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-        print_success "NVM installed"
+    # Install fnm (Fast Node Manager) if not present
+    if command -v fnm &> /dev/null; then
+        print_success "fnm already installed: $(fnm --version)"
     else
-        print_success "NVM already installed"
+        echo "Installing fnm (Fast Node Manager)..."
+        curl -fsSL https://github.com/Schniz/fnm/releases/latest/download/fnm-linux.zip -o /tmp/fnm.zip
+        unzip -o /tmp/fnm.zip -d "$HOME/.local/bin"
+        chmod +x "$HOME/.local/bin/fnm"
+        rm -f /tmp/fnm.zip
+        print_success "fnm installed: $(fnm --version)"
     fi
 
-    # Source nvm for current session
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    # Load fnm into the current session (.zshrc already runs 'fnm env --use-on-cd' on login)
+    eval "$(fnm env)"
 
-    # Install latest LTS Node.js
+    # Install latest LTS Node.js and make it the default
     echo "Installing latest LTS Node.js..."
-    nvm install --lts
-    nvm use --lts
-    nvm alias default lts/*
+    fnm install --lts
+    fnm default lts-latest
+    fnm use lts-latest
 
     NODE_VERSION=$(node --version)
-    print_success "Node.js $NODE_VERSION installed"
+    print_success "Node.js $NODE_VERSION installed (via fnm)"
 
     echo "Enabling Corepack for Yarn/Pnpm shims..."
     if corepack enable 2>/dev/null; then
@@ -754,7 +757,7 @@ show_completion_message() {
     DOTNET_SUMMARY=$(dotnet --list-sdks 2>/dev/null | head -n5 | paste -sd ', ' -)
     echo "  • .NET SDKs ${DOTNET_SUMMARY:-installed}"
     echo "  • Go $(go version 2>/dev/null | awk '{print $3}' || echo 'latest')"
-    echo "  • Node Version Manager (nvm) with Node.js LTS"
+    echo "  • fnm (Fast Node Manager) with Node.js LTS $(node --version 2>/dev/null || echo '')"
     echo "  • Rust $(rustc --version 2>/dev/null || echo 'latest') with cargo, clippy, rustfmt, rust-analyzer"
     echo "  • Elixir $(elixir --version 2>/dev/null | head -n1 || echo 'latest') with Erlang/OTP, Hex, rebar3"
     echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep"
@@ -791,9 +794,9 @@ show_completion_message() {
     echo "  • az --version       - Check Azure CLI version"
     echo "  • gh auth login      - Authenticate with GitHub"
     echo "  • gh --version       - Check GitHub CLI version"
-    echo "  • nvm install <ver>  - Install specific Node.js version"
-    echo "  • nvm use <ver>      - Switch Node.js version"
-    echo "  • nvm ls             - List installed Node.js versions"
+    echo "  • fnm install <ver>  - Install specific Node.js version"
+    echo "  • fnm use <ver>      - Switch Node.js version"
+    echo "  • fnm list           - List installed Node.js versions"
     echo "  • uv venv            - Create Python virtual environment"
     echo "  • uv pip install     - Install Python packages (fast!)"
     echo "  • fzf                - Fuzzy finder (Ctrl+R for history search)"
