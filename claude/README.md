@@ -16,14 +16,17 @@ stow claude
 
 This links into `~/.claude/`:
 - `settings.json` → your settings (permissions, **status line**, enabled plugins, TUI)
+- `statusline.sh` → the status line script (invoked by settings.json)
 - `skills/` → your custom skills (the whole directory is symlinked into this repo)
 
 ## Status line
 
-The status line is defined **inline** as a `command` inside `settings.json`
-(current dir + git branch + model, with color). Because it's inline — not an
-external script — it travels automatically with `settings.json`; there is no
-extra file to manage.
+The status line is a script, `statusline.sh` (stowed to `~/.claude/statusline.sh`),
+which `settings.json` runs via `"command": "bash ~/.claude/statusline.sh"`. It
+renders `<dir>   <branch ●changes>   <model · output-style>` in color — the
+change count shows only when the tree is dirty, and the style suffix only when it
+isn't the default. Being part of this package it's portable like everything else;
+edit the script (not a JSON-escaped one-liner) to tweak it.
 
 ## Skills
 
