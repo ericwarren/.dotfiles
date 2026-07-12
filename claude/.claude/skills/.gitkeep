@@ -1,0 +1,4 @@
+# Keeps the skills/ directory tracked by git so `stow claude` can link it.
+# Add each skill as a subdirectory here (e.g. skills/my-skill/SKILL.md).
+# Because ~/.claude/skills becomes a symlink into this repo after stowing,
+# any skill you create lands here automatically and is version-controlled.

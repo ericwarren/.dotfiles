@@ -21,3 +21,12 @@ wezterm/Cargo.lock
 **/.*swp
 **/.*swo
 emacs/.local/
+
+# Claude Code — never commit secrets, machine state, or project-local settings
+/.claude/settings.local.json
+claude/.claude/settings.local.json
+claude/.claude/.credentials.json
+claude/.claude/history.jsonl
+claude/.claude/projects/
+claude/.claude/todos/
+claude/.claude/shell-snapshots/

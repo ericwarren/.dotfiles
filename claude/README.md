@@ -1,36 +1,68 @@
 # Claude Code Configuration
 
-This directory contains Claude Code settings managed with GNU Stow.
+Portable Claude Code configuration managed with GNU Stow, so your settings,
+status line, and skills follow you to every machine.
 
 ## Installation
 
 From the `~/.dotfiles` directory:
+
 ```bash
+# Ensure ~/.claude exists as a REAL directory first (see the safety note below),
+# then stow:
+mkdir -p ~/.claude
 stow claude
 ```
 
-## Files Managed
+This links into `~/.claude/`:
+- `settings.json` → your settings (permissions, **status line**, enabled plugins, TUI)
+- `skills/` → your custom skills (the whole directory is symlinked into this repo)
 
-- `.claude/settings.json` - Claude Code settings (theme, statusline, permissions, MCP server settings)
+## Status line
 
-## Files NOT Managed (intentionally excluded)
+The status line is defined **inline** as a `command` inside `settings.json`
+(current dir + git branch + model, with color). Because it's inline — not an
+external script — it travels automatically with `settings.json`; there is no
+extra file to manage.
 
-These files are user-specific or contain sensitive data and should not be version controlled:
+## Skills
 
-- `.claude.json` - User preferences, MCP servers with API keys, runtime state (KEEP LOCAL)
+`skills/` is symlinked into this repo, so every skill you add under
+`~/.claude/skills/<name>/` is written straight into the repo and version
+controlled. Commit it and it's available on all machines after `stow claude`.
+
+`agents/` and `commands/` can be added the same way — create
+`claude/.claude/agents/` (or `commands/`) here, add a `.gitkeep`, and re-stow.
+
+## Safety: stow folding
+
+`~/.claude` also holds secrets and machine state (credentials, sessions,
+history). The `mkdir -p ~/.claude` step above matters: if `~/.claude` does
+**not** already exist, stow would replace the whole directory with a single
+symlink into this repo, and Claude would then write your credentials and
+session history straight into version control. With `~/.claude` present as a
+real directory, stow only folds the *sub-paths* this package provides
+(`settings.json`, `skills/`), leaving everything else local.
+
+Do this **before** creating any skills locally; otherwise `~/.claude/skills`
+already exists as a real dir and stow will report a conflict.
+
+## Files NOT managed (intentionally excluded)
+
+User-specific or sensitive — kept local, never version controlled (also
+guarded in the repo `.gitignore`):
+
+- `.claude.json` - User preferences, MCP servers with API keys, runtime state
 - `.claude/.credentials.json` - API credentials (sensitive)
+- `.claude/settings.local.json` - Machine-local setting overrides
 - `.claude/history.jsonl` - Conversation history
-- `.claude/projects/` - Project-specific settings
-- `.claude/file-history/` - File modification history
-- `.claude/debug/` - Debug logs
-- `.claude/downloads/` - Downloaded files
-- `.claude/session-env/` - Session environment snapshots
+- `.claude/projects/` - Per-project session transcripts and memory
+- `.claude/sessions/`, `.claude/session-env/` - Session state
 - `.claude/shell-snapshots/` - Shell state snapshots
 - `.claude/todos/` - Todo list data
+- `.claude/file-history/`, `.claude/debug/`, `.claude/downloads/` - Runtime data
 
 ## Notes
 
-- `.claude.json` is kept in your home directory and NOT managed by stow (it contains API keys and personal data)
-- `settings.json` contains all shareable configurations (theme, permissions, MCP enablement)
-- User-level MCP servers should be configured in `~/.claude.json` (not version controlled)
-- Project-level MCP servers should be configured in `.mcp.json` in the repository root
+- Project-level MCP servers go in `.mcp.json` at a repo root (this repo has one).
+- User-level MCP servers live in `~/.claude.json` (kept local, not managed here).
