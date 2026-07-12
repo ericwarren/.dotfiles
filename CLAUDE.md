@@ -91,8 +91,7 @@ Ctrl+Left/Right     # Previous/next window
 ├── qutebrowser/    # Qutebrowser web browser
 ├── emacs/          # Doom Emacs configuration
 ├── fontconfig/     # Font settings
-├── tlp/            # Power management (laptop)
-└── libinput-gestures/  # Touchpad gestures
+└── tlp/            # Power management (laptop)
 ```
 
 ### Configuration Patterns
