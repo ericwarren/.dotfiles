@@ -24,17 +24,19 @@ stow alacritty                 # GUI applications
 ```
 
 ### Setup Scripts
-- `setup-WSL-ubuntu.sh` - Ubuntu 22.04/24.04 setup for WSL
-- `setup-X1-fedora.sh` - Fedora 40+ setup for Lenovo X1 Carbon
+- `setup-X1-kubuntu.sh` - **Primary.** Kubuntu 24.04+ on Lenovo X1 Carbon Gen 9
+- `setup-WSL-ubuntu.sh` - Ubuntu setup for WSL (secondary; may be removed)
+- `setup-X1-fedora.sh` - Fedora setup (secondary; may be removed)
 
-Both scripts install:
-- Development toolchains (.NET, Go, Node.js via nvm, Python)
-- Shell environment (zsh, Oh My Zsh, Starship prompt)
-- CLI tools (fzf, ripgrep, eza, bat, jq, htop)
-- Text editors (Neovim with plugins)
-- Cloud CLIs (Azure CLI, GitHub CLI)
-- Claude Code CLI
-- Tmux Plugin Manager (TPM)
+`setup-X1-kubuntu.sh` provisions a Python / .NET (C#) / Rust focused environment:
+- Language toolchains: Python (+uv), .NET SDKs, Rust (rustup), Node.js LTS (via fnm)
+- Shell: zsh, Oh My Zsh, Starship prompt
+- CLI tools: fzf, ripgrep, eza, bat, fd, zoxide, jq, htop, ncdu
+- Editors: Neovim, Doom Emacs (with `emacs --daemon`)
+- Apps: Alacritty, Google Chrome, Docker, Azure CLI, GitHub CLI
+- Extras: Claude Code, Herdr (agent multiplexer), keyd (capslock→Esc/Ctrl),
+  voxd (offline voice-to-text), Tmux Plugin Manager (TPM)
+- Stows the dotfiles packages (including the `claude` package)
 
 ### Git Worktree + Tmux Development Workflow
 
@@ -119,6 +121,16 @@ Ctrl+Left/Right     # Previous/next window
 - Package management via lazy.nvim
 - Configuration managed via stow
 
+**Claude Code (claude/.claude/):**
+- `settings.json` (permissions, status line, plugins, TUI) + `statusline.sh` (the status line script)
+- `skills/` is symlinked into the repo, so skills you create auto-version here
+- Secrets/state (credentials, projects, sessions) are gitignored and stay local
+- Stow only with `~/.claude` already a real directory (see `claude/README.md`)
+
+**Emacs (emacs/.config/):**
+- Doom private config (`~/.config/doom`) plus an `emacs --daemon` user service
+  (`systemctl --user enable --now emacs`)
+
 ## Development Notes
 
 ### Adding New Configurations
@@ -139,8 +151,3 @@ Ctrl+Left/Right     # Previous/next window
 - Tmux config auto-detects clipboard tool (pbcopy/xclip/clip.exe)
 - WSL-specific settings in .zshrc (DISPLAY variable)
 - Stow works consistently across Linux distributions
-
-### MCP Servers
-Repository includes `.mcp.json` configuring multiple MCP servers for enhanced Claude Code functionality:
-- **microsoft_docs_mcp**: Microsoft/Azure documentation search
-- **context7**: Library documentation lookup

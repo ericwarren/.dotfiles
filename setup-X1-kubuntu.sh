@@ -575,9 +575,9 @@ install_doom_emacs() {
         print_success "Emacs installed: $(emacs --version | head -n1)"
     fi
 
-    # The Doom framework lives at ~/.config/emacs; the private config (~/.config/doom)
-    # comes from the dotfiles 'emacs' stow package. Clone the framework here, but defer
-    # 'doom install' until after the config is stowed (so Doom reads your init.el).
+    # The Doom framework lives at ~/.config/emacs (cloned here); the private config
+    # (~/.config/doom) and the daemon unit come from the stowed 'emacs' package. This
+    # function runs AFTER setup_dotfiles, so that config should already be in place.
     if [ -d "$HOME/.config/emacs/.git" ]; then
         print_success "Doom Emacs framework already cloned (~/.config/emacs)"
     else
@@ -586,7 +586,27 @@ install_doom_emacs() {
         print_success "Doom Emacs framework cloned"
     fi
 
-    print_warning "After the 'emacs' package is stowed, finish with: ~/.config/emacs/bin/doom install"
+    if [ -f "$HOME/.config/doom/init.el" ]; then
+        echo "Installing Doom packages (doom install; can take a few minutes)..."
+        if "$HOME/.config/emacs/bin/doom" install --force >/dev/null 2>&1; then
+            print_success "Doom packages installed"
+        else
+            print_warning "doom install had issues; re-run '~/.config/emacs/bin/doom install' manually"
+        fi
+
+        # Enable the emacsclient daemon (unit provided by the stowed emacs package)
+        if [ -f "$HOME/.config/systemd/user/emacs.service" ]; then
+            if systemctl --user enable --now emacs >/dev/null 2>&1; then
+                print_success "Emacs daemon enabled and started (systemctl --user emacs)"
+            else
+                systemctl --user enable emacs >/dev/null 2>&1 || true
+                print_warning "Emacs daemon set for next login; start now with 'systemctl --user start emacs'"
+            fi
+        fi
+    else
+        print_warning "Doom config (~/.config/doom) not found — stow the 'emacs' package, then run:"
+        print_warning "  ~/.config/emacs/bin/doom install && systemctl --user enable --now emacs"
+    fi
 }
 
 setup_dotfiles() {
@@ -735,7 +755,7 @@ show_completion_message() {
     echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
     echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
     echo "  • Neovim $(nvim --version 2>/dev/null | head -n1 || echo 'latest')"
-    echo "  • Doom Emacs (Rust dev editor) — finish with '~/.config/emacs/bin/doom install'"
+    echo "  • Doom Emacs (Rust dev editor) with emacs --daemon (systemctl --user emacs)"
     echo "  • keyd (capslock → Esc on tap, Control on hold)"
     echo "  • voxd $(voxd --version 2>/dev/null | head -n1 || echo 'latest') (offline voice-to-text dictation)"
 
@@ -745,7 +765,7 @@ show_completion_message() {
     echo "  3. Apply your dotfiles with stow:"
     echo "     cd ~/.dotfiles && stow zsh git neovim tmux emacs claude"
     echo "  4. Launch nvim to auto-install plugins (first run will take a moment)"
-    echo "  5. Finish Doom Emacs (after stowing): ~/.config/emacs/bin/doom install"
+    echo "  5. Verify the Emacs daemon: systemctl --user status emacs"
 
     echo -e "\n💡 Useful commands:"
     echo "  • claude             - Launch Claude Code CLI"
@@ -802,8 +822,8 @@ main() {
     install_tpm
     install_keyd
     install_voxd
-    install_doom_emacs
     setup_dotfiles
+    install_doom_emacs
     setup_shell
 
     # Completion
