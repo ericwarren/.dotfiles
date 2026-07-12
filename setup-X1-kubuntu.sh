@@ -596,7 +596,7 @@ setup_dotfiles() {
 
     # Check for dotfile packages
     available_packages=()
-    for pkg in git zsh neovim tmux emacs; do
+    for pkg in git zsh neovim tmux emacs claude; do
         if [ -d "$script_dir/$pkg" ]; then
             available_packages+=("$pkg")
         fi
@@ -604,7 +604,7 @@ setup_dotfiles() {
 
     if [ ${#available_packages[@]} -eq 0 ]; then
         print_warning "No dotfile packages found in $script_dir"
-        print_warning "Expected directories: git/, zsh/, neovim/, tmux/, emacs/"
+        print_warning "Expected directories: git/, zsh/, neovim/, tmux/, emacs/, claude/"
         return
     fi
 
@@ -616,6 +616,10 @@ setup_dotfiles() {
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd "$script_dir"
+        # Ensure ~/.claude is a real directory so stow links only the sub-paths
+        # this package provides (settings, statusline, skills) rather than folding
+        # the whole dir — which also holds credentials/session state (kept local).
+        mkdir -p "$HOME/.claude"
         for pkg in "${available_packages[@]}"; do
             echo "Applying $pkg dotfiles..."
             if stow -v "$pkg" 2>/dev/null; then
@@ -627,7 +631,7 @@ setup_dotfiles() {
         done
     else
         echo "Skipping dotfiles setup"
-        echo "You can apply them later with: stow git zsh neovim tmux emacs"
+        echo "You can apply them later with: stow git zsh neovim tmux emacs claude"
     fi
 }
 
@@ -739,7 +743,7 @@ show_completion_message() {
     echo "  1. Restart your terminal or run: exec zsh"
     echo "  2. Authenticate Claude Code: claude auth"
     echo "  3. Apply your dotfiles with stow:"
-    echo "     cd ~/.dotfiles && stow zsh git neovim tmux claude"
+    echo "     cd ~/.dotfiles && stow zsh git neovim tmux emacs claude"
     echo "  4. Launch nvim to auto-install plugins (first run will take a moment)"
     echo "  5. Finish Doom Emacs (after stowing): ~/.config/emacs/bin/doom install"
 
