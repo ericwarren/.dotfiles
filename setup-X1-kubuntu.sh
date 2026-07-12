@@ -563,6 +563,70 @@ install_tpm() {
     print_warning "After stowing tmux config, press Ctrl+Space then I to install plugins"
 }
 
+install_voxd() {
+    print_header "🎙️ Installing voxd (offline voice-to-text dictation)"
+
+    # voxd's launcher runs its app in a venv and needs uv for the version workaround below
+    export PATH="$HOME/.local/bin:$PATH"
+    if ! command -v uv &> /dev/null; then
+        print_warning "uv not found; skipping voxd (needs install_python first)"
+        return
+    fi
+
+    if command -v voxd &> /dev/null; then
+        print_success "voxd already installed: $(voxd --version 2>/dev/null | head -n1 || echo 'installed')"
+    else
+        echo "Fetching latest voxd release..."
+        local deb_url
+        deb_url=$(curl -fsSL https://api.github.com/repos/jakovius/voxd/releases/latest \
+            | grep -oE 'https://[^"]*_amd64\.deb' | head -n1)
+
+        if [ -z "$deb_url" ]; then
+            print_warning "Could not resolve voxd .deb URL from GitHub; skipping voxd"
+            return
+        fi
+
+        echo "Downloading and installing voxd (apt resolves ydotool + audio deps)..."
+        local deb_file="/tmp/${deb_url##*/}"
+        curl -fsSL "$deb_url" -o "$deb_file"
+        sudo apt install -y "$deb_file"
+        rm -f "$deb_file"
+        print_success "voxd installed: $(voxd --version 2>/dev/null | head -n1 || echo 'installed')"
+    fi
+
+    # Ubuntu may ship a Python newer than voxd supports (its launcher only accepts
+    # 3.9-3.13; e.g. 24.04 has 3.12 = OK, but 26.04 has 3.14 = rejected). Create the
+    # venv the launcher probes for, pinned to 3.13 via uv, so it works on any release.
+    local voxd_venv="$HOME/.local/share/voxd/.venv"
+    if [ -x "$voxd_venv/bin/python" ]; then
+        print_success "voxd venv already present ($voxd_venv)"
+    else
+        echo "Creating voxd Python 3.13 venv (version-proofs against system Python)..."
+        uv python install 3.13
+        uv venv --python 3.13 "$voxd_venv"
+        uv pip install --python "$voxd_venv/bin/python" \
+            sounddevice pyqt6 platformdirs pyyaml pyperclip psutil numpy requests tqdm pyqtgraph
+        print_success "voxd venv created at $voxd_venv"
+    fi
+
+    # ydotool keystroke injection needs the user in the 'input' group (uinput access
+    # without sudo). Match the sudo-free daemon setup voxd relies on.
+    if id -nG "$USER" | tr ' ' '\n' | grep -qx input; then
+        print_success "$USER already in 'input' group (sudo-free ydotool)"
+    else
+        echo "Adding $USER to 'input' group for sudo-free ydotool..."
+        sudo usermod -aG input "$USER"
+        print_warning "Log out/in for 'input' group membership to take effect"
+    fi
+
+    # Intentionally NOT running 'voxd --setup' here: it downloads GBs (Whisper +
+    # optional local LLM for post-processing) and enables per-user systemd services,
+    # which belong to an interactive first run, not an unattended setup script.
+    print_success "voxd ready"
+    print_warning "First run: 'voxd --setup' (downloads Whisper model + wires ydotool), then 'voxd --tray'"
+    print_warning "Bind a global hotkey to: bash -c 'voxd --trigger-record'"
+}
+
 setup_dotfiles() {
     print_header "🔗 Setting Up Dotfiles"
 
@@ -707,6 +771,7 @@ show_completion_message() {
     echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
     echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
     echo "  • Neovim $(nvim --version 2>/dev/null | head -n1 || echo 'latest')"
+    echo "  • voxd $(voxd --version 2>/dev/null | head -n1 || echo 'latest') (offline voice-to-text dictation)"
 
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
@@ -717,6 +782,7 @@ show_completion_message() {
 
     echo -e "\n💡 Useful commands:"
     echo "  • claude             - Launch Claude Code CLI"
+    echo "  • voxd --tray        - Voice dictation in the background (types at cursor)"
     echo "  • nvim               - Launch Neovim"
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
     echo "  • <Space>ff          - Find files (in nvim)"
@@ -770,6 +836,7 @@ main() {
     install_azure_cli
     install_github_cli
     install_tpm
+    install_voxd
     setup_dotfiles
     setup_shell
 
