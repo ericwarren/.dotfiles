@@ -68,9 +68,6 @@ install_system_packages() {
         imagemagick \
         lsb-release ksshaskpass
 
-    echo "Installing C/C++ toolchain (clang/clangd/clang-format/lldb)..."
-    sudo apt install -y clang clangd clang-format lldb
-
     sudo apt upgrade -y
 
     print_success "Essential packages installed"
@@ -158,27 +155,6 @@ EOF
     sudo apt install -y google-chrome-stable
 
     print_success "Google Chrome installed: $(google-chrome --version)"
-}
-
-install_vscode() {
-    print_header "💻 Installing Visual Studio Code"
-
-    if command -v code &> /dev/null; then
-        print_success "Visual Studio Code already installed: $(code --version | head -n1)"
-        return
-    fi
-
-    echo "Installing Visual Studio Code repository..."
-    sudo install -d /etc/apt/keyrings
-    curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/microsoft.gpg > /dev/null
-    sudo tee /etc/apt/sources.list.d/vscode.list << 'EOF'
-deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main
-EOF
-
-    sudo apt update
-    sudo apt install -y code
-
-    print_success "Visual Studio Code installed: $(code --version | head -n1)"
 }
 
 install_dotnet() {
@@ -302,67 +278,6 @@ install_docker() {
     print_success "Docker installation complete"
 }
 
-install_go() {
-    print_header "🐹 Installing Go"
-
-    if command -v go &> /dev/null; then
-        print_success "Go already installed: $(go version)"
-        return
-    fi
-
-    # Get the latest Go version
-    echo "Fetching latest Go version..."
-    GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | head -n1)
-
-    if [ -z "$GO_VERSION" ]; then
-        print_error "Failed to fetch Go version, using fallback"
-        GO_VERSION="go1.23.5"
-    fi
-
-    echo "Downloading Go ${GO_VERSION}..."
-    wget "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz" -O /tmp/go.tar.gz
-
-    echo "Removing old Go installation if present..."
-    sudo rm -rf /usr/local/go
-
-    echo "Installing Go..."
-    sudo tar -C /usr/local -xzf /tmp/go.tar.gz
-    rm /tmp/go.tar.gz
-
-    # Add Go paths to both bash and zsh configs
-    local rc_file
-    for rc_file in "$HOME/.bashrc" "$HOME/.zshrc"; do
-        [ -f "$rc_file" ] || touch "$rc_file"
-
-        local go_lines=()
-        if ! grep -qs '/usr/local/go/bin' "$rc_file"; then
-            go_lines+=('export PATH=$PATH:/usr/local/go/bin')
-        fi
-        if ! grep -qs '$HOME/go/bin' "$rc_file"; then
-            go_lines+=('export PATH=$PATH:$HOME/go/bin')
-        fi
-
-        if [ ${#go_lines[@]} -gt 0 ]; then
-            {
-                echo ''
-                echo '# Go paths added by setup-X1-kubuntu.sh'
-                for line in "${go_lines[@]}"; do
-                    echo "$line"
-                done
-            } >> "$rc_file"
-            print_success "Added Go PATH entries to ${rc_file##*/}"
-        else
-            print_success "Go PATH entries already present in ${rc_file##*/}"
-        fi
-    done
-
-    # Export for current session
-    export PATH=$PATH:/usr/local/go/bin
-    export PATH=$PATH:$HOME/go/bin
-
-    print_success "Go installed: $(go version)"
-}
-
 install_nodejs() {
     print_header "📗 Installing Node.js via fnm"
 
@@ -427,40 +342,6 @@ install_rust() {
     fi
 }
 
-install_elixir() {
-    print_header "💧 Installing Elixir & Erlang/OTP"
-
-    if command -v elixir &> /dev/null; then
-        print_success "Elixir already installed: $(elixir --version | head -n1)"
-        return
-    fi
-
-    echo "Adding Erlang Solutions repository..."
-    if wget -q --timeout=15 -O /tmp/erlang-solutions.deb https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb 2>/dev/null; then
-        sudo dpkg -i /tmp/erlang-solutions.deb
-        rm /tmp/erlang-solutions.deb
-        sudo apt update
-        echo "Installing Erlang/OTP..."
-        sudo apt install -y esl-erlang
-        echo "Installing Elixir..."
-        sudo apt install -y elixir
-    else
-        echo "Erlang Solutions repo unavailable, falling back to Ubuntu packages..."
-        rm -f /tmp/erlang-solutions.deb
-        sudo apt update
-        echo "Installing Erlang/OTP..."
-        sudo apt install -y erlang
-        echo "Installing Elixir..."
-        sudo apt install -y elixir
-    fi
-
-    echo "Installing Hex and rebar3..."
-    mix local.hex --force
-    mix local.rebar --force
-
-    print_success "Elixir installed: $(elixir --version | head -n1)"
-}
-
 install_claude_code() {
     print_header "🤖 Installing Claude Code"
 
@@ -479,6 +360,26 @@ install_claude_code() {
         print_success "Claude Code installed: $(claude --version 2>/dev/null || echo 'successfully')"
     else
         print_warning "Claude Code installed but may need PATH update. Restart your shell."
+    fi
+}
+
+install_herdr() {
+    print_header "🐐 Installing Herdr (agent multiplexer)"
+
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if command -v herdr &> /dev/null; then
+        print_success "Herdr already installed: $(herdr --version 2>/dev/null | head -n1 || echo 'installed')"
+        return
+    fi
+
+    echo "Installing Herdr (single Rust binary; no sudo)..."
+    curl -fsSL https://herdr.dev/install.sh | sh
+
+    if command -v herdr &> /dev/null; then
+        print_success "Herdr installed: $(herdr --version 2>/dev/null | head -n1 || echo 'successfully')"
+    else
+        print_warning "Herdr installed but may need PATH update. Restart your shell."
     fi
 }
 
@@ -566,6 +467,38 @@ install_tpm() {
     print_warning "After stowing tmux config, press Ctrl+Space then I to install plugins"
 }
 
+install_keyd() {
+    print_header "⌨️ Installing keyd (key remapping daemon)"
+
+    if command -v keyd &> /dev/null; then
+        print_success "keyd already installed"
+    else
+        echo "Installing keyd from the Ubuntu repositories..."
+        sudo apt install -y keyd
+        print_success "keyd installed"
+    fi
+
+    # keyd config lives in /etc (system path), so it can't be stow-managed like the
+    # home-directory configs; write it directly. Maps capslock to Esc on tap and
+    # Control when held.
+    echo "Writing /etc/keyd/default.conf..."
+    sudo mkdir -p /etc/keyd
+    sudo tee /etc/keyd/default.conf > /dev/null << 'EOF'
+[ids]
+*
+
+[main]
+# Maps capslock to escape when pressed and control when held
+capslock = overload(control, esc)
+EOF
+
+    echo "Enabling and starting keyd service..."
+    sudo systemctl enable keyd
+    sudo systemctl restart keyd
+
+    print_success "keyd configured (capslock → Esc on tap, Control on hold)"
+}
+
 install_voxd() {
     print_header "🎙️ Installing voxd (offline voice-to-text dictation)"
 
@@ -630,6 +563,32 @@ install_voxd() {
     print_warning "Bind a global hotkey to: bash -c 'voxd --trigger-record'"
 }
 
+install_doom_emacs() {
+    print_header "😈 Installing Doom Emacs (Rust dev editor)"
+
+    # Emacs itself — Doom runs on top of it
+    if command -v emacs &> /dev/null; then
+        print_success "Emacs already installed: $(emacs --version | head -n1)"
+    else
+        echo "Installing Emacs..."
+        sudo apt install -y emacs
+        print_success "Emacs installed: $(emacs --version | head -n1)"
+    fi
+
+    # The Doom framework lives at ~/.config/emacs; the private config (~/.config/doom)
+    # comes from the dotfiles 'emacs' stow package. Clone the framework here, but defer
+    # 'doom install' until after the config is stowed (so Doom reads your init.el).
+    if [ -d "$HOME/.config/emacs/.git" ]; then
+        print_success "Doom Emacs framework already cloned (~/.config/emacs)"
+    else
+        echo "Cloning Doom Emacs framework..."
+        git clone --depth 1 https://github.com/doomemacs/doomemacs "$HOME/.config/emacs"
+        print_success "Doom Emacs framework cloned"
+    fi
+
+    print_warning "After the 'emacs' package is stowed, finish with: ~/.config/emacs/bin/doom install"
+}
+
 setup_dotfiles() {
     print_header "🔗 Setting Up Dotfiles"
 
@@ -637,7 +596,7 @@ setup_dotfiles() {
 
     # Check for dotfile packages
     available_packages=()
-    for pkg in git zsh neovim tmux; do
+    for pkg in git zsh neovim tmux emacs; do
         if [ -d "$script_dir/$pkg" ]; then
             available_packages+=("$pkg")
         fi
@@ -645,7 +604,7 @@ setup_dotfiles() {
 
     if [ ${#available_packages[@]} -eq 0 ]; then
         print_warning "No dotfile packages found in $script_dir"
-        print_warning "Expected directories: git/, zsh/, neovim/, tmux/"
+        print_warning "Expected directories: git/, zsh/, neovim/, tmux/, emacs/"
         return
     fi
 
@@ -668,7 +627,7 @@ setup_dotfiles() {
         done
     else
         echo "Skipping dotfiles setup"
-        echo "You can apply them later with: stow git zsh neovim tmux"
+        echo "You can apply them later with: stow git zsh neovim tmux emacs"
     fi
 }
 
@@ -756,14 +715,11 @@ show_completion_message() {
     echo "  • Python 3 with uv package manager $(uv --version 2>/dev/null || echo 'latest')"
     DOTNET_SUMMARY=$(dotnet --list-sdks 2>/dev/null | head -n5 | paste -sd ', ' -)
     echo "  • .NET SDKs ${DOTNET_SUMMARY:-installed}"
-    echo "  • Go $(go version 2>/dev/null | awk '{print $3}' || echo 'latest')"
     echo "  • fnm (Fast Node Manager) with Node.js LTS $(node --version 2>/dev/null || echo '')"
     echo "  • Rust $(rustc --version 2>/dev/null || echo 'latest') with cargo, clippy, rustfmt, rust-analyzer"
-    echo "  • Elixir $(elixir --version 2>/dev/null | head -n1 || echo 'latest') with Erlang/OTP, Hex, rebar3"
     echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep"
     echo "  • Alacritty terminal emulator with Cascadia Code Nerd Font"
     echo "  • Google Chrome $(google-chrome --version 2>/dev/null || echo 'latest')"
-    echo "  • Visual Studio Code $(code --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • Docker Engine $(docker --version 2>/dev/null || echo 'latest')"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
@@ -771,9 +727,12 @@ show_completion_message() {
     echo "    - git, z, sudo, extract, colored-man-pages, dotnet"
     echo "  • Starship prompt $(starship --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • Claude Code $(claude --version 2>/dev/null || echo 'latest')"
+    echo "  • Herdr $(herdr --version 2>/dev/null | head -n1 || echo 'latest') (agent multiplexer for coding agents)"
     echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
     echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
     echo "  • Neovim $(nvim --version 2>/dev/null | head -n1 || echo 'latest')"
+    echo "  • Doom Emacs (Rust dev editor) — finish with '~/.config/emacs/bin/doom install'"
+    echo "  • keyd (capslock → Esc on tap, Control on hold)"
     echo "  • voxd $(voxd --version 2>/dev/null | head -n1 || echo 'latest') (offline voice-to-text dictation)"
 
     echo -e "\n📌 Next Steps:"
@@ -782,9 +741,11 @@ show_completion_message() {
     echo "  3. Apply your dotfiles with stow:"
     echo "     cd ~/.dotfiles && stow zsh git neovim tmux claude"
     echo "  4. Launch nvim to auto-install plugins (first run will take a moment)"
+    echo "  5. Finish Doom Emacs (after stowing): ~/.config/emacs/bin/doom install"
 
     echo -e "\n💡 Useful commands:"
     echo "  • claude             - Launch Claude Code CLI"
+    echo "  • herdr              - Agent multiplexer (tmux for coding agents)"
     echo "  • voxd --tray        - Voice dictation in the background (types at cursor)"
     echo "  • nvim               - Launch Neovim"
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
@@ -806,8 +767,6 @@ show_completion_message() {
     echo "  • ncdu               - Disk usage analyzer"
     echo "  • tldr <command>     - Simplified man pages"
     echo "  • dotnet --info      - Show .NET information"
-    echo "  • go version         - Check Go version"
-    echo "  • go mod init        - Initialize Go module"
 
     if [ "$SHELL" != "$(which zsh)" ]; then
         echo -e "\n${YELLOW}⚠️  Remember to restart your terminal for the shell change to take effect!${NC}"
@@ -828,18 +787,18 @@ main() {
     install_alacritty
     install_neovim
     install_chrome
-    install_vscode
     install_dotnet
     install_docker
-    install_go
     install_nodejs
     install_rust
-    install_elixir
     install_claude_code
+    install_herdr
     install_azure_cli
     install_github_cli
     install_tpm
+    install_keyd
     install_voxd
+    install_doom_emacs
     setup_dotfiles
     setup_shell
 
