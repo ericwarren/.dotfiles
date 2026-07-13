@@ -62,9 +62,12 @@ stow -nv <pkg>    # dry run (preview / debug conflicts)
   Also needs the `input` group for sudo-free `ydotool`. Run `voxd --setup` once after install.
 - **keyd** — its config is `/etc/keyd/default.conf` (a system path, not stow-managed);
   the setup script writes it. Remaps CapsLock → Esc (tap) / Ctrl (hold).
-- **Doom Emacs** — the setup clones the framework to `~/.config/emacs`, runs `doom install`,
-  and enables the daemon (`systemctl --user enable --now emacs`). The `emacs` package
-  provides the daemon unit and your private `~/.config/doom` config.
+- **Doom Emacs** — the setup installs the `emacs-pgtk` (Wayland-native) build, clones the
+  framework to `~/.config/emacs`, runs `doom install`, and enables the daemon
+  (`systemctl --user enable --now emacs`). pgtk is used so the daemon can open GUI frames
+  under Wayland without XWayland/XAUTHORITY (the X11 `emacs-gtk` build crashes
+  `emacsclient -c` when the daemon starts before the session env is imported). The `emacs`
+  package provides the daemon unit and your private `~/.config/doom` config.
 - **MCP servers are not stowable** — MCP config lives in `~/.claude.json` (machine-local,
   holds secrets), not a stowable file. Account-level MCP connectors (e.g. Microsoft Learn)
   sync via your Claude login, so they're available on every machine after `claude` auth —

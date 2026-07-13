@@ -572,12 +572,17 @@ install_voxd() {
 install_doom_emacs() {
     print_header "😈 Installing Doom Emacs (Rust dev editor)"
 
-    # Emacs itself — Doom runs on top of it
-    if command -v emacs &> /dev/null; then
-        print_success "Emacs already installed: $(emacs --version | head -n1)"
+    # Emacs itself — Doom runs on top of it. Use the pure-GTK (pgtk) build so the
+    # daemon talks to Wayland natively (KDE Plasma is Wayland here): the X11 build
+    # (emacs-gtk) can't open GUI frames when the daemon starts before the graphical
+    # session env (DISPLAY/XAUTHORITY) is imported, which makes 'emacsclient -c'
+    # fall back to a tty and crash. emacs-pgtk needs neither XWayland nor XAUTHORITY
+    # and replaces emacs-gtk automatically (they Conflict).
+    if dpkg -s emacs-pgtk &> /dev/null; then
+        print_success "Emacs (pgtk) already installed: $(emacs --version | head -n1)"
     else
-        echo "Installing Emacs..."
-        sudo apt install -y emacs
+        echo "Installing Emacs (pgtk / Wayland-native build)..."
+        sudo apt install -y emacs-pgtk
         print_success "Emacs installed: $(emacs --version | head -n1)"
     fi
 
