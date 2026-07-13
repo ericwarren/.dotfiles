@@ -34,5 +34,6 @@
     "frontend-design@claude-code-plugins": true
   },
   "alwaysThinkingEnabled": true,
-  "tui": "fullscreen"
+  "tui": "fullscreen",
+  "theme": "dark"
 }
