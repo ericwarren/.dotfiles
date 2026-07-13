@@ -6,6 +6,12 @@
 
 set -e
 
+# Let apt/dpkg configure packages with their defaults instead of stopping on
+# interactive debconf prompts. Some packages (emacs, imagemagick, ranger) pull
+# in a mail-transport-agent, and Postfix's debconf screen would otherwise block
+# an unattended run. Postfix defaults to "Local only" under this frontend.
+export DEBIAN_FRONTEND=noninteractive
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
