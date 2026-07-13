@@ -146,7 +146,8 @@ install_chrome() {
     fi
 
     echo "Installing Google Chrome repository..."
-    sudo curl -fsSLo /usr/share/keyrings/google-chrome-keyring.gpg https://dl.google.com/linux/keys/google-linux-signing-key.pub
+    curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | \
+        sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg
     sudo tee /etc/apt/sources.list.d/google-chrome.list << 'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main
 EOF
@@ -404,18 +405,17 @@ install_azure_cli() {
     echo "Adding Azure CLI repository..."
     AZ_DIST=$(lsb_release -cs)
 
-    # Microsoft doesn't always have packages for the latest Ubuntu releases
-    # Map to the latest supported version if needed
+    # Microsoft only publishes azure-cli packages for Ubuntu LTS releases
+    # (jammy = 22.04, noble = 24.04). Anything else — interim releases and
+    # newer LTSes not yet supported (e.g. resolute/26.04) — 404s on the repo's
+    # Release file, so fall back to the latest supported LTS (noble).
     case "$AZ_DIST" in
-        questing|*25.*)
-            # Ubuntu 25.x - use 24.04 LTS repository
-            AZ_DIST="noble"
-            print_warning "Using noble (24.04) repository for Azure CLI (questing/25.x not yet supported)"
+        jammy|noble)
+            # Natively supported; use as-is
             ;;
-        oracular|*24.10*)
-            # Ubuntu 24.10 - use 24.04 LTS repository
+        *)
+            print_warning "Using noble (24.04) repository for Azure CLI ($AZ_DIST not supported by Microsoft)"
             AZ_DIST="noble"
-            print_warning "Using noble (24.04) repository for Azure CLI (oracular/24.10 not yet supported)"
             ;;
     esac
 
