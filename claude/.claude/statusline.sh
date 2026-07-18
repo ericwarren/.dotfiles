@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Claude Code status line:  <dir>   <branch ●changes>   <model · style>
+# Claude Code status line:  <dir>   <branch ●changes>   <model · style>   <ctx%>
 # Reads the status JSON from stdin (see Claude Code status line docs).
 
 input=$(cat)
@@ -11,6 +11,16 @@ dir=$(basename "$cwd")
 # --- model + output style ---
 model=$(printf '%s' "$input" | jq -r '.model.display_name // "?"')
 style=$(printf '%s' "$input" | jq -r '.output_style.name // "default"')
+
+# --- context window usage ---
+ctx_pct=$(printf '%s' "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)
+if [ "$ctx_pct" -ge 90 ]; then
+    ctx_seg=$(printf '   \033[1;31m%s%%\033[0m' "$ctx_pct")     # red: compact now
+elif [ "$ctx_pct" -ge 70 ]; then
+    ctx_seg=$(printf '   \033[1;33m%s%%\033[0m' "$ctx_pct")     # yellow: getting full
+else
+    ctx_seg=$(printf '   \033[2m%s%%\033[0m' "$ctx_pct")        # dim: plenty left
+fi
 
 # --- git branch + changed-file count ---
 git_seg=""
@@ -32,4 +42,4 @@ else
     model_seg=$(printf '\033[1;35m%s\033[0m' "$model")
 fi
 
-printf '\033[1;36m%s\033[0m%s   %s' "$dir" "$git_seg" "$model_seg"
+printf '\033[1;36m%s\033[0m%s   %s%s' "$dir" "$git_seg" "$model_seg" "$ctx_seg"
