@@ -95,6 +95,18 @@
   ;; matter when multiple Emacsen edit the same remote file.
   (setq remote-file-name-inhibit-locks t))
 
+;; rustic-mode hangs Emacs when opening Rust files over TRAMP (it shells out to
+;; cargo/rustc during mode setup, which stalls on remote buffers). Remote .rs
+;; files get plain rust-mode + eglot instead; local files keep rustic.
+(defun +my/rust-mode-dispatch ()
+  "Use rust-mode for TRAMP buffers, rustic-mode locally."
+  (if (and buffer-file-name (file-remote-p buffer-file-name))
+      (rust-mode)
+    (rustic-mode)))
+(add-to-list 'auto-mode-alist '("\\.rs\\'" . +my/rust-mode-dispatch))
+(add-hook 'rust-mode-hook
+          (lambda () (when (file-remote-p default-directory) (eglot-ensure))))
+
 ;; Open treemacs from anywhere (incl. the dashboard) without project detection.
 ;; Unlike `+treemacs/toggle' (SPC o p), the raw `treemacs' command just shows the
 ;; tree so you can navigate and open a file.
