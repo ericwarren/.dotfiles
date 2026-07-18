@@ -81,6 +81,20 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
+;; --- Remote editing on vulcan (TRAMP + eglot) ---
+;; Open files as /ssh:vulcan:~/src/...; eglot starts rust-analyzer on vulcan.
+(after! tramp
+  ;; Use the remote login shell's PATH so eglot can find ~/.cargo/bin/rust-analyzer
+  ;; (TRAMP's default remote path skips per-user bin directories).
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  ;; Multiplex everything over one persistent ssh connection instead of paying
+  ;; connection setup per operation — the single biggest TRAMP latency win.
+  (setq tramp-ssh-controlmaster-options
+        "-o ControlMaster=auto -o ControlPath=~/.ssh/tramp.%%C -o ControlPersist=yes")
+  ;; Skip lock files on remote saves; they cost a round-trip each and only
+  ;; matter when multiple Emacsen edit the same remote file.
+  (setq remote-file-name-inhibit-locks t))
+
 ;; Open treemacs from anywhere (incl. the dashboard) without project detection.
 ;; Unlike `+treemacs/toggle' (SPC o p), the raw `treemacs' command just shows the
 ;; tree so you can navigate and open a file.
