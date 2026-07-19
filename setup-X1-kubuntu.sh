@@ -390,6 +390,26 @@ install_herdr() {
     fi
 }
 
+install_pi() {
+    print_header "🥧 Installing Pi (coding agent)"
+
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if command -v pi &> /dev/null; then
+        print_success "Pi already installed: $(pi --version 2>/dev/null | head -n1 || echo 'installed')"
+        return
+    fi
+
+    echo "Installing Pi (single binary; no sudo)..."
+    curl -fsSL https://pi.dev/install.sh | sh
+
+    if command -v pi &> /dev/null; then
+        print_success "Pi installed: $(pi --version 2>/dev/null | head -n1 || echo 'successfully')"
+    else
+        print_warning "Pi installed but may need PATH update. Restart your shell."
+    fi
+}
+
 install_azure_cli() {
     print_header "☁️ Installing Azure CLI"
 
@@ -627,7 +647,7 @@ setup_dotfiles() {
 
     # Check for dotfile packages
     available_packages=()
-    for pkg in git zsh neovim tmux emacs claude; do
+    for pkg in git zsh neovim tmux emacs claude pi; do
         if [ -d "$script_dir/$pkg" ]; then
             available_packages+=("$pkg")
         fi
@@ -635,7 +655,7 @@ setup_dotfiles() {
 
     if [ ${#available_packages[@]} -eq 0 ]; then
         print_warning "No dotfile packages found in $script_dir"
-        print_warning "Expected directories: git/, zsh/, neovim/, tmux/, emacs/, claude/"
+        print_warning "Expected directories: git/, zsh/, neovim/, tmux/, emacs/, claude/, pi/"
         return
     fi
 
@@ -647,10 +667,11 @@ setup_dotfiles() {
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         cd "$script_dir"
-        # Ensure ~/.claude is a real directory so stow links only the sub-paths
-        # this package provides (settings, statusline, skills) rather than folding
-        # the whole dir — which also holds credentials/session state (kept local).
-        mkdir -p "$HOME/.claude"
+        # Ensure ~/.claude and ~/.pi/agent are real directories so stow links only
+        # the sub-paths these packages provide (settings, statusline, skills) rather
+        # than folding the whole dir — which also holds credentials/session state
+        # (kept local).
+        mkdir -p "$HOME/.claude" "$HOME/.pi/agent"
         for pkg in "${available_packages[@]}"; do
             echo "Applying $pkg dotfiles..."
             if stow -v "$pkg" 2>/dev/null; then
@@ -662,7 +683,7 @@ setup_dotfiles() {
         done
     else
         echo "Skipping dotfiles setup"
-        echo "You can apply them later with: stow git zsh neovim tmux emacs claude"
+        echo "You can apply them later with: stow git zsh neovim tmux emacs claude pi"
     fi
 }
 
@@ -763,6 +784,7 @@ show_completion_message() {
     echo "  • Starship prompt $(starship --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • Claude Code $(claude --version 2>/dev/null || echo 'latest')"
     echo "  • Herdr $(herdr --version 2>/dev/null | head -n1 || echo 'latest') (agent multiplexer for coding agents)"
+    echo "  • Pi $(pi --version 2>/dev/null | head -n1 || echo 'latest') (minimal terminal coding agent)"
     echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
     echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
     echo "  • Neovim $(nvim --version 2>/dev/null | head -n1 || echo 'latest')"
@@ -774,13 +796,14 @@ show_completion_message() {
     echo "  1. Restart your terminal or run: exec zsh"
     echo "  2. Authenticate Claude Code: claude auth"
     echo "  3. Apply your dotfiles with stow:"
-    echo "     cd ~/.dotfiles && stow zsh git neovim tmux emacs claude"
+    echo "     cd ~/.dotfiles && stow zsh git neovim tmux emacs claude pi"
     echo "  4. Launch nvim to auto-install plugins (first run will take a moment)"
     echo "  5. Verify the Emacs daemon: systemctl --user status emacs"
 
     echo -e "\n💡 Useful commands:"
     echo "  • claude             - Launch Claude Code CLI"
     echo "  • herdr              - Agent multiplexer (tmux for coding agents)"
+    echo "  • pi                 - Minimal terminal coding agent (/login then /model)"
     echo "  • voxd --tray        - Voice dictation in the background (types at cursor)"
     echo "  • nvim               - Launch Neovim"
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
@@ -828,6 +851,7 @@ main() {
     install_rust
     install_claude_code
     install_herdr
+    install_pi
     install_azure_cli
     install_github_cli
     install_tpm

@@ -34,3 +34,10 @@ claude/.claude/history.jsonl
 claude/.claude/projects/
 claude/.claude/todos/
 claude/.claude/shell-snapshots/
+
+# Pi coding agent — never commit credentials, session state, or trust decisions
+pi/.pi/agent/auth.json
+pi/.pi/agent/trust.json
+pi/.pi/agent/settings.local.json
+pi/.pi/agent/sessions/
+pi/.pi/agent/npm/
