@@ -1,4 +1,13 @@
 {
   "lastChangelogVersion": "0.80.10",
-  "theme": "dark"
+  "theme": "dark",
+  "packages": [
+    "npm:pi-better-openai"
+  ],
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.5",
+  "defaultThinkingLevel": "medium",
+  "extensions": [
+    "~/.pi/agent/extensions/gondolin"
+  ]
 }

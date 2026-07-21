@@ -41,3 +41,5 @@ pi/.pi/agent/trust.json
 pi/.pi/agent/settings.local.json
 pi/.pi/agent/sessions/
 pi/.pi/agent/npm/
+# Cloned third-party extension (own git repo + node_modules); not ours to version
+pi/.pi/agent/extensions/gondolin/
