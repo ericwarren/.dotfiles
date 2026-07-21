@@ -410,6 +410,46 @@ install_pi() {
     fi
 }
 
+install_gondolin_sandbox() {
+    print_header "📦 Installing Gondolin sandbox prerequisites (QEMU + KVM)"
+
+    # Host prerequisites for running Pi tool calls inside a Gondolin micro-VM.
+    # This installs only the QEMU/KVM plumbing; the pi-gondolin extension itself
+    # is registered manually in ~/.pi/agent/settings.json (kept out of this script
+    # so its clone path stays a personal choice).
+
+    # QEMU x86_64 with KVM acceleration is Gondolin's default, stable backend.
+    if command -v qemu-system-x86_64 &> /dev/null; then
+        print_success "QEMU already installed: $(qemu-system-x86_64 --version | head -n1)"
+    else
+        echo "Installing qemu-system-x86..."
+        sudo apt install -y qemu-system-x86
+        print_success "QEMU installed: $(qemu-system-x86_64 --version | head -n1)"
+    fi
+
+    # Warn (don't fail) if the CPU lacks hardware virtualization — Gondolin would
+    # fall back to painfully slow pure emulation.
+    if grep -qE '\b(vmx|svm)\b' /proc/cpuinfo; then
+        print_success "CPU virtualization (VT-x/AMD-V) available"
+    else
+        print_warning "No VT-x/AMD-V flag in /proc/cpuinfo — enable virtualization in BIOS/UEFI"
+    fi
+
+    # /dev/kvm is mode rw-rw---- owned by root:kvm, so KVM acceleration needs the
+    # user in the 'kvm' group (same sudo-free pattern as docker/input above).
+    if id -nG "$USER" | tr ' ' '\n' | grep -qx kvm; then
+        print_success "$USER already in 'kvm' group (KVM acceleration without sudo)"
+    else
+        echo "Adding $USER to 'kvm' group for /dev/kvm access..."
+        sudo usermod -aG kvm "$USER"
+        print_warning "Log out/in for 'kvm' group membership to take effect"
+    fi
+
+    print_success "Gondolin sandbox host prerequisites ready"
+    print_warning "Register the extension manually, e.g. clone pi-gondolin and add it to"
+    print_warning "  ~/.pi/agent/settings.json  \"extensions\": [\"~/.pi/agent/extensions/gondolin\"]"
+}
+
 install_azure_cli() {
     print_header "☁️ Installing Azure CLI"
 
@@ -785,6 +825,7 @@ show_completion_message() {
     echo "  • Claude Code $(claude --version 2>/dev/null || echo 'latest')"
     echo "  • Herdr $(herdr --version 2>/dev/null | head -n1 || echo 'latest') (agent multiplexer for coding agents)"
     echo "  • Pi $(pi --version 2>/dev/null | head -n1 || echo 'latest') (minimal terminal coding agent)"
+    echo "  • Gondolin sandbox prereqs: QEMU $(qemu-system-x86_64 --version 2>/dev/null | head -n1 | awk '{print $4}' || echo 'latest') + kvm group"
     echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
     echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
     echo "  • Neovim $(nvim --version 2>/dev/null | head -n1 || echo 'latest')"
@@ -852,6 +893,7 @@ main() {
     install_claude_code
     install_herdr
     install_pi
+    install_gondolin_sandbox
     install_azure_cli
     install_github_cli
     install_tpm
