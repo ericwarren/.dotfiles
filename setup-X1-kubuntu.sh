@@ -585,6 +585,33 @@ install_azure_cli() {
     print_success "Azure CLI installed: $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'successfully')"
 }
 
+install_flyctl() {
+    print_header "🎈 Installing Fly.io CLI (flyctl)"
+
+    # flyctl installs to ~/.fly/bin (no sudo). The stowed zsh config already puts
+    # that on PATH, so export it here too for the rest of this run.
+    export FLYCTL_INSTALL="$HOME/.fly"
+    export PATH="$FLYCTL_INSTALL/bin:$PATH"
+
+    if command -v flyctl &> /dev/null; then
+        print_success "flyctl already installed: $(flyctl version 2>/dev/null | head -n1 || echo 'installed')"
+        return
+    fi
+
+    # Piping the installer into sh leaves it non-interactive, so it will NOT append
+    # a machine-specific PATH block to ~/.zshrc — PATH is handled by the zsh package
+    # instead, keeping shell config portable across machines.
+    echo "Installing flyctl..."
+    curl -fsSL https://fly.io/install.sh | sh
+
+    if command -v flyctl &> /dev/null; then
+        print_success "flyctl installed: $(flyctl version 2>/dev/null | head -n1 || echo 'successfully')"
+    else
+        print_warning "flyctl installed but may need PATH update. Restart your shell."
+    fi
+    print_warning "Authenticate manually: 'fly auth signup' (new account) or 'fly auth login'"
+}
+
 install_github_cli() {
     print_header "🐙 Installing GitHub CLI"
 
@@ -919,6 +946,7 @@ show_completion_message() {
     echo "  • OpenAI Codex CLI $(codex --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • Gondolin sandbox prereqs: QEMU $(qemu-system-x86_64 --version 2>/dev/null | head -n1 | awk '{print $4}' || echo 'latest') + kvm group"
     echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
+    echo "  • Fly.io CLI $(flyctl version 2>/dev/null | head -n1 | awk '{print $2}' || echo 'latest')"
     echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
     echo "  • Neovim $(nvim --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • Doom Emacs (Rust dev editor) with emacs --daemon (systemctl --user emacs)"
@@ -945,6 +973,8 @@ show_completion_message() {
     echo "  • <Space>fg          - Live grep (in nvim)"
     echo "  • az login           - Login to Azure"
     echo "  • az --version       - Check Azure CLI version"
+    echo "  • fly auth login     - Authenticate with Fly.io (auth signup for a new account)"
+    echo "  • fly launch         - Deploy an app to Fly.io from the current directory"
     echo "  • gh auth login      - Authenticate with GitHub"
     echo "  • gh --version       - Check GitHub CLI version"
     echo "  • fnm install <ver>  - Install specific Node.js version"
@@ -992,6 +1022,7 @@ main() {
     install_codex
     install_gondolin_sandbox
     install_azure_cli
+    install_flyctl
     install_github_cli
     install_tpm
     install_keyd
