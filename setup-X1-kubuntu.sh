@@ -349,6 +349,62 @@ install_rust() {
     fi
 }
 
+install_r_rstudio() {
+    print_header "📊 Installing R (CRAN) and RStudio Desktop"
+
+    # --- R from CRAN (Ubuntu's bundled r-base lags CRAN by many releases) ---
+    if command -v R &> /dev/null; then
+        print_success "R already installed: $(R --version | head -n1)"
+    else
+        echo "Adding CRAN apt repository and signing key..."
+        sudo mkdir -p /etc/apt/keyrings
+        curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
+            sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/cran.gpg
+        sudo chmod go+r /etc/apt/keyrings/cran.gpg
+
+        # CRAN publishes a cran40 suite per LTS codename (jammy=22.04, noble=24.04,
+        # resolute=26.04). Fall back to noble for anything else so an unsupported
+        # interim release doesn't 404 the Release file (same idiom as Azure CLI).
+        R_DIST=$(lsb_release -cs)
+        case "$R_DIST" in
+            jammy|noble|resolute)
+                # Published by CRAN; use as-is
+                ;;
+            *)
+                print_warning "Using noble (24.04) CRAN suite ($R_DIST not published by CRAN)"
+                R_DIST="noble"
+                ;;
+        esac
+
+        echo "deb [signed-by=/etc/apt/keyrings/cran.gpg] https://cloud.r-project.org/bin/linux/ubuntu ${R_DIST}-cran40/" | \
+            sudo tee /etc/apt/sources.list.d/cran.list > /dev/null
+
+        echo "Installing r-base and r-base-dev..."
+        sudo apt update
+        sudo apt install -y r-base r-base-dev
+        print_success "R installed: $(R --version | head -n1)"
+    fi
+
+    # --- RStudio Desktop (Posit; free open-source build) ---
+    if dpkg -s rstudio &> /dev/null; then
+        print_success "RStudio already installed: $(dpkg-query -W -f='${Version}' rstudio 2>/dev/null || echo installed)"
+    else
+        # Posit ships one jammy electron build that also runs on noble/newer. The
+        # 'latest' redirect always resolves to the current stable release, so there
+        # is no version string to hardcode and let rot.
+        echo "Downloading latest RStudio Desktop .deb..."
+        local rstudio_deb="/tmp/rstudio-latest-amd64.deb"
+        if curl -fSL "https://rstudio.org/download/latest/stable/desktop/jammy/rstudio-latest-amd64.deb" -o "$rstudio_deb"; then
+            echo "Installing RStudio (apt resolves its dependencies)..."
+            sudo apt install -y "$rstudio_deb"
+            rm -f "$rstudio_deb"
+            print_success "RStudio installed: $(dpkg-query -W -f='${Version}' rstudio 2>/dev/null || echo 'successfully')"
+        else
+            print_warning "Could not download RStudio .deb; install manually from posit.co/download/rstudio-desktop"
+        fi
+    fi
+}
+
 install_claude_code() {
     print_header "🤖 Installing Claude Code"
 
@@ -408,6 +464,40 @@ install_pi() {
     else
         print_warning "Pi installed but may need PATH update. Restart your shell."
     fi
+}
+
+install_codex() {
+    print_header "🧠 Installing OpenAI Codex CLI"
+
+    # Load fnm/Node into this session so the global npm prefix resolves (install_nodejs
+    # ran earlier in main(), but re-eval keeps this function robust if run standalone).
+    export PATH="$HOME/.local/bin:$PATH"
+    if command -v fnm &> /dev/null; then
+        eval "$(fnm env)" 2>/dev/null || true
+    fi
+
+    if command -v codex &> /dev/null; then
+        print_success "Codex CLI already installed: $(codex --version 2>/dev/null | head -n1 || echo 'installed')"
+        return
+    fi
+
+    if ! command -v npm &> /dev/null; then
+        print_warning "npm not found; skipping Codex (needs install_nodejs first)"
+        return
+    fi
+
+    # Codex ships as a Rust binary wrapped in the @openai/codex npm package. Installing
+    # globally via the fnm-managed Node keeps it sudo-free and self-updating with npm,
+    # matching the other global CLIs (typescript, prettier, ...).
+    echo "Installing @openai/codex globally via npm..."
+    npm install -g @openai/codex
+
+    if command -v codex &> /dev/null; then
+        print_success "Codex CLI installed: $(codex --version 2>/dev/null | head -n1 || echo 'successfully')"
+    else
+        print_warning "Codex installed but may need PATH update. Restart your shell."
+    fi
+    print_warning "Authenticate on first run: 'codex' then sign in (ChatGPT account or OPENAI_API_KEY)"
 }
 
 install_gondolin_sandbox() {
@@ -813,6 +903,7 @@ show_completion_message() {
     echo "  • .NET SDKs ${DOTNET_SUMMARY:-installed}"
     echo "  • fnm (Fast Node Manager) with Node.js LTS $(node --version 2>/dev/null || echo '')"
     echo "  • Rust $(rustc --version 2>/dev/null || echo 'latest') with cargo, clippy, rustfmt, rust-analyzer"
+    echo "  • R $(R --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest') (CRAN) + RStudio Desktop $(dpkg-query -W -f='${Version}' rstudio 2>/dev/null || echo 'latest')"
     echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep"
     echo "  • Alacritty terminal emulator with Cascadia Code Nerd Font"
     echo "  • Google Chrome $(google-chrome --version 2>/dev/null || echo 'latest')"
@@ -825,6 +916,7 @@ show_completion_message() {
     echo "  • Claude Code $(claude --version 2>/dev/null || echo 'latest')"
     echo "  • Herdr $(herdr --version 2>/dev/null | head -n1 || echo 'latest') (agent multiplexer for coding agents)"
     echo "  • Pi $(pi --version 2>/dev/null | head -n1 || echo 'latest') (minimal terminal coding agent)"
+    echo "  • OpenAI Codex CLI $(codex --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • Gondolin sandbox prereqs: QEMU $(qemu-system-x86_64 --version 2>/dev/null | head -n1 | awk '{print $4}' || echo 'latest') + kvm group"
     echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
     echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
@@ -845,6 +937,7 @@ show_completion_message() {
     echo "  • claude             - Launch Claude Code CLI"
     echo "  • herdr              - Agent multiplexer (tmux for coding agents)"
     echo "  • pi                 - Minimal terminal coding agent (/login then /model)"
+    echo "  • codex              - OpenAI Codex CLI (sign in with ChatGPT or OPENAI_API_KEY)"
     echo "  • voxd --tray        - Voice dictation in the background (types at cursor)"
     echo "  • nvim               - Launch Neovim"
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
@@ -866,6 +959,8 @@ show_completion_message() {
     echo "  • ncdu               - Disk usage analyzer"
     echo "  • tldr <command>     - Simplified man pages"
     echo "  • dotnet --info      - Show .NET information"
+    echo "  • R                  - R interactive console (Rscript for scripts)"
+    echo "  • rstudio            - Launch RStudio Desktop IDE"
 
     if [ "$SHELL" != "$(which zsh)" ]; then
         echo -e "\n${YELLOW}⚠️  Remember to restart your terminal for the shell change to take effect!${NC}"
@@ -890,9 +985,11 @@ main() {
     install_docker
     install_nodejs
     install_rust
+    install_r_rstudio
     install_claude_code
     install_herdr
     install_pi
+    install_codex
     install_gondolin_sandbox
     install_azure_cli
     install_github_cli
