@@ -1,8 +1,12 @@
 #!/bin/bash
 
-# Simplified Ubuntu Development Environment Setup Script for WSL
+# Ubuntu Development Environment Setup Script for WSL
 # Designed for Ubuntu 22.04/24.04 on Windows Subsystem for Linux
-# Installs: Zsh, Python, .NET SDK, Go, Node.js, Neovim, Claude Code (tools only, configs via stow)
+# CLI parity with setup-X1-kubuntu.sh, minus GUI apps (Alacritty, Chrome, Emacs,
+# RStudio Desktop, voxd) and host-hardware bits (keyd). RStudio ships as the
+# headless Server (browser at localhost:8787) instead of the WSLg Desktop window.
+# Installs: Zsh, Python, .NET, Go, Node.js, Rust, Elixir, R + RStudio Server,
+# Docker Engine, Neovim, Claude Code, Herdr, Pi, Codex, QEMU/KVM, Azure/Fly/GitHub CLIs
 # Usage: ./setup-WSL-ubuntu.sh
 
 set -e
@@ -244,6 +248,64 @@ install_elixir() {
     print_success "Elixir installed: $(elixir --version | head -n1)"
 }
 
+install_r() {
+    print_header "📊 Installing R (CRAN) and RStudio Server"
+
+    # --- R from CRAN (Ubuntu's bundled r-base lags CRAN by many releases) ---
+    if command -v R &> /dev/null; then
+        print_success "R already installed: $(R --version | head -n1)"
+    else
+        echo "Adding CRAN apt repository and signing key..."
+        sudo mkdir -p /etc/apt/keyrings
+        curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
+            sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/cran.gpg
+        sudo chmod go+r /etc/apt/keyrings/cran.gpg
+
+        # CRAN publishes a cran40 suite per LTS codename (jammy=22.04, noble=24.04,
+        # resolute=26.04). Fall back to noble for anything else so an unsupported
+        # interim release doesn't 404 the Release file.
+        R_DIST=$(lsb_release -cs)
+        case "$R_DIST" in
+            jammy|noble|resolute)
+                # Published by CRAN; use as-is
+                ;;
+            *)
+                print_warning "Using noble (24.04) CRAN suite ($R_DIST not published by CRAN)"
+                R_DIST="noble"
+                ;;
+        esac
+
+        echo "deb [signed-by=/etc/apt/keyrings/cran.gpg] https://cloud.r-project.org/bin/linux/ubuntu ${R_DIST}-cran40/" | \
+            sudo tee /etc/apt/sources.list.d/cran.list > /dev/null
+
+        echo "Installing r-base and r-base-dev..."
+        sudo apt update
+        sudo apt install -y r-base r-base-dev
+        print_success "R installed: $(R --version | head -n1)"
+    fi
+
+    # --- RStudio Server (browser IDE at http://localhost:8787) ---
+    # WSL choice: Desktop would render through WSLg as an X/Wayland window (the ugly
+    # border/DPI issues); Server is headless and viewed in the Windows browser, so it
+    # looks native. The 'latest' redirect always resolves to the current stable build.
+    if dpkg -s rstudio-server &> /dev/null; then
+        print_success "RStudio Server already installed: $(dpkg-query -W -f='${Version}' rstudio-server 2>/dev/null || echo installed)"
+    else
+        echo "Downloading latest RStudio Server .deb..."
+        local rstudio_deb="/tmp/rstudio-server-latest-amd64.deb"
+        if curl -fSL "https://rstudio.org/download/latest/stable/server/jammy/rstudio-server-latest-amd64.deb" -o "$rstudio_deb"; then
+            echo "Installing RStudio Server (apt resolves its dependencies)..."
+            sudo apt install -y "$rstudio_deb"
+            rm -f "$rstudio_deb"
+            print_success "RStudio Server installed: $(dpkg-query -W -f='${Version}' rstudio-server 2>/dev/null || echo 'successfully')"
+            print_warning "Open http://localhost:8787 in your Windows browser (log in with your WSL username/password)"
+            print_warning "If it isn't running (no systemd): sudo rstudio-server start  —  status: sudo rstudio-server status"
+        else
+            print_warning "Could not download RStudio Server .deb; install manually from posit.co/download/rstudio-server"
+        fi
+    fi
+}
+
 install_claude_code() {
     print_header "🤖 Installing Claude Code"
 
@@ -263,6 +325,78 @@ install_claude_code() {
     else
         print_warning "Claude Code installed but may need PATH update. Restart your shell."
     fi
+}
+
+install_herdr() {
+    print_header "🐐 Installing Herdr (agent multiplexer)"
+
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if command -v herdr &> /dev/null; then
+        print_success "Herdr already installed: $(herdr --version 2>/dev/null | head -n1 || echo 'installed')"
+        return
+    fi
+
+    echo "Installing Herdr (single Rust binary; no sudo)..."
+    curl -fsSL https://herdr.dev/install.sh | sh
+
+    if command -v herdr &> /dev/null; then
+        print_success "Herdr installed: $(herdr --version 2>/dev/null | head -n1 || echo 'successfully')"
+    else
+        print_warning "Herdr installed but may need PATH update. Restart your shell."
+    fi
+}
+
+install_pi() {
+    print_header "🥧 Installing Pi (coding agent)"
+
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if command -v pi &> /dev/null; then
+        print_success "Pi already installed: $(pi --version 2>/dev/null | head -n1 || echo 'installed')"
+        return
+    fi
+
+    echo "Installing Pi (single binary; no sudo)..."
+    curl -fsSL https://pi.dev/install.sh | sh
+
+    if command -v pi &> /dev/null; then
+        print_success "Pi installed: $(pi --version 2>/dev/null | head -n1 || echo 'successfully')"
+    else
+        print_warning "Pi installed but may need PATH update. Restart your shell."
+    fi
+}
+
+install_codex() {
+    print_header "🧠 Installing OpenAI Codex CLI"
+
+    # Load nvm/Node into this session so the global npm prefix resolves (install_nodejs
+    # ran earlier in main(), but re-sourcing keeps this function robust standalone).
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+    if command -v codex &> /dev/null; then
+        print_success "Codex CLI already installed: $(codex --version 2>/dev/null | head -n1 || echo 'installed')"
+        return
+    fi
+
+    if ! command -v npm &> /dev/null; then
+        print_warning "npm not found; skipping Codex (needs install_nodejs first)"
+        return
+    fi
+
+    # Codex ships as a Rust binary wrapped in the @openai/codex npm package. Installing
+    # globally via the nvm-managed Node keeps it sudo-free and self-updating with npm,
+    # matching the other global CLIs (typescript, prettier, ...).
+    echo "Installing @openai/codex globally via npm..."
+    npm install -g @openai/codex
+
+    if command -v codex &> /dev/null; then
+        print_success "Codex CLI installed: $(codex --version 2>/dev/null | head -n1 || echo 'successfully')"
+    else
+        print_warning "Codex installed but may need PATH update. Restart your shell."
+    fi
+    print_warning "Authenticate on first run: 'codex' then sign in (ChatGPT account or OPENAI_API_KEY)"
 }
 
 install_neovim() {
@@ -342,6 +476,114 @@ install_go() {
     export PATH=$PATH:$HOME/go/bin
 
     print_success "Go installed: $(go version)"
+}
+
+install_docker() {
+    print_header "🐳 Installing Docker Engine"
+
+    if command -v docker &> /dev/null; then
+        print_success "Docker already installed: $(docker --version)"
+        return
+    fi
+
+    # WSL note: this installs Docker Engine *inside* WSL (an alternative to Docker
+    # Desktop's WSL integration). The daemon needs systemd as PID 1 — recent WSL
+    # enables it by default; if not, add "[boot]\nsystemd=true" to /etc/wsl.conf and
+    # run 'wsl --shutdown' from Windows. Don't run this AND Docker Desktop integration.
+    echo "Removing old Docker installations..."
+    sudo apt remove -y docker.io docker-doc docker-compose podman-docker containerd runc 2>/dev/null || true
+
+    echo "Installing Docker Engine..."
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+    echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+    echo "Adding $USER to docker group..."
+    sudo usermod -aG docker "$USER"
+
+    # Only drive systemd if it's actually PID 1 (WSL may boot without it).
+    if [ "$(ps -p 1 -o comm= 2>/dev/null)" = "systemd" ]; then
+        echo "Enabling Docker service..."
+        sudo systemctl enable --now docker || print_warning "Could not enable/start docker via systemd"
+    else
+        print_warning "systemd is not PID 1 in this WSL distro."
+        print_warning "  Enable it: add '[boot]\\nsystemd=true' to /etc/wsl.conf, then 'wsl --shutdown' from Windows"
+        print_warning "  Then start the daemon: sudo systemctl enable --now docker  (or: sudo service docker start)"
+    fi
+
+    print_success "Docker installed: $(docker --version)"
+    print_warning "Log out/in (or 'wsl --shutdown') for docker group membership to take effect"
+}
+
+install_gondolin_sandbox() {
+    print_header "📦 Installing Gondolin sandbox prerequisites (QEMU + KVM)"
+
+    # Host prerequisites for running Pi tool calls inside a Gondolin micro-VM.
+    # Installs only the QEMU/KVM plumbing; the pi-gondolin extension itself is
+    # registered manually in ~/.pi/agent/settings.json (kept out of this script).
+    if command -v qemu-system-x86_64 &> /dev/null; then
+        print_success "QEMU already installed: $(qemu-system-x86_64 --version | head -n1)"
+    else
+        echo "Installing qemu-system-x86..."
+        sudo apt install -y qemu-system-x86
+        print_success "QEMU installed: $(qemu-system-x86_64 --version | head -n1)"
+    fi
+
+    # KVM acceleration inside WSL2 needs nested virtualization: /dev/kvm only appears
+    # when the Windows host exposes it (Hyper-V nested virt). Warn (don't fail) if
+    # missing — Gondolin would otherwise fall back to slow pure emulation.
+    if [ -e /dev/kvm ]; then
+        print_success "/dev/kvm present (KVM acceleration available)"
+        if id -nG "$USER" | tr ' ' '\n' | grep -qx kvm; then
+            print_success "$USER already in 'kvm' group (KVM access without sudo)"
+        else
+            echo "Adding $USER to 'kvm' group for /dev/kvm access..."
+            sudo usermod -aG kvm "$USER"
+            print_warning "Log out/in (or 'wsl --shutdown') for 'kvm' group membership to take effect"
+        fi
+    else
+        print_warning "/dev/kvm not present — under WSL enable nested virtualization on the host"
+        print_warning "  (Set-VMProcessor -VMName <distro> -ExposeVirtualizationExtensions \$true), else Gondolin runs emulated"
+    fi
+
+    print_success "Gondolin sandbox host prerequisites ready"
+    print_warning "Register the extension manually: clone pi-gondolin and add it to"
+    print_warning "  ~/.pi/agent/settings.json  \"extensions\": [\"~/.pi/agent/extensions/gondolin\"]"
+}
+
+install_flyctl() {
+    print_header "🎈 Installing Fly.io CLI (flyctl)"
+
+    # flyctl installs to ~/.fly/bin (no sudo). The stowed zsh config already puts that
+    # on PATH, so export it here too for the rest of this run.
+    export FLYCTL_INSTALL="$HOME/.fly"
+    export PATH="$FLYCTL_INSTALL/bin:$PATH"
+
+    if command -v flyctl &> /dev/null; then
+        print_success "flyctl already installed: $(flyctl version 2>/dev/null | head -n1 || echo 'installed')"
+        return
+    fi
+
+    # Piped into sh the installer stays non-interactive, so it will NOT append a
+    # machine-specific PATH block to ~/.zshrc — PATH is handled by the stowed zsh
+    # package instead, keeping shell config portable across machines.
+    echo "Installing flyctl..."
+    curl -fsSL https://fly.io/install.sh | sh
+
+    if command -v flyctl &> /dev/null; then
+        print_success "flyctl installed: $(flyctl version 2>/dev/null | head -n1 || echo 'successfully')"
+    else
+        print_warning "flyctl installed but may need PATH update. Restart your shell."
+    fi
+    print_warning "Authenticate manually: 'fly auth signup' (new account) or 'fly auth login'"
 }
 
 install_azure_cli() {
@@ -507,7 +749,9 @@ show_completion_message() {
     echo "  • Go $(go version 2>/dev/null | awk '{print $3}' || echo 'latest')"
     echo "  • Node Version Manager (nvm) with Node.js LTS + Corepack + global tools"
     echo "  • Rust $(rustc --version 2>/dev/null || echo 'latest') with cargo, clippy, rustfmt, rust-analyzer"
+    echo "  • R $(R --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest') (CRAN) + RStudio Server $(dpkg-query -W -f='${Version}' rstudio-server 2>/dev/null || echo 'latest') (browser: localhost:8787)"
     echo "  • Elixir $(elixir --version 2>/dev/null | head -n1 || echo 'latest') with Erlang/OTP, Hex, rebar3"
+    echo "  • Docker Engine $(docker --version 2>/dev/null || echo 'latest')"
     echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep, zoxide"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
@@ -515,7 +759,12 @@ show_completion_message() {
     echo "    - git, z, sudo, extract, colored-man-pages, dotnet"
     echo "  • Starship prompt $(starship --version 2>/dev/null | head -n1 || echo 'latest')"
     echo "  • Claude Code $(claude --version 2>/dev/null || echo 'latest')"
+    echo "  • Herdr $(herdr --version 2>/dev/null | head -n1 || echo 'latest') (agent multiplexer for coding agents)"
+    echo "  • Pi $(pi --version 2>/dev/null | head -n1 || echo 'latest') (minimal terminal coding agent)"
+    echo "  • OpenAI Codex CLI $(codex --version 2>/dev/null | head -n1 || echo 'latest')"
+    echo "  • Gondolin sandbox prereqs: QEMU $(qemu-system-x86_64 --version 2>/dev/null | head -n1 | awk '{print $4}' || echo 'latest') + kvm group (needs WSL nested virt)"
     echo "  • Azure CLI $(az version --output tsv --query '\"azure-cli\"' 2>/dev/null || echo 'latest')"
+    echo "  • Fly.io CLI $(flyctl version 2>/dev/null | head -n1 | awk '{print $2}' || echo 'latest')"
     echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
     echo "  • Neovim $(nvim --version 2>/dev/null | head -n1 || echo 'latest')"
 
@@ -528,12 +777,19 @@ show_completion_message() {
 
     echo -e "\n💡 Useful commands:"
     echo "  • claude             - Launch Claude Code CLI"
+    echo "  • herdr              - Agent multiplexer (tmux for coding agents)"
+    echo "  • pi                 - Minimal terminal coding agent (/login then /model)"
+    echo "  • codex              - OpenAI Codex CLI (sign in with ChatGPT or OPENAI_API_KEY)"
     echo "  • nvim               - Launch Neovim"
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
     echo "  • <Space>ff          - Find files (in nvim)"
     echo "  • <Space>fg          - Live grep (in nvim)"
+    echo "  • R                  - R interactive console (Rscript for scripts)"
+    echo "  • rstudio-server start - Start RStudio Server, then open http://localhost:8787"
     echo "  • az login           - Login to Azure"
     echo "  • az --version       - Check Azure CLI version"
+    echo "  • fly auth login     - Authenticate with Fly.io (auth signup for a new account)"
+    echo "  • fly launch         - Deploy an app to Fly.io from the current directory"
     echo "  • gh auth login      - Authenticate with GitHub"
     echo "  • gh --version       - Check GitHub CLI version"
     echo "  • nvm install <ver>  - Install specific Node.js version"
@@ -568,12 +824,19 @@ main() {
     install_system_packages
     install_python
     install_dotnet
+    install_docker
     install_go
     install_nodejs
     install_rust
+    install_r
     install_elixir
     install_claude_code
+    install_herdr
+    install_pi
+    install_codex
+    install_gondolin_sandbox
     install_azure_cli
+    install_flyctl
     install_github_cli
     install_tpm
     install_neovim
