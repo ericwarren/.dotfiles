@@ -65,7 +65,7 @@ install_system_packages() {
         curl wget git zsh \
         ca-certificates gnupg \
         unzip stow \
-        jq fzf bat eza htop ncdu tldr \
+        jq fzf bat eza htop ncdu \
         tree ripgrep zoxide \
         imagemagick \
         dbus-user-session keychain
@@ -550,7 +550,7 @@ show_completion_message() {
     echo "  • .NET SDKs ${DOTNET_SUMMARY:-installed}"
     echo "  • Node Version Manager (nvm) with Node.js LTS + Corepack + global tools"
     echo "  • Rust $(rustc --version 2>/dev/null || echo 'latest') with cargo, clippy, rustfmt, rust-analyzer"
-    echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep, zoxide"
+    echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, jq, tree, ripgrep, zoxide"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
     echo "    - zsh-syntax-highlighting (syntax coloring)"
@@ -598,7 +598,6 @@ show_completion_message() {
     echo "  • rg <pattern>       - Fast recursive search (ripgrep)"
     echo "  • eza -la            - Modern ls replacement"
     echo "  • ncdu               - Disk usage analyzer"
-    echo "  • tldr <command>     - Simplified man pages"
     echo "  • dotnet --info      - Show .NET information"
 
     if [ "$SHELL" != "$(which zsh)" ]; then
