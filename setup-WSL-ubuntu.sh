@@ -3,11 +3,10 @@
 # Ubuntu Development Environment Setup Script for WSL
 # Designed for Ubuntu 22.04/24.04 on Windows Subsystem for Linux
 # CLI parity with setup-X1-kubuntu.sh, minus GUI apps (Alacritty, Chrome, Emacs,
-# RStudio Desktop, voxd) and host-hardware bits (keyd). RStudio ships as the
-# headless Server (browser at localhost:8787) instead of the WSLg Desktop window.
-# Docker is intentionally omitted — use Docker Desktop's WSL integration on Windows.
-# Installs: Zsh, Python, .NET, Node.js, Rust, R + RStudio Server, Neovim, Claude
-# Code, Herdr, Pi, Codex, QEMU/KVM, Azure/Fly/GitHub CLIs
+# voxd) and host-hardware bits (keyd). Docker (use Docker Desktop's WSL integration
+# on Windows) and R/RStudio (installed on the Windows side) are intentionally omitted.
+# Installs: Zsh, Python, .NET, Node.js, Rust, Neovim, Claude Code, Herdr, Pi, Codex,
+# QEMU/KVM, Azure/Fly/GitHub CLIs
 # Usage: ./setup-WSL-ubuntu.sh
 
 set -e
@@ -212,64 +211,6 @@ install_rust() {
         print_success "Cargo installed: $(cargo --version)"
     else
         print_warning "Rust installed but may need PATH update. Restart your shell."
-    fi
-}
-
-install_r() {
-    print_header "📊 Installing R (CRAN) and RStudio Server"
-
-    # --- R from CRAN (Ubuntu's bundled r-base lags CRAN by many releases) ---
-    if command -v R &> /dev/null; then
-        print_success "R already installed: $(R --version | head -n1)"
-    else
-        echo "Adding CRAN apt repository and signing key..."
-        sudo mkdir -p /etc/apt/keyrings
-        curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
-            sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/cran.gpg
-        sudo chmod go+r /etc/apt/keyrings/cran.gpg
-
-        # CRAN publishes a cran40 suite per LTS codename (jammy=22.04, noble=24.04,
-        # resolute=26.04). Fall back to noble for anything else so an unsupported
-        # interim release doesn't 404 the Release file.
-        R_DIST=$(lsb_release -cs)
-        case "$R_DIST" in
-            jammy|noble|resolute)
-                # Published by CRAN; use as-is
-                ;;
-            *)
-                print_warning "Using noble (24.04) CRAN suite ($R_DIST not published by CRAN)"
-                R_DIST="noble"
-                ;;
-        esac
-
-        echo "deb [signed-by=/etc/apt/keyrings/cran.gpg] https://cloud.r-project.org/bin/linux/ubuntu ${R_DIST}-cran40/" | \
-            sudo tee /etc/apt/sources.list.d/cran.list > /dev/null
-
-        echo "Installing r-base and r-base-dev..."
-        sudo apt update
-        sudo apt install -y r-base r-base-dev
-        print_success "R installed: $(R --version | head -n1)"
-    fi
-
-    # --- RStudio Server (browser IDE at http://localhost:8787) ---
-    # WSL choice: Desktop would render through WSLg as an X/Wayland window (the ugly
-    # border/DPI issues); Server is headless and viewed in the Windows browser, so it
-    # looks native. The 'latest' redirect always resolves to the current stable build.
-    if dpkg -s rstudio-server &> /dev/null; then
-        print_success "RStudio Server already installed: $(dpkg-query -W -f='${Version}' rstudio-server 2>/dev/null || echo installed)"
-    else
-        echo "Downloading latest RStudio Server .deb..."
-        local rstudio_deb="/tmp/rstudio-server-latest-amd64.deb"
-        if curl -fSL "https://rstudio.org/download/latest/stable/server/jammy/rstudio-server-latest-amd64.deb" -o "$rstudio_deb"; then
-            echo "Installing RStudio Server (apt resolves its dependencies)..."
-            sudo apt install -y "$rstudio_deb"
-            rm -f "$rstudio_deb"
-            print_success "RStudio Server installed: $(dpkg-query -W -f='${Version}' rstudio-server 2>/dev/null || echo 'successfully')"
-            print_warning "Open http://localhost:8787 in your Windows browser (log in with your WSL username/password)"
-            print_warning "If it isn't running (no systemd): sudo rstudio-server start  —  status: sudo rstudio-server status"
-        else
-            print_warning "Could not download RStudio Server .deb; install manually from posit.co/download/rstudio-server"
-        fi
     fi
 }
 
@@ -609,7 +550,6 @@ show_completion_message() {
     echo "  • .NET SDKs ${DOTNET_SUMMARY:-installed}"
     echo "  • Node Version Manager (nvm) with Node.js LTS + Corepack + global tools"
     echo "  • Rust $(rustc --version 2>/dev/null || echo 'latest') with cargo, clippy, rustfmt, rust-analyzer"
-    echo "  • R $(R --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest') (CRAN) + RStudio Server $(dpkg-query -W -f='${Version}' rstudio-server 2>/dev/null || echo 'latest') (browser: localhost:8787)"
     echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep, zoxide"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
@@ -642,8 +582,6 @@ show_completion_message() {
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
     echo "  • <Space>ff          - Find files (in nvim)"
     echo "  • <Space>fg          - Live grep (in nvim)"
-    echo "  • R                  - R interactive console (Rscript for scripts)"
-    echo "  • rstudio-server start - Start RStudio Server, then open http://localhost:8787"
     echo "  • az login           - Login to Azure"
     echo "  • az --version       - Check Azure CLI version"
     echo "  • fly auth login     - Authenticate with Fly.io (auth signup for a new account)"
@@ -682,7 +620,6 @@ main() {
     install_dotnet
     install_nodejs
     install_rust
-    install_r
     install_claude_code
     install_herdr
     install_pi
