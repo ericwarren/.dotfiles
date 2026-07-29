@@ -2,11 +2,11 @@
 
 # Ubuntu Development Environment Setup Script for WSL
 # Designed for Ubuntu 22.04/24.04 on Windows Subsystem for Linux
-# CLI parity with setup-X1-kubuntu.sh, minus GUI apps (Alacritty, Chrome, Emacs,
-# voxd) and host-hardware bits (keyd). Docker (use Docker Desktop's WSL integration
+# CLI parity with setup-X1-kubuntu.sh, minus GUI apps (Alacritty, Chrome, voxd)
+# and host-hardware bits (keyd). Docker (use Docker Desktop's WSL integration
 # on Windows) and R/RStudio (installed on the Windows side) are intentionally omitted.
-# Installs: Zsh, Python, .NET, Node.js, Rust, Neovim, Claude Code, Herdr, Pi, Codex,
-# QEMU/KVM, Azure/Fly/GitHub CLIs
+# Installs: Zsh, Python, .NET, Node.js, Rust, Neovim, Doom Emacs, Claude Code, Herdr,
+# Pi, Codex, QEMU/KVM, Azure/Fly/GitHub CLIs
 # Usage: ./setup-WSL-ubuntu.sh
 
 set -e
@@ -330,6 +330,65 @@ install_neovim() {
     print_success "Neovim configuration will be managed via stow (neovim package)"
 }
 
+install_doom_emacs() {
+    print_header "😈 Installing Doom Emacs"
+
+    # Emacs itself — Doom runs on top of it. Prefer the pure-GTK build: WSLg gives WSL2
+    # a Wayland display, so plain 'emacs' can open a real GUI frame without needing
+    # XWayland/XAUTHORITY. pgtk isn't published for every Ubuntu release, so fall back
+    # to emacs-gtk and finally emacs-nox (terminal-only) — Doom runs on all three, and
+    # 'emacs -nw' works regardless of which one landed.
+    if command -v emacs &> /dev/null; then
+        print_success "Emacs already installed: $(emacs --version | head -n1)"
+    else
+        local emacs_pkg=""
+        for pkg in emacs-pgtk emacs-gtk emacs-nox; do
+            echo "Installing $pkg..."
+            if sudo apt install -y "$pkg"; then
+                emacs_pkg="$pkg"
+                break
+            fi
+            print_warning "$pkg unavailable in this release; trying the next Emacs build"
+        done
+
+        if [ -n "$emacs_pkg" ]; then
+            print_success "Emacs installed ($emacs_pkg): $(emacs --version | head -n1)"
+        else
+            print_error "No Emacs package could be installed; skipping Doom"
+            return
+        fi
+    fi
+
+    # The Doom framework lives at ~/.config/emacs (cloned here); the private config
+    # (~/.config/doom) comes from the stowed 'emacs' package. This script doesn't stow,
+    # so the doom install step is gated on that config already existing.
+    #
+    # No emacs --daemon here (unlike setup-X1-kubuntu.sh): WSL2 shuts the VM down when
+    # the last session closes, so a boot-time daemon mostly buys a resident 200-400MB
+    # rather than a warm editor. Just run 'emacs -nw'; the stowed unit is available if
+    # that ever changes ('systemctl --user enable --now emacs').
+    if [ -d "$HOME/.config/emacs/.git" ]; then
+        print_success "Doom Emacs framework already cloned (~/.config/emacs)"
+    else
+        echo "Cloning Doom Emacs framework..."
+        git clone --depth 1 https://github.com/doomemacs/doomemacs "$HOME/.config/emacs"
+        print_success "Doom Emacs framework cloned"
+    fi
+
+    if [ -f "$HOME/.config/doom/init.el" ]; then
+        echo "Installing Doom packages (doom install; can take a few minutes)..."
+        if "$HOME/.config/emacs/bin/doom" install --force >/dev/null 2>&1; then
+            print_success "Doom packages installed"
+        else
+            print_warning "doom install had issues; re-run '~/.config/emacs/bin/doom install' manually"
+        fi
+        print_success "Doom ready — launch with 'emacs -nw' (no daemon on WSL by design)"
+    else
+        print_warning "Doom config (~/.config/doom) not found — stow the 'emacs' package, then run:"
+        print_warning "  ~/.config/emacs/bin/doom install"
+    fi
+}
+
 install_gondolin_sandbox() {
     print_header "📦 Installing Gondolin sandbox prerequisites (QEMU + KVM)"
 
@@ -570,13 +629,16 @@ show_completion_message() {
     echo "  • Fly.io CLI $(flyctl version 2>/dev/null | head -n1 | awk '{print $2}' || echo 'latest')"
     echo "  • GitHub CLI $(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest')"
     echo "  • Neovim $(nvim --version 2>/dev/null | head -n1 || echo 'latest')"
+    echo "  • Doom Emacs on $(emacs --version 2>/dev/null | head -n1 || echo 'Emacs')"
 
     echo -e "\n📌 Next Steps:"
     echo "  1. Restart your terminal or run: exec zsh"
     echo "  2. Authenticate Claude Code: claude auth"
     echo "  3. Apply your dotfiles with stow:"
-    echo "     cd ~/.dotfiles && stow zsh git neovim tmux claude"
+    echo "     cd ~/.dotfiles && stow zsh git neovim tmux emacs claude"
     echo "  4. Launch nvim to auto-install plugins (first run will take a moment)"
+    echo "  5. If the 'emacs' package wasn't stowed before this ran, finish Doom setup:"
+    echo "     ~/.config/emacs/bin/doom install"
 
     echo -e "\n💡 Useful commands:"
     echo "  • claude             - Launch Claude Code CLI"
@@ -584,6 +646,8 @@ show_completion_message() {
     echo "  • pi                 - Minimal terminal coding agent (/login then /model)"
     echo "  • codex              - OpenAI Codex CLI (sign in with ChatGPT or OPENAI_API_KEY)"
     echo "  • nvim               - Launch Neovim"
+    echo "  • emacs -nw          - Launch Doom Emacs in the terminal"
+    echo "  • doom sync          - Reload Doom after editing ~/.config/doom"
     echo "  • <Space>e           - Toggle file explorer (in nvim)"
     echo "  • <Space>ff          - Find files (in nvim)"
     echo "  • <Space>fg          - Live grep (in nvim)"
@@ -634,6 +698,7 @@ main() {
     install_github_cli
     install_tpm
     install_neovim
+    install_doom_emacs
     setup_shell
 
     # Completion
