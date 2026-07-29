@@ -5,8 +5,9 @@
 # CLI parity with setup-X1-kubuntu.sh, minus GUI apps (Alacritty, Chrome, Emacs,
 # RStudio Desktop, voxd) and host-hardware bits (keyd). RStudio ships as the
 # headless Server (browser at localhost:8787) instead of the WSLg Desktop window.
-# Installs: Zsh, Python, .NET, Go, Node.js, Rust, Elixir, R + RStudio Server,
-# Docker Engine, Neovim, Claude Code, Herdr, Pi, Codex, QEMU/KVM, Azure/Fly/GitHub CLIs
+# Docker is intentionally omitted — use Docker Desktop's WSL integration on Windows.
+# Installs: Zsh, Python, .NET, Node.js, Rust, R + RStudio Server, Neovim, Claude
+# Code, Herdr, Pi, Codex, QEMU/KVM, Azure/Fly/GitHub CLIs
 # Usage: ./setup-WSL-ubuntu.sh
 
 set -e
@@ -214,40 +215,6 @@ install_rust() {
     fi
 }
 
-install_elixir() {
-    print_header "💧 Installing Elixir & Erlang/OTP"
-
-    if command -v elixir &> /dev/null; then
-        print_success "Elixir already installed: $(elixir --version | head -n1)"
-        return
-    fi
-
-    echo "Adding Erlang Solutions repository..."
-    if wget -q --timeout=15 -O /tmp/erlang-solutions.deb https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb 2>/dev/null; then
-        sudo dpkg -i /tmp/erlang-solutions.deb
-        rm /tmp/erlang-solutions.deb
-        sudo apt update
-        echo "Installing Erlang/OTP..."
-        sudo apt install -y esl-erlang
-        echo "Installing Elixir..."
-        sudo apt install -y elixir
-    else
-        echo "Erlang Solutions repo unavailable, falling back to Ubuntu packages..."
-        rm -f /tmp/erlang-solutions.deb
-        sudo apt update
-        echo "Installing Erlang/OTP..."
-        sudo apt install -y erlang
-        echo "Installing Elixir..."
-        sudo apt install -y elixir
-    fi
-
-    echo "Installing Hex and rebar3..."
-    mix local.hex --force
-    mix local.rebar --force
-
-    print_success "Elixir installed: $(elixir --version | head -n1)"
-}
-
 install_r() {
     print_header "📊 Installing R (CRAN) and RStudio Server"
 
@@ -415,112 +382,6 @@ install_neovim() {
 
     print_success "Neovim installed: $(nvim --version | head -n1)"
     print_success "Neovim configuration will be managed via stow (neovim package)"
-}
-
-install_go() {
-    print_header "🐹 Installing Go"
-
-    if command -v go &> /dev/null; then
-        print_success "Go already installed: $(go version)"
-        return
-    fi
-
-    # Get the latest Go version
-    echo "Fetching latest Go version..."
-    GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | head -n1)
-
-    if [ -z "$GO_VERSION" ]; then
-        print_error "Failed to fetch Go version, using fallback"
-        GO_VERSION="go1.23.5"
-    fi
-
-    echo "Downloading Go ${GO_VERSION}..."
-    wget "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz" -O /tmp/go.tar.gz
-
-    echo "Removing old Go installation if present..."
-    sudo rm -rf /usr/local/go
-
-    echo "Installing Go..."
-    sudo tar -C /usr/local -xzf /tmp/go.tar.gz
-    rm /tmp/go.tar.gz
-
-    # Add Go paths to both bash and zsh configs
-    local rc_file
-    for rc_file in "$HOME/.bashrc" "$HOME/.zshrc"; do
-        [ -f "$rc_file" ] || touch "$rc_file"
-
-        local go_lines=()
-        if ! grep -qs '/usr/local/go/bin' "$rc_file"; then
-            go_lines+=('export PATH=$PATH:/usr/local/go/bin')
-        fi
-        if ! grep -qs '$HOME/go/bin' "$rc_file"; then
-            go_lines+=('export PATH=$PATH:$HOME/go/bin')
-        fi
-
-        if [ ${#go_lines[@]} -gt 0 ]; then
-            {
-                echo ''
-                echo '# Go paths added by setup-WSL-ubuntu.sh'
-                for line in "${go_lines[@]}"; do
-                    echo "$line"
-                done
-            } >> "$rc_file"
-            print_success "Added Go PATH entries to ${rc_file##*/}"
-        else
-            print_success "Go PATH entries already present in ${rc_file##*/}"
-        fi
-    done
-
-    # Export for current session
-    export PATH=$PATH:/usr/local/go/bin
-    export PATH=$PATH:$HOME/go/bin
-
-    print_success "Go installed: $(go version)"
-}
-
-install_docker() {
-    print_header "🐳 Installing Docker Engine"
-
-    if command -v docker &> /dev/null; then
-        print_success "Docker already installed: $(docker --version)"
-        return
-    fi
-
-    # WSL note: this installs Docker Engine *inside* WSL (an alternative to Docker
-    # Desktop's WSL integration). The daemon needs systemd as PID 1 — recent WSL
-    # enables it by default; if not, add "[boot]\nsystemd=true" to /etc/wsl.conf and
-    # run 'wsl --shutdown' from Windows. Don't run this AND Docker Desktop integration.
-    echo "Removing old Docker installations..."
-    sudo apt remove -y docker.io docker-doc docker-compose podman-docker containerd runc 2>/dev/null || true
-
-    echo "Installing Docker Engine..."
-    sudo install -m 0755 -d /etc/apt/keyrings
-    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-    sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-    echo \
-        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-    sudo apt update
-    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-    echo "Adding $USER to docker group..."
-    sudo usermod -aG docker "$USER"
-
-    # Only drive systemd if it's actually PID 1 (WSL may boot without it).
-    if [ "$(ps -p 1 -o comm= 2>/dev/null)" = "systemd" ]; then
-        echo "Enabling Docker service..."
-        sudo systemctl enable --now docker || print_warning "Could not enable/start docker via systemd"
-    else
-        print_warning "systemd is not PID 1 in this WSL distro."
-        print_warning "  Enable it: add '[boot]\\nsystemd=true' to /etc/wsl.conf, then 'wsl --shutdown' from Windows"
-        print_warning "  Then start the daemon: sudo systemctl enable --now docker  (or: sudo service docker start)"
-    fi
-
-    print_success "Docker installed: $(docker --version)"
-    print_warning "Log out/in (or 'wsl --shutdown') for docker group membership to take effect"
 }
 
 install_gondolin_sandbox() {
@@ -746,12 +607,9 @@ show_completion_message() {
     echo "  • Python 3 with uv package manager $(uv --version 2>/dev/null || echo 'latest')"
     DOTNET_SUMMARY=$(dotnet --list-sdks 2>/dev/null | head -n5 | paste -sd ', ' -)
     echo "  • .NET SDKs ${DOTNET_SUMMARY:-installed}"
-    echo "  • Go $(go version 2>/dev/null | awk '{print $3}' || echo 'latest')"
     echo "  • Node Version Manager (nvm) with Node.js LTS + Corepack + global tools"
     echo "  • Rust $(rustc --version 2>/dev/null || echo 'latest') with cargo, clippy, rustfmt, rust-analyzer"
     echo "  • R $(R --version 2>/dev/null | head -n1 | awk '{print $3}' || echo 'latest') (CRAN) + RStudio Server $(dpkg-query -W -f='${Version}' rstudio-server 2>/dev/null || echo 'latest') (browser: localhost:8787)"
-    echo "  • Elixir $(elixir --version 2>/dev/null | head -n1 || echo 'latest') with Erlang/OTP, Hex, rebar3"
-    echo "  • Docker Engine $(docker --version 2>/dev/null || echo 'latest')"
     echo "  • Modern CLI tools: fzf, bat, eza, htop, ncdu, tldr, jq, tree, ripgrep, zoxide"
     echo "  • Zsh with Oh My Zsh + plugins:"
     echo "    - zsh-autosuggestions (command suggestions)"
@@ -804,8 +662,6 @@ show_completion_message() {
     echo "  • ncdu               - Disk usage analyzer"
     echo "  • tldr <command>     - Simplified man pages"
     echo "  • dotnet --info      - Show .NET information"
-    echo "  • go version         - Check Go version"
-    echo "  • go mod init        - Initialize Go module"
 
     if [ "$SHELL" != "$(which zsh)" ]; then
         echo -e "\n${YELLOW}⚠️  Remember to restart your terminal for the shell change to take effect!${NC}"
@@ -824,12 +680,9 @@ main() {
     install_system_packages
     install_python
     install_dotnet
-    install_docker
-    install_go
     install_nodejs
     install_rust
     install_r
-    install_elixir
     install_claude_code
     install_herdr
     install_pi
