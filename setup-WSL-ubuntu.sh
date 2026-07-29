@@ -705,5 +705,10 @@ main() {
     show_completion_message
 }
 
-# Run main function
-main "$@"
+# Run main only when executed directly, not when sourced. Sourcing then lets you run a
+# single installer instead of the whole script — use a subshell so this file's 'set -e'
+# doesn't follow you home:
+#   bash -c 'source ~/.dotfiles/setup-WSL-ubuntu.sh; install_doom_emacs'
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    main "$@"
+fi
