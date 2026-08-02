@@ -1,0 +1,12 @@
+# emacs-plus build configuration.
+#
+# Read by the emacs-plus-app cask at (re)install time to swap the app icon.
+# Icon names come from the tap's community registry:
+#   /opt/homebrew/Library/Taps/d12frosted/homebrew-emacs-plus/community/icons
+#
+# After changing this file, re-apply with:
+#   brew reinstall --cask emacs-plus-app
+#
+# This only repackages the prebuilt app bundle -- it does not touch the Doom
+# install (~/.config/emacs) or the private config (~/.config/doom).
+icon: modern-doom3

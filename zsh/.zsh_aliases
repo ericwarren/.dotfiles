@@ -35,6 +35,24 @@ alias pip='pip3'
 alias nv='nvim'
 alias vim='nvim'
 
+# Emacs - talk to the daemon, never start a second instance.
+# -a '' starts a daemon if none is reachable, so these work cold.
+alias e='emacsclient -t -a ""'        # frame in the current terminal
+alias ec='emacsclient -c -n -a ""'    # GUI frame, does not block the shell
+
+# Daemon control. The service manager keeps the daemon alive (launchd KeepAlive
+# / systemd Restart=always), so `kill-emacs` only reloads it -- stopping for
+# real has to go through the service manager.
+if [[ "$OSTYPE" == darwin* ]]; then
+    alias estart='launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/gnu.emacs.daemon.plist'
+    alias estop='launchctl bootout gui/$(id -u)/gnu.emacs.daemon'
+    alias erestart='launchctl kickstart -k gui/$(id -u)/gnu.emacs.daemon'
+else
+    alias estart='systemctl --user start emacs.service'
+    alias estop='systemctl --user stop emacs.service'
+    alias erestart='systemctl --user restart emacs.service'
+fi
+
 # .NET aliases
 alias dn='dotnet'
 alias dnr='dotnet run'

@@ -1,0 +1,4 @@
+# Placeholder so `yas-snippet-dirs' resolves to a real directory.
+# Without it Doom warns on every startup:
+#   [yas] Check your `yas-snippet-dirs': .../snippets/ is not a directory
+# Drop custom snippets in here as <major-mode>/<name>.

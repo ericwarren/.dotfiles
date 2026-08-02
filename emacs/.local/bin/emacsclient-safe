@@ -1,28 +1,56 @@
-#!/bin/bash
-# Safe emacsclient wrapper that handles socket errors gracefully
+#!/usr/bin/env bash
+# Safe emacsclient wrapper that handles socket errors gracefully.
+#
+# Works on macOS (launchd via brew services) and Linux (systemd user unit,
+# see emacs/.config/systemd/user/emacs.service).
+#
+# Note: modern emacsclient can do most of this itself with
+#   emacsclient -c -n -a ''
+# where -a '' starts a daemon when none is reachable. This wrapper exists for
+# the cases that flag does not cover: picking the right socket when several
+# exist, and starting the daemon through the platform's service manager so it
+# survives logout.
 
-# Possible socket locations
-SOCKET_PATHS=(
-    "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/emacs/server"
-    "/tmp/emacs$(id -u)/server"
-    "$HOME/.emacs.d/server"
-)
+EMACS_PLUS_SERVICE="d12frosted/emacs-plus/emacs-plus@30"
+
+# Possible socket locations, most specific first.
+socket_candidates() {
+    # macOS: Emacs uses $TMPDIR, a per-user /var/folders/... path.
+    # This is NOT /tmp, which is why the generic path below never matches here.
+    [ -n "$TMPDIR" ] && printf '%s\n' "${TMPDIR%/}/emacs$(id -u)/server"
+    # Linux: XDG_RUNTIME_DIR is what the systemd unit sets TMPDIR to.
+    printf '%s\n' "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/emacs/server"
+    # Generic fallback for builds that ignore TMPDIR.
+    printf '%s\n' "/tmp/emacs$(id -u)/server"
+}
 
 # Function to find working socket
 find_socket() {
-    for socket in "${SOCKET_PATHS[@]}"; do
+    local socket
+    while IFS= read -r socket; do
         if [ -S "$socket" ] && emacsclient --socket-name="$socket" --eval nil &>/dev/null; then
             echo "$socket"
             return 0
         fi
-    done
+    done < <(socket_candidates)
     return 1
 }
 
 # Function to ensure daemon is running
 ensure_daemon() {
-    # Check if systemd service is available and use it
-    if systemctl --user is-enabled emacs.service &>/dev/null; then
+    if [ "$(uname -s)" = "Darwin" ]; then
+        # Prefer the launchd service, but only if it is already registered --
+        # starting it otherwise would silently opt the user into login startup.
+        if brew services list 2>/dev/null | grep -q 'emacs-plus'; then
+            echo "Starting Emacs daemon via brew services..." >&2
+            brew services start "$EMACS_PLUS_SERVICE" &>/dev/null
+            sleep 2
+        elif ! pgrep -f '[Ee]macs.*daemon' &>/dev/null; then
+            echo "Starting Emacs daemon..." >&2
+            emacs --daemon &>/dev/null
+            sleep 2
+        fi
+    elif systemctl --user is-enabled emacs.service &>/dev/null; then
         if ! systemctl --user is-active emacs.service &>/dev/null; then
             echo "Starting Emacs daemon via systemd..." >&2
             systemctl --user start emacs.service
@@ -44,10 +72,10 @@ main() {
     if socket=$(find_socket); then
         exec emacsclient --socket-name="$socket" "$@"
     fi
-    
+
     # No socket found, ensure daemon is running
     ensure_daemon
-    
+
     # Wait for socket to appear (up to 10 seconds)
     for i in {1..10}; do
         if socket=$(find_socket); then
@@ -55,10 +83,10 @@ main() {
         fi
         sleep 1
     done
-    
-    # Last resort - try without socket specification
+
+    # Last resort - let emacsclient find or start one itself
     echo "Warning: Could not find socket, trying default emacsclient..." >&2
-    exec emacsclient "$@"
+    exec emacsclient -a '' "$@"
 }
 
 main "$@"

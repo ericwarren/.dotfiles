@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS counterpart to emacs/.config/systemd/user/emacs.service.
+
+  Installed via the emacs-plus-app *cask*, which (unlike the formula) has no
+  `brew services` support, so the daemon is managed here instead.
+
+  Load:    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/gnu.emacs.daemon.plist
+  Unload:  launchctl bootout gui/$(id -u)/gnu.emacs.daemon
+  Restart: launchctl kickstart -k gui/$(id -u)/gnu.emacs.daemon
+
+  --fg-daemon, not --daemon: launchd must own the process, so it must not fork.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>gnu.emacs.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Applications/Emacs.app/Contents/MacOS/Emacs</string>
+        <string>--fg-daemon</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Mirrors Restart=always in the systemd unit. -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- launchd agents inherit a minimal PATH; Doom needs git, rg, fd and the
+         language toolchains for magit, projectile and lsp to work. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/eric/.config/emacs/bin:/Users/eric/.cargo/bin:/Users/eric/.local/bin:/Users/eric/.dotnet/tools:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>LANG</key>
+        <string>en_US.UTF-8</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/emacs-daemon.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/emacs-daemon.err.log</string>
+</dict>
+</plist>
