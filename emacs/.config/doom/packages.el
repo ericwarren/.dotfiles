@@ -49,3 +49,15 @@
 
 ;; Example packages (uncomment to use):
 ;; (package! evil-tutor)  ; Learn vim/evil
+
+;; Ghostel -- terminal emulator backed by libghostty-vt, the VT engine from the
+;; Ghostty terminal. Replaces Doom's :term vterm module (disabled in init.el).
+;; Unlike vterm it needs no cmake and no local compile: a prebuilt native module
+;; (ghostel-module-aarch64-macos.dylib) auto-downloads on first use, so it also
+;; survives Emacs major upgrades without a rebuild.
+;; :files mirrors the upstream MELPA recipe -- the Elisp lives in lisp/, and the
+;; Zig sources must come along for the optional build-from-source path.
+(package! ghostel
+  :recipe (:host github :repo "dakra/ghostel"
+           :files (:defaults "etc" "src" "vendor"
+                   "build.zig" "build.zig.zon" "symbols.map")))

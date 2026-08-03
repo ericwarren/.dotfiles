@@ -125,6 +125,144 @@
 
 (add-hook 'window-setup-hook #'+my/set-frame-size-and-center)
 
+;; --- C development ---------------------------------------------------------
+
+;; Xcode's Command Line Tools ship clangd, clang-format and lldb-dap, but only
+;; clangd is symlinked into /usr/bin -- the rest live in the CLT bin directory,
+;; which is not on PATH. Append it (so Homebrew still wins for anything it also
+;; provides) rather than editing the shell profile, keeping the fix inside Emacs.
+(when (eq system-type 'darwin)
+  (let ((clt "/Library/Developer/CommandLineTools/usr/bin"))
+    (when (file-directory-p clt)
+      (add-to-list 'exec-path clt t)
+      (setenv "PATH" (concat (getenv "PATH") ":" clt)))))
+
+;; 4-space indent, no tabs. cc-mode and the tree-sitter mode keep separate
+;; offset variables, so both have to be set.
+;;
+;; `c-basic-offset' is deliberately set globally rather than inside an
+;; `after! cc-mode' block: apheleia builds its clang-format invocation as
+;; "--style={IndentWidth: %d}" from `c-basic-offset', but C files open in
+;; `c-ts-mode', where cc-mode never loads and the variable would be VOID --
+;; which makes format-on-save fail outright. Setting the default keeps
+;; clang-format's indent width agreed with the editor's.
+(setq-default c-basic-offset 4)
+(setq c-ts-mode-indent-offset 4)
+(add-hook! '(c-mode-hook c-ts-mode-hook)
+  (setq indent-tabs-mode nil))
+
+;; clangd flags. --clang-tidy adds real bug detection (not just syntax) on top
+;; of the compiler's own warnings, which is worth a lot while learning C.
+;; --header-insertion=never stops it silently adding #includes you didn't type.
+(after! eglot
+  (add-to-list 'eglot-server-programs
+               '((c-mode c-ts-mode c++-mode c++-ts-mode)
+                 . ("clangd" "--background-index" "--clang-tidy"
+                    "--header-insertion=never" "--completion-style=detailed"))))
+
+(defun +my/c--build-and-run (extra-flags &optional compiler)
+  "Compile the current C file with EXTRA-FLAGS and run it.
+COMPILER defaults to clang. Single-file only, which is all lessons 01-08
+need. Output goes to the *compilation* buffer so warnings become clickable
+file:line links."
+  (let ((src (buffer-file-name)))
+    (unless src (user-error "Buffer is not visiting a file"))
+    (save-buffer)
+    (let ((out (file-name-sans-extension src)))
+      (compile (format "%s %s -g -O0 -std=c17 -Wall -Wextra %s -o %s && %s"
+                       (or compiler "clang")
+                       (shell-quote-argument src)
+                       extra-flags
+                       (shell-quote-argument out)
+                       (shell-quote-argument out))))))
+
+(defun +my/c-compile-and-run ()
+  "Compile and run the current C file with warnings on."
+  (interactive)
+  (+my/c--build-and-run ""))
+
+(defun +my/c-compile-and-run-asan ()
+  "Compile and run the current C file under Address/UB sanitizer.
+Catches buffer overflows and use-after-free with file:line. Note that ASan's
+leak detector does NOT work on macOS -- use `+my/c-run-leaks' for leaks."
+  (interactive)
+  (+my/c--build-and-run "-fsanitize=address,undefined"))
+
+(defun +my/c-run-leaks ()
+  "Compile the current C file and run it under macOS `leaks'.
+This is the Valgrind replacement for leak detection on Apple silicon;
+MallocStackLogging makes the report name the allocating function and line."
+  (interactive)
+  (let ((src (buffer-file-name)))
+    (unless src (user-error "Buffer is not visiting a file"))
+    (save-buffer)
+    (let ((out (file-name-sans-extension src)))
+      (compile (format "clang %s -g -O0 -std=c17 -Wall -Wextra -o %s && \
+MallocStackLogging=1 leaks --atExit -- %s"
+                       (shell-quote-argument src)
+                       (shell-quote-argument out)
+                       (shell-quote-argument out))))))
+
+;; Keep the compilation buffer scrolled to the newest output.
+(setq compilation-scroll-output t)
+
+;; Localleader (SPC m) bindings. c-mode-map and c-ts-mode-map are different
+;; keymaps from different features, so each gets its own `after!' -- one that
+;; never loads simply never runs.
+(after! cc-mode
+  (map! :localleader
+        :map c-mode-map
+        "c" #'+my/c-compile-and-run
+        "a" #'+my/c-compile-and-run-asan
+        "l" #'+my/c-run-leaks))
+(after! c-ts-mode
+  (map! :localleader
+        :map c-ts-mode-map
+        "c" #'+my/c-compile-and-run
+        "a" #'+my/c-compile-and-run-asan
+        "l" #'+my/c-run-leaks))
+
+;; --- Terminals -------------------------------------------------------------
+
+;; Ghostel is the terminal *inside* Emacs -- same VT engine as the Ghostty app,
+;; so lldb, ncurses, true color and shell integration all behave. Doom's :term
+;; vterm module is disabled in favour of it; `+my/open-ghostty' below still
+;; launches the real standalone Ghostty when a separate window is wanted.
+(use-package! ghostel
+  :defer t
+  :init
+  (setq
+   ;; Keep the native module OUT of straight's build tree. Upstream warns that a
+   ;; package rebuild will otherwise delete the .dylib while Emacs has it loaded;
+   ;; doom-data-dir survives `doom sync' and `doom upgrade' (it is where the
+   ;; tree-sitter grammars live too).
+   ghostel-module-directory (expand-file-name "ghostel/" doom-data-dir)
+   ;; If the module ever goes missing -- version bump, fresh machine -- fetch the
+   ;; prebuilt binary instead of prompting.
+   ghostel-module-auto-install 'download)
+  ;; Terminal buffers should take keystrokes, not evil normal-state motions.
+  (after! evil
+    (evil-set-initial-state 'ghostel-mode 'insert))
+  :config
+  ;; Open as a bottom split instead of taking over the window. Matches both
+  ;; "*ghostel*" and the per-title "*ghostel: TITLE*" buffers.
+  (set-popup-rule! "^\\*ghostel" :size 0.35 :vslot -4 :select t :quit nil :ttl nil))
+
+(map! :leader
+      :desc "Terminal (ghostel)"      "o t" #'ghostel
+      :desc "Terminal in project"     "o T" #'ghostel-project)
+
+(defun +my/open-ghostty ()
+  "Open a real Ghostty window at the current project root."
+  (interactive)
+  (let ((dir (expand-file-name (or (doom-project-root) default-directory))))
+    (call-process "open" nil 0 nil "-na" "Ghostty"
+                  "--args" (concat "--working-directory=" dir))
+    (message "Ghostty -> %s" dir)))
+
+(map! :leader
+      :desc "Ghostty at project root" "o g" #'+my/open-ghostty)
+
 ;; --- Org-roam capture system ---
 
 ;; Capture templates (dumb inbox drops).

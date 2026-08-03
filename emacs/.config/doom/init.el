@@ -76,7 +76,8 @@
        ;;eshell            ; the elisp shell that works everywhere
        ;;shell             ; simple shell REPL for Emacs
        ;;term              ; basic terminal emulator for Emacs
-       vterm             ; the best terminal emulation in Emacs
+       ;;vterm             ; superseded by ghostel (see packages.el); vterm needs
+                         ;   cmake and a recompile on every Emacs upgrade
 
        :checkers
        syntax              ; tasing you for every semicolon you forget
@@ -95,7 +96,7 @@
        lookup              ; navigate your code and its documentation
        (lsp +eglot)      ; M-x vscode (eglot: reliable LSP over TRAMP for remote Rust on vulcan)
        magit             ; a git porcelain for Emacs
-       ;;make              ; run make tasks from Emacs
+       make              ; run make tasks from Emacs
        ;;pass              ; password manager for nerds
        ;;pdf               ; pdf enhancements
        ;;prodigy           ; FIXME managing external services & code builders
@@ -113,7 +114,7 @@
        :lang
        ;;agda              ; types of types of types of types...
        ;;beancount         ; mind the GAAP
-       ;;cc                ; C > C++ == 1
+       (cc +lsp +tree-sitter) ; C > C++ == 1
        ;;clojure           ; java with a lisp
        ;;common-lisp       ; if you've seen one lisp, you've seen them all
        ;;coq               ; proofs-as-programs
