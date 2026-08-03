@@ -53,6 +53,21 @@ else
     alias erestart='systemctl --user restart emacs.service'
 fi
 
+# C toolchain. On macOS /usr/bin/gcc is Apple clang wearing a gcc name, and its
+# diagnostics differ from the GNU wording the C lessons quote -- GNU says
+# "overflow in conversion" where clang says "implicit conversion". Point gcc at
+# the newest Homebrew GNU gcc when one is installed. Linux needs no alias:
+# gcc is already GNU there.
+if [[ "$OSTYPE" == darwin* ]]; then
+    for _v in 20 19 18 17 16 15; do
+        if command -v gcc-$_v &> /dev/null; then
+            alias gcc="gcc-$_v"
+            break
+        fi
+    done
+    unset _v
+fi
+
 # .NET aliases
 alias dn='dotnet'
 alias dnr='dotnet run'
