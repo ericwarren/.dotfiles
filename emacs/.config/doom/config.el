@@ -24,6 +24,42 @@
 ;;(setq doom-font (font-spec :family "Fira Code" :size 12 :weight 'semi-light)
 ;;      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13))
 (setq doom-font (font-spec :family "CaskaydiaCove Nerd Font" :size 16))
+
+;; Nerd Font glyphs -- powerline separators, OS/language icons -- live in the
+;; Unicode private-use areas, and the fontset below decides which font draws
+;; them, overriding whatever face asks for them.
+;;
+;; IMPORTANT: `set-fontset-font' beats a face's own :family for non-ASCII
+;; characters. nerd-icons explicitly requests "Symbols Nerd Font Mono" and does
+;; NOT get it -- verified by reading `internal-char-font' back off a rendered
+;; dashboard icon. So this one mapping governs Doom's UI icons AND terminal
+;; output together and has to satisfy both; setting `nerd-icons-font-family'
+;; accomplishes nothing.
+(defcustom +my/nerd-glyph-font "CaskaydiaCove Nerd Font Mono"
+  "Font used for Nerd Font private-use glyphs.
+Must be the *Mono* variant. Measured from the font files themselves, at 2048
+units per em against the 1200-unit text cell of `doom-font':
+
+  Symbols Nerd Font Mono   advance 2048             -- 1.71 cells; the terminal
+                                                       grid misaligns, which is
+                                                       what mangles Starship
+  CaskaydiaCove Nerd Font  advance 1200, xMax 2048  -- outline overruns its cell
+                                                       and Emacs clips it, so
+                                                       dashboard icons render as
+                                                       fragments (71% cut on
+                                                       nf-oct-book/history)
+  CaskaydiaCove NF Mono    advance 1200, xMax 1200  -- one cell AND fits in it
+
+Only the Mono variant satisfies both constraints, so the terminal and the Doom
+dashboard both get it."
+  :type 'string :group 'doom)
+
+(defun +my/use-text-font-for-nerd-glyphs (&rest _)
+  "Route Nerd Font private-use ranges to `+my/nerd-glyph-font'."
+  (dolist (range '((#xe000  . #xf8ff)     ; PUA: powerline, devicons, font-awesome
+                   (#xf0000 . #xffffd)))  ; PUA-A: material design
+    (set-fontset-font t range (font-spec :family +my/nerd-glyph-font) nil nil)))
+(add-hook 'after-setting-font-hook #'+my/use-text-font-for-nerd-glyphs)
 ;;
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
