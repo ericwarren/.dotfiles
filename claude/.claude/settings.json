@@ -45,17 +45,17 @@
     "command": "bash ~/.claude/statusline.sh"
   },
   "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true,
-    "mattpocock-skills@mattpocock": true,
-    "dotnet11@dotnet-agent-skills": true,
-    "dotnet@dotnet-agent-skills": true,
     "dotnet-aspnetcore@dotnet-agent-skills": true,
     "dotnet-data@dotnet-agent-skills": true,
     "dotnet-diag@dotnet-agent-skills": true,
     "dotnet-msbuild@dotnet-agent-skills": true,
     "dotnet-nuget@dotnet-agent-skills": true,
     "dotnet-template-engine@dotnet-agent-skills": true,
-    "dotnet-test@dotnet-agent-skills": true
+    "dotnet-test@dotnet-agent-skills": true,
+    "dotnet11@dotnet-agent-skills": true,
+    "dotnet@dotnet-agent-skills": true,
+    "frontend-design@claude-plugins-official": true,
+    "mattpocock-skills@mattpocock": true
   },
   "extraKnownMarketplaces": {
     "anthropic-agent-skills": {
@@ -64,17 +64,17 @@
         "repo": "anthropics/skills"
       }
     },
-    "mattpocock": {
-      "source": {
-        "source": "github",
-        "repo": "mattpocock/skills"
-      },
-      "autoUpdate": true
-    },
     "dotnet-agent-skills": {
       "source": {
         "source": "github",
         "repo": "dotnet/skills"
+      },
+      "autoUpdate": true
+    },
+    "mattpocock": {
+      "source": {
+        "source": "github",
+        "repo": "mattpocock/skills"
       },
       "autoUpdate": true
     }
@@ -82,5 +82,6 @@
   "alwaysThinkingEnabled": true,
   "tui": "fullscreen",
   "theme": "dark",
-  "agentPushNotifEnabled": true
+  "agentPushNotifEnabled": true,
+  "model": "claude-fable-5[1m]"
 }
